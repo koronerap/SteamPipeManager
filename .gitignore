@@ -1,0 +1,17 @@
+# Build output
+bin/
+obj/
+publish/
+dist/
+
+# IDE
+.vs/
+.idea/
+*.user
+
+# Local planning notes, not part of the public repo
+PLAN.md
+
+# Published binaries
+*.exe
+!src/**/app.ico

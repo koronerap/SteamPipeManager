@@ -1,0 +1,126 @@
+﻿<ui:FluentWindow x:Class="SteamPipeManager.App.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:loc="clr-namespace:SteamPipeManager.App.Localization"
+                 xmlns:views="clr-namespace:SteamPipeManager.App.Views"
+                 xmlns:conv="clr-namespace:SteamPipeManager.App.Converters"
+                 Title="Steam Pipe Manager"
+                 Width="1280" Height="820"
+                 MinWidth="900" MinHeight="600"
+                 WindowStartupLocation="CenterScreen"
+                 WindowBackdropType="Mica"
+                 ExtendsContentIntoTitleBar="True">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <conv:BoolToVisibility x:Key="BoolToVisibilityInverted" Invert="True" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="Steam Pipe Manager" />
+
+        <!-- Breadcrumb: ev ikonu → profil avatarı → oyun adı -->
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    Margin="24,8,24,16"
+                    VerticalAlignment="Center"
+                    Visibility="{Binding IsChromeVisible, Converter={StaticResource BoolToVisibility}}">
+
+            <ui:Button Appearance="Transparent" Padding="8,6"
+                       Icon="{ui:SymbolIcon Home24}"
+                       AutomationProperties.Name="{loc:T Nav.Home}"
+                       ToolTip="{loc:T Nav.Home.Tip}"
+                       Command="{Binding GoToProfilesCommand}" />
+
+            <TextBlock Text="›" Margin="8,0" Opacity="0.4" VerticalAlignment="Center" FontSize="15"
+                       Visibility="{Binding Navigation.HasProfile, Converter={StaticResource BoolToVisibility}}" />
+
+            <!-- Profil: yalnızca avatar; adı tooltip'te -->
+            <ui:Button Appearance="Transparent" Padding="4"
+                       AutomationProperties.Name="{Binding Navigation.Profile.DisplayName}"
+                       ToolTip="{Binding Navigation.Profile.DisplayName}"
+                       Command="{Binding GoToAppsCommand}"
+                       Visibility="{Binding Navigation.HasProfile, Converter={StaticResource BoolToVisibility}}">
+                <Grid Width="26" Height="26">
+                    <Border CornerRadius="13" Background="#2F6FEB"
+                            Visibility="{Binding HasActiveAvatar, Converter={StaticResource BoolToVisibilityInverted}}">
+                        <TextBlock Text="{Binding ActiveInitial}" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+
+                    <Border CornerRadius="13"
+                            Visibility="{Binding HasActiveAvatar, Converter={StaticResource BoolToVisibility}}">
+                        <Border.Background>
+                            <ImageBrush Stretch="UniformToFill"
+                                        ImageSource="{Binding ActiveAvatarPath, Converter={StaticResource PathToImage}}" />
+                        </Border.Background>
+                    </Border>
+                </Grid>
+            </ui:Button>
+
+            <TextBlock Text="›" Margin="8,0" Opacity="0.4" VerticalAlignment="Center" FontSize="15"
+                       Visibility="{Binding Navigation.HasApp, Converter={StaticResource BoolToVisibility}}" />
+
+            <TextBlock Text="{Binding Navigation.App.Title}"
+                       VerticalAlignment="Center"
+                       FontWeight="SemiBold" FontSize="14"
+                       Visibility="{Binding Navigation.HasApp, Converter={StaticResource BoolToVisibility}}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,24,16"
+                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                    Visibility="{Binding IsChromeVisible, Converter={StaticResource BoolToVisibility}}">
+            <ui:Button Appearance="Transparent" Padding="9,6"
+                       Icon="{ui:SymbolIcon Settings24}"
+                       AutomationProperties.Name="{loc:T Nav.Settings}"
+                                   ToolTip="{loc:T Nav.Settings}"
+                       Command="{Binding OpenSettingsCommand}"
+                       Visibility="{Binding IsSettings, Converter={StaticResource BoolToVisibilityInverted}}" />
+            <ui:Button Appearance="Transparent" Padding="9,6"
+                       Icon="{ui:SymbolIcon ArrowLeft24}"
+                       AutomationProperties.Name="{loc:T Nav.Back}"
+                                   ToolTip="{loc:T Nav.Back}"
+                       Command="{Binding CloseSettingsCommand}"
+                       Visibility="{Binding IsSettings, Converter={StaticResource BoolToVisibility}}" />
+        </StackPanel>
+
+        <Grid Grid.Row="2" Margin="24,0,24,24">
+            <views:ProfilePickerView DataContext="{Binding ProfilePicker}"
+                                     Visibility="{Binding DataContext.IsProfilePicker,
+                                                  RelativeSource={RelativeSource AncestorType=Window},
+                                                  Converter={StaticResource BoolToVisibility}}" />
+
+            <views:AppPickerView DataContext="{Binding AppPicker}"
+                                 Visibility="{Binding DataContext.IsAppPicker,
+                                              RelativeSource={RelativeSource AncestorType=Window},
+                                              Converter={StaticResource BoolToVisibility}}" />
+
+            <views:SubAppWorkspaceView DataContext="{Binding Workspace}"
+                                       Visibility="{Binding DataContext.IsWorkspace,
+                                                    RelativeSource={RelativeSource AncestorType=Window},
+                                                    Converter={StaticResource BoolToVisibility}}" />
+
+            <views:SetupView DataContext="{Binding Setup}"
+                             Visibility="{Binding DataContext.IsSetup,
+                                          RelativeSource={RelativeSource AncestorType=Window},
+                                          Converter={StaticResource BoolToVisibility}}" />
+
+            <views:SettingsView DataContext="{Binding Settings}"
+                                Visibility="{Binding DataContext.IsSettings,
+                                             RelativeSource={RelativeSource AncestorType=Window},
+                                             Converter={StaticResource BoolToVisibility}}" />
+        </Grid>
+
+        <!-- Giriş penceresi tüm satırların üstünü kaplar -->
+        <views:LoginOverlay Grid.Row="0" Grid.RowSpan="3"
+                            DataContext="{Binding Login}" />
+    </Grid>
+</ui:FluentWindow>

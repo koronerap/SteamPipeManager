@@ -1,0 +1,237 @@
+﻿<UserControl x:Class="SteamPipeManager.App.Views.ProfilePickerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:loc="clr-namespace:SteamPipeManager.App.Localization">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <StackPanel>
+                <TextBlock Text="{loc:T Profile.Title}" Style="{StaticResource SectionHeader}" Margin="0,0,0,4" />
+                <TextBlock Opacity="0.65" TextWrapping="Wrap" MaxWidth="720" HorizontalAlignment="Left"
+                           Text="{loc:T Profile.Subtitle}" />
+            </StackPanel>
+
+            <ui:Button Appearance="Primary" Padding="14,8"
+                       HorizontalAlignment="Right" VerticalAlignment="Top"
+                       Icon="{ui:SymbolIcon PersonAdd24}"
+                       AutomationProperties.Name="{loc:T Profile.New}"
+                                   ToolTip="{loc:T Profile.New}"
+                       Command="{Binding BeginAddProfileCommand}"
+                       Visibility="{Binding IsAddingProfile, Converter={StaticResource BoolToVisInverted}}" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- Boş durum -->
+                <ui:Card Padding="28" Margin="0,0,0,20" MaxWidth="640" HorizontalAlignment="Left"
+                         Visibility="{Binding Cards.Count, Converter={StaticResource CountToVisInverted}}">
+                    <StackPanel>
+                        <TextBlock Text="{loc:T Profile.Empty.Title}"
+                                   FontSize="17" FontWeight="SemiBold" Margin="0,0,0,10" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.8" LineHeight="21"
+                                   Text="{loc:T Profile.Empty.Body}" />
+                    </StackPanel>
+                </ui:Card>
+
+                <ItemsControl ItemsSource="{Binding Cards}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:Card Width="340" Margin="0,0,20,20" Padding="20">
+                                <StackPanel>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Steam avatarı; yoksa baş harf rozeti -->
+                                        <Grid Grid.Column="0" Width="48" Height="48" VerticalAlignment="Top">
+                                            <Border CornerRadius="24" Background="#2F6FEB"
+                                                    Visibility="{Binding HasAvatar, Converter={StaticResource BoolToVisInverted}}">
+                                                <TextBlock Text="{Binding Initial}"
+                                                           FontSize="20" FontWeight="SemiBold" Foreground="White"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+
+                                            <Border CornerRadius="24"
+                                                    Visibility="{Binding HasAvatar, Converter={StaticResource BoolToVis}}">
+                                                <Border.Background>
+                                                    <ImageBrush Stretch="UniformToFill"
+                                                                ImageSource="{Binding AvatarPath, Converter={StaticResource PathToImage}}" />
+                                                </Border.Background>
+                                            </Border>
+                                        </Grid>
+
+                                        <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       FontSize="17" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding SteamUsername}"
+                                                       Opacity="0.6" FontSize="12" Margin="0,1,0,0"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <TextBlock Text="{Binding Summary}" Opacity="0.8" Margin="0,16,0,0" />
+
+                                    <!-- Oturum durumu -->
+                                    <Border Background="#1AFFFFFF" CornerRadius="6" Padding="12,8" Margin="0,14,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <Ellipse Grid.Column="0" Width="9" Height="9"
+                                                     Fill="{Binding SessionBrush}"
+                                                     VerticalAlignment="Center" Margin="0,0,10,0" />
+
+                                            <TextBlock Grid.Column="1" Text="{Binding SessionText}"
+                                                       VerticalAlignment="Center" FontSize="12"
+                                                       TextTrimming="CharacterEllipsis" />
+
+                                            <ui:Button Grid.Column="2" Appearance="Transparent" Padding="6,2"
+                                                       Icon="{ui:SymbolIcon ArrowSync24}"
+                                                       AutomationProperties.Name="{loc:T Profile.Recheck.Tip}"
+                                   ToolTip="{loc:T Profile.Recheck.Tip}"
+                                                       IsEnabled="{Binding IsIdle}"
+                                                       Command="{Binding DataContext.CheckSessionCommand,
+                                                                 RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                       CommandParameter="{Binding}" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Grid Margin="0,16,0,0">
+                                        <ui:Button Appearance="Primary" Padding="18,7"
+                                                   Icon="{ui:SymbolIcon Open24}"
+                                                   Content="{loc:T Common.Open}"
+ToolTip="{loc:T Profile.Open.Tip}"
+                                                   HorizontalAlignment="Left"
+                                                   Command="{Binding DataContext.SelectCommand,
+                                                             RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                   CommandParameter="{Binding}" />
+
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <ui:Button Padding="9,7"
+                                                       Icon="{ui:SymbolIcon Key24}"
+                                                       AutomationProperties.Name="{loc:T Profile.Login.Tip}"
+                                   ToolTip="{loc:T Profile.Login.Tip}"
+                                                       IsEnabled="{Binding IsIdle}"
+                                                       Command="{Binding DataContext.LoginCommand,
+                                                                 RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                       CommandParameter="{Binding}" />
+
+                                            <ui:Button Padding="9,7" Margin="6,0,0,0"
+                                                       Icon="{ui:SymbolIcon Edit24}"
+                                                       AutomationProperties.Name="{loc:T Profile.Edit.Tip}"
+                                   ToolTip="{loc:T Profile.Edit.Tip}"
+                                                       Command="{Binding DataContext.BeginEditCommand,
+                                                                 RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                       CommandParameter="{Binding}" />
+
+                                            <ui:Button Padding="9,7" Margin="6,0,0,0"
+                                                       Appearance="Transparent"
+                                                       Icon="{ui:SymbolIcon Delete24}"
+                                                       AutomationProperties.Name="{loc:T Profile.Delete.Tip}"
+                                   ToolTip="{loc:T Profile.Delete.Tip}"
+                                                       Command="{Binding DataContext.DeleteCommand,
+                                                                 RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                       CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </ui:Card>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Profil düzenleme -->
+                <ui:Card Padding="24" MaxWidth="520" HorizontalAlignment="Left" Margin="0,0,0,16"
+                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="{loc:T Profile.Edit.Tip}" FontWeight="SemiBold" FontSize="17" Margin="0,0,0,16" />
+
+                        <TextBlock Text="{loc:T Profile.Name}" Style="{StaticResource FieldLabel}" />
+                        <ui:TextBox Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <TextBlock Text="{loc:T Profile.Username}" Style="{StaticResource FieldLabel}" Margin="0,14,0,4" />
+                        <ui:TextBox Text="{Binding EditUsername, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Opacity="0.55" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Text="{loc:T Profile.Edit.Warning}" />
+
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="IndianRed" Margin="0,14,0,0"
+                                   TextWrapping="Wrap"
+                                   Visibility="{Binding ErrorMessage, Converter={StaticResource TextToVis}}" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                            <ui:Button Content="{loc:T Common.Save}" Appearance="Primary" Padding="18,6"
+                                       Icon="{ui:SymbolIcon Save24}"
+                                       Command="{Binding ConfirmEditCommand}" />
+                            <ui:Button Content="{loc:T Common.Cancel}" Appearance="Transparent" Margin="8,0,0,0"
+                                       Command="{Binding CancelEditCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </ui:Card>
+
+                <!-- Yeni profil -->
+                <ui:Card Padding="24" MaxWidth="520" HorizontalAlignment="Left"
+                         Visibility="{Binding IsAddingProfile, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="{loc:T Profile.New}" FontWeight="SemiBold" FontSize="17" Margin="0,0,0,16" />
+
+                        <TextBlock Text="{loc:T Profile.Name}" Style="{StaticResource FieldLabel}" />
+                        <ui:TextBox Text="{Binding NewProfileName, UpdateSourceTrigger=PropertyChanged}"
+                                    PlaceholderText="Studio Ana Hesap" />
+
+                        <TextBlock Text="{loc:T Profile.Username}" Style="{StaticResource FieldLabel}" Margin="0,14,0,4" />
+                        <ui:TextBox Text="{Binding NewSteamUsername, UpdateSourceTrigger=PropertyChanged}"
+                                    PlaceholderText="steam_partner_hesabi" />
+                        <TextBlock Opacity="0.55" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                   Text="{loc:T Profile.Username.Hint}" />
+
+                        <Border Background="#1AFFFFFF" CornerRadius="6" Padding="14" Margin="0,16,0,0">
+                            <StackPanel>
+                                <TextBlock Text="{loc:T Profile.NoPassword.Title}" FontWeight="SemiBold" FontSize="12" />
+                                <TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="12" Margin="0,4,0,0"
+                                           Text="{loc:T Profile.NoPassword.Body}" />
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="IndianRed" Margin="0,14,0,0"
+                                   TextWrapping="Wrap"
+                                   Visibility="{Binding ErrorMessage, Converter={StaticResource TextToVis}}" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                            <ui:Button Content="{loc:T Common.Create}" Appearance="Primary" Padding="18,6"
+                                       Icon="{ui:SymbolIcon Checkmark24}"
+                                       Command="{Binding ConfirmAddProfileCommand}" />
+                            <ui:Button Content="{loc:T Common.Cancel}" Appearance="Transparent" Margin="8,0,0,0"
+                                       Command="{Binding CancelAddProfileCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </ui:Card>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="#1AFFFFFF" CornerRadius="6" Padding="14,10" Margin="0,12,0,0"
+                Visibility="{Binding StatusMessage, Converter={StaticResource TextToVis}}">
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Opacity="0.9" />
+        </Border>
+    </Grid>
+</UserControl>

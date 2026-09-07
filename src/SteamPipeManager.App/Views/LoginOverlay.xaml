@@ -1,0 +1,81 @@
+﻿<UserControl x:Class="SteamPipeManager.App.Views.LoginOverlay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:loc="clr-namespace:SteamPipeManager.App.Localization"
+             Visibility="{Binding IsOpen, Converter={StaticResource BoolToVis}}">
+
+    <!-- Arkayı karartan katman: giriş sürerken başka bir şeye tıklanmasın -->
+    <Grid Background="#B0000000">
+        <!-- ui:Card yarı saydam olduğu için arkadaki içerik okunuyordu; diyalog opak olmalı -->
+        <Border Width="440" Padding="28" CornerRadius="8"
+                Background="#FF202024" BorderBrush="#33FFFFFF" BorderThickness="1"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel>
+                <TextBlock Text="{loc:T Login.Title}" FontSize="19" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Username}" Opacity="0.6" FontSize="12" Margin="0,3,0,0" />
+
+                <!-- 1. adım: şifre -->
+                <StackPanel Margin="0,20,0,0"
+                            Visibility="{Binding ShowPasswordStep, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{loc:T Login.Password}" Style="{StaticResource FieldLabel}" />
+                    <PasswordBox x:Name="PasswordInput"
+                                 PasswordChanged="OnPasswordChanged"
+                                 Padding="10,8"
+                                 FontSize="14" />
+
+                    <Border Background="#1AFFFFFF" CornerRadius="6" Padding="12" Margin="0,14,0,0">
+                        <TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="11"
+                                   Text="{loc:T Login.Note}" />
+                    </Border>
+                </StackPanel>
+
+                <!-- 2a. adım: Steam Guard kodu -->
+                <StackPanel Margin="0,20,0,0"
+                            Visibility="{Binding ShowGuardStep, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{loc:T Login.GuardCode}" Style="{StaticResource FieldLabel}" />
+                    <ui:TextBox Text="{Binding GuardCode, UpdateSourceTrigger=PropertyChanged}"
+                                PlaceholderText="ABCDE"
+                                FontSize="17" CharacterCasing="Upper" MaxLength="10" />
+
+                    <ui:Button Content="{loc:T Login.GuardSend}" Appearance="Primary" Margin="0,14,0,0" Padding="16,7"
+                               Icon="{ui:SymbolIcon Send24}"
+                               Command="{Binding SubmitGuardCodeCommand}" />
+                </StackPanel>
+
+                <!-- 2b. adım: telefondan onay -->
+                <StackPanel Margin="0,20,0,0"
+                            Visibility="{Binding ShowMobileStep, Converter={StaticResource BoolToVis}}">
+                    <Border Background="#33B8860B" CornerRadius="6" Padding="14">
+                        <StackPanel>
+                            <TextBlock Text="{loc:T Login.Mobile.Title}" FontWeight="SemiBold" FontSize="13" />
+                            <TextBlock TextWrapping="Wrap" Opacity="0.85" FontSize="12" Margin="0,6,0,0"
+                                       Text="{loc:T Login.Mobile.Body}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <ProgressBar Height="3" IsIndeterminate="True" Margin="0,18,0,0"
+                             Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+
+                <TextBlock Text="{Binding StatusMessage}" Opacity="0.75" FontSize="12" Margin="0,10,0,0"
+                           TextWrapping="Wrap"
+                           Visibility="{Binding StatusMessage, Converter={StaticResource TextToVis}}" />
+
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="IndianRed" FontSize="12"
+                           Margin="0,10,0,0" TextWrapping="Wrap"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource TextToVis}}" />
+
+                <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                    <ui:Button Content="{loc:T Login.Submit}" Appearance="Primary" Padding="18,7"
+                               Icon="{ui:SymbolIcon Key24}"
+                               Command="{Binding SubmitCommand}"
+                               Visibility="{Binding ShowPasswordStep, Converter={StaticResource BoolToVis}}" />
+
+                    <ui:Button Content="{loc:T Common.Cancel}" Appearance="Transparent" Margin="8,0,0,0"
+                               Command="{Binding CancelCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,441 @@
+using System.Collections.ObjectModel;
+using System.Windows.Media;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using SteamPipeManager.App.Localization;
+using SteamPipeManager.App.Services;
+using SteamPipeManager.Core.Models;
+using SteamPipeManager.Core.SteamCmd;
+
+namespace SteamPipeManager.App.ViewModels;
+
+/// <summary>
+/// Profil kartı: hesabın özeti ve SteamCMD oturum durumu.
+/// Oturum durumu build ekranından buraya taşındı — giriş hesap düzeyinde bir kavram,
+/// build hedefine değil profile ait.
+/// </summary>
+public sealed partial class ProfileCard(UserProfile profile) : ObservableObject
+{
+    public UserProfile Profile { get; } = profile;
+
+    public string DisplayName => Profile.DisplayName;
+
+    public string SteamUsername => Profile.SteamUsername;
+
+    /// <summary>
+    /// Steam avatarı (varsa). Yoksa baş harf rozetine düşülür — hesabın Steam profili
+    /// gizli veya yoksa görsel çekilemez.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAvatar))]
+    private string? _avatarPath;
+
+    public bool HasAvatar => AvatarPath is { Length: > 0 };
+
+    /// <summary>Kart üzerindeki yuvarlak rozet için baş harf.</summary>
+    public string Initial => Profile.DisplayName is { Length: > 0 } name
+        ? name[..1].ToUpperInvariant()
+        : "?";
+
+    public int AppCount => Profile.Apps.Count;
+
+    public int SubAppCount => ProfileRepository.AllSubApps(Profile).Count();
+
+    public string Summary => AppCount == 0
+        ? AppLocalizer.Instance.Get("Profile.NoGames")
+        : AppLocalizer.Instance.Format("Profile.Summary", AppCount, SubAppCount);
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SessionText))]
+    [NotifyPropertyChangedFor(nameof(SessionBrush))]
+    [NotifyPropertyChangedFor(nameof(NeedsLogin))]
+    private SessionState _session = SessionState.Unknown;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SessionText))]
+    private string _sessionDetail = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SessionText))]
+    [NotifyPropertyChangedFor(nameof(IsIdle))]
+    private bool _isChecking;
+
+    public bool IsIdle => !IsChecking;
+
+    public bool NeedsLogin => Session is SessionState.LoginRequired or SessionState.Unknown;
+
+    public string SessionText => (IsChecking, Session) switch
+    {
+        (true, _) => AppLocalizer.Instance.Get("Session.Checking"),
+        (_, SessionState.Active) => AppLocalizer.Instance.Get("Session.Active"),
+        (_, SessionState.LoginRequired) => AppLocalizer.Instance.Get("Session.LoginRequired"),
+        (_, SessionState.CheckFailed) => AppLocalizer.Instance.Format("Session.CheckFailed", SessionDetail),
+        _ => AppLocalizer.Instance.Get("Session.Unknown"),
+    };
+
+    public Brush SessionBrush => Session switch
+    {
+        SessionState.Active => Brushes.MediumSeaGreen,
+        SessionState.LoginRequired => Brushes.Goldenrod,
+        SessionState.CheckFailed => Brushes.IndianRed,
+        _ => Brushes.Gray,
+    };
+}
+
+public sealed partial class ProfilePickerViewModel(
+    ProfileRepository repository,
+    NavigationState navigation,
+    IConfirmationService confirmation,
+    BuildCoordinator coordinator,
+    SteamImageService images,
+    LoginViewModel login) : ObservableObject
+{
+    /// <summary>Uygulama ömrü boyunca bir kez otomatik kontrol yapılır.</summary>
+    private bool _autoCheckDone;
+
+    /// <summary>Avatarlar da açılışta bir kez tazelenir.</summary>
+    private bool _avatarsRefreshed;
+
+    public ObservableCollection<ProfileCard> Cards { get; } = [];
+
+    [ObservableProperty]
+    private bool _isAddingProfile;
+
+    [ObservableProperty]
+    private string _newProfileName = "";
+
+    [ObservableProperty]
+    private string _newSteamUsername = "";
+
+    [ObservableProperty]
+    private string? _errorMessage;
+
+    [ObservableProperty]
+    private string? _statusMessage;
+
+    [ObservableProperty]
+    private bool _isBusy;
+
+    /// <summary>Düzenlenen profil; null ise düzenleme kapalı.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsEditing))]
+    private ProfileCard? _editing;
+
+    [ObservableProperty]
+    private string _editName = "";
+
+    [ObservableProperty]
+    private string _editUsername = "";
+
+    public bool IsEditing => Editing is not null;
+
+    public void Refresh()
+    {
+        var previous = Cards.ToDictionary(c => c.Profile.Id, c => (c.Session, c.SessionDetail));
+
+        Cards.Clear();
+
+        foreach (var profile in repository.Profiles)
+        {
+            var card = new ProfileCard(profile);
+
+            // Yeniden yüklemede daha önce öğrenilen oturum durumu korunur.
+            if (previous.TryGetValue(profile.Id, out var state))
+            {
+                card.Session = state.Session;
+                card.SessionDetail = state.SessionDetail;
+            }
+
+            // Avatar diskteki önbellekten anında gelir; ağa çıkılmaz.
+            if (profile.SteamId64 is { } steamId)
+            {
+                card.AvatarPath = images.GetCachedAvatar(steamId);
+            }
+
+            Cards.Add(card);
+        }
+    }
+
+    /// <summary>
+    /// SteamCMD zaten kuruluysa oturumları arka planda bir kez kontrol eder.
+    /// Kurulu değilse hiçbir şey yapılmaz: açılışta 43 MB indirme başlatmak istemeyiz.
+    /// </summary>
+    public async Task AutoCheckSessionsAsync()
+    {
+        if (_autoCheckDone || Cards.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!await coordinator.IsInstalledAsync())
+            {
+                return;
+            }
+        }
+        catch
+        {
+            // Ayarlar okunamıyorsa sessizce vazgeç; açılış bundan etkilenmemeli.
+            return;
+        }
+
+        _autoCheckDone = true;
+
+        // Tüm profiller aynı SteamCMD kurulumunu paylaştığı için kontroller sıralı yapılır.
+        foreach (var card in Cards.ToList())
+        {
+            await CheckAsync(card);
+        }
+    }
+
+    [RelayCommand]
+    private void Select(ProfileCard card) => navigation.SelectProfile(card.Profile);
+
+    [RelayCommand]
+    private async Task CheckSessionAsync(ProfileCard card) => await CheckAsync(card);
+
+    private async Task CheckAsync(ProfileCard card)
+    {
+        if (card.IsChecking)
+        {
+            return;
+        }
+
+        card.IsChecking = true;
+
+        try
+        {
+            var result = await coordinator.CheckSessionAsync(card.Profile);
+            card.Session = result.State;
+            card.SessionDetail = result.Detail;
+
+            await ApplySteamIdAsync(card, result.SteamId64);
+        }
+        catch (Exception ex)
+        {
+            card.Session = SessionState.CheckFailed;
+            card.SessionDetail = ex.Message;
+        }
+        finally
+        {
+            card.IsChecking = false;
+        }
+    }
+
+    /// <summary>
+    /// Uygulama içi giriş penceresini açar. Konsol penceresi açılmaz; şifre yalnızca
+    /// giriş süresince bellekte tutulur, diske yazılmaz.
+    /// </summary>
+    [RelayCommand]
+    private async Task LoginAsync(ProfileCard card)
+    {
+        StatusMessage = null;
+
+        var result = await login.BeginAsync(card.Profile);
+
+        if (!result.Succeeded)
+        {
+            StatusMessage = result.Stage == LoginStage.Cancelled ? null : result.Message;
+            return;
+        }
+
+        card.Session = SessionState.Active;
+        card.SessionDetail = AppLocalizer.Instance.Get("Session.Active");
+        StatusMessage = AppLocalizer.Instance.Format("Profile.LoginDone", card.SteamUsername);
+
+        await ApplySteamIdAsync(card, result.SteamId64);
+    }
+
+    /// <summary>
+    /// Giriş satırından gelen SteamID profile yazılır ve avatar bir kez indirilir.
+    /// Avatar bulunamazsa sessizce baş harf rozetinde kalınır.
+    /// </summary>
+    private async Task ApplySteamIdAsync(ProfileCard card, ulong? steamId64)
+    {
+        if (steamId64 is { } id && card.Profile.SteamId64 != id)
+        {
+            card.Profile.SteamId64 = id;
+            await repository.SaveAsync();
+        }
+
+        await LoadAvatarAsync(card);
+    }
+
+    private async Task LoadAvatarAsync(ProfileCard card)
+    {
+        if (card.Profile.SteamId64 is not { } id || card.HasAvatar)
+        {
+            return;
+        }
+
+        card.AvatarPath = await images.GetAvatarAsync(id);
+    }
+
+    /// <summary>
+    /// Uygulama açılışında profil başına bir kez Steam'e sorar: avatar değiştiyse
+    /// önbellek güncellenir, ağ erişilemezse eldeki görsel korunur.
+    /// </summary>
+    public async Task RefreshAvatarsAsync()
+    {
+        if (_avatarsRefreshed)
+        {
+            return;
+        }
+
+        _avatarsRefreshed = true;
+
+        foreach (var card in Cards.ToList())
+        {
+            if (card.Profile.SteamId64 is not { } id)
+            {
+                continue;
+            }
+
+            try
+            {
+                if (await images.RefreshAvatarAsync(id) is { } path)
+                {
+                    // Aynı yola yazıldığı için bağlamayı zorlamak gerekiyor.
+                    card.AvatarPath = null;
+                    card.AvatarPath = path;
+                }
+            }
+            catch
+            {
+                // Avatar tazelenemezse önbellekteki görselle devam edilir.
+            }
+        }
+    }
+
+    // --- Profil düzenleme ---
+
+    [RelayCommand]
+    private void BeginEdit(ProfileCard card)
+    {
+        Editing = card;
+        EditName = card.DisplayName;
+        EditUsername = card.SteamUsername;
+        ErrorMessage = null;
+    }
+
+    [RelayCommand]
+    private void CancelEdit()
+    {
+        Editing = null;
+        ErrorMessage = null;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmEditAsync()
+    {
+        if (Editing is not { } card)
+        {
+            return;
+        }
+
+        var name = EditName.Trim();
+        var username = EditUsername.Trim();
+
+        if (name.Length == 0 || username.Length == 0)
+        {
+            ErrorMessage = AppLocalizer.Instance.Get("Profile.Error.Required");
+            return;
+        }
+
+        var clash = repository.Profiles.Any(p =>
+            p != card.Profile &&
+            string.Equals(p.SteamUsername, username, StringComparison.OrdinalIgnoreCase));
+
+        if (clash)
+        {
+            ErrorMessage = AppLocalizer.Instance.Format("Profile.Error.UsernameTaken", username);
+            return;
+        }
+
+        // Kullanıcı adı değiştiyse eski oturum ve avatar artık o hesaba ait değil.
+        if (!string.Equals(card.Profile.SteamUsername, username, StringComparison.OrdinalIgnoreCase))
+        {
+            card.Profile.SteamId64 = null;
+            card.AvatarPath = null;
+            card.Session = SessionState.Unknown;
+            card.SessionDetail = "";
+        }
+
+        card.Profile.DisplayName = name;
+        card.Profile.SteamUsername = username;
+        await repository.SaveAsync();
+
+        Editing = null;
+        Refresh();
+    }
+
+    [RelayCommand]
+    private void BeginAddProfile()
+    {
+        NewProfileName = "";
+        NewSteamUsername = "";
+        ErrorMessage = null;
+        IsAddingProfile = true;
+    }
+
+    [RelayCommand]
+    private void CancelAddProfile()
+    {
+        IsAddingProfile = false;
+        ErrorMessage = null;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmAddProfileAsync()
+    {
+        var name = NewProfileName.Trim();
+        var username = NewSteamUsername.Trim();
+
+        if (name.Length == 0 || username.Length == 0)
+        {
+            ErrorMessage = AppLocalizer.Instance.Get("Profile.Error.Required");
+            return;
+        }
+
+        if (repository.Profiles.Any(p => string.Equals(p.SteamUsername, username, StringComparison.OrdinalIgnoreCase)))
+        {
+            ErrorMessage = AppLocalizer.Instance.Format("Profile.Error.Duplicate", username);
+            return;
+        }
+
+        var profile = repository.AddProfile(name, username);
+        await repository.SaveAsync();
+
+        IsAddingProfile = false;
+        Refresh();
+        navigation.SelectProfile(profile);
+    }
+
+    /// <summary>
+    /// Silme geri alınamaz ve altındaki tüm oyun/hedef tanımlarını götürür, bu yüzden
+    /// onay isteniyor.
+    /// </summary>
+    [RelayCommand]
+    private async Task DeleteAsync(ProfileCard card)
+    {
+        var detail = card.AppCount == 0
+            ? AppLocalizer.Instance.Get("Profile.Delete.NoApps")
+            : AppLocalizer.Instance.Format("Profile.Delete.HasApps", card.AppCount, card.SubAppCount);
+
+        var confirmed = await confirmation.ConfirmAsync(
+            AppLocalizer.Instance.Get("Profile.Delete.Title"),
+            AppLocalizer.Instance.Format("Profile.Delete.Body", card.DisplayName, detail),
+            confirmText: AppLocalizer.Instance.Get("Common.Delete"),
+            isDestructive: true);
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        repository.RemoveProfile(card.Profile);
+        await repository.SaveAsync();
+        Refresh();
+    }
+}

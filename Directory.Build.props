@@ -1,0 +1,13 @@
+<Project>
+
+  <PropertyGroup>
+    <!--
+      Hata ayıklama sembolleri assembly'nin içine gömülür: publish çıktısı tek dosya
+      kalsın ama bir çökme olduğunda satır numaraları yine de okunabilsin.
+    -->
+    <DebugType>embedded</DebugType>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

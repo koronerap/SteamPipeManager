@@ -1,0 +1,82 @@
+﻿<UserControl x:Class="SteamPipeManager.App.Views.SetupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:loc="clr-namespace:SteamPipeManager.App.Localization">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="620" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20">
+
+            <TextBlock Text="{loc:T Setup.Welcome}" FontSize="24" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:T Setup.Intro}" TextWrapping="Wrap" Opacity="0.75"
+                       TextAlignment="Center" Margin="0,10,0,0" LineHeight="21" />
+
+            <ui:Card Padding="20" Margin="0,24,0,0">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.Language}" FontWeight="SemiBold" Margin="0,0,0,10" />
+                    <ComboBox ItemsSource="{Binding Languages}"
+                              SelectedItem="{Binding SelectedLanguage}"
+                              DisplayMemberPath="Name"
+                              HorizontalAlignment="Left" MinWidth="220" />
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Padding="20" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.SteamCmd}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock Text="{loc:T Setup.SteamCmd.Body}" TextWrapping="Wrap"
+                               Opacity="0.75" FontSize="12" Margin="0,0,0,14" />
+
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding NeedsSteamCmd, Converter={StaticResource BoolToVis}}">
+                        <ui:Button Appearance="Primary" Padding="16,8"
+                                   Icon="{ui:SymbolIcon ArrowDownload24}"
+                                   Content="{loc:T Settings.SteamCmd.Download}"
+                                   IsEnabled="{Binding IsIdle}"
+                                   Command="{Binding DownloadCommand}" />
+                        <ui:Button Margin="8,0,0,0" Padding="16,8"
+                                   Icon="{ui:SymbolIcon FolderOpen24}"
+                                   Content="{loc:T Setup.UseExisting}"
+                                   IsEnabled="{Binding IsIdle}"
+                                   Command="{Binding PickExistingCommand}" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding SteamCmdReady, Converter={StaticResource BoolToVis}}">
+                        <Ellipse Width="9" Height="9" Fill="MediumSeaGreen"
+                                 VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Text="{Binding SteamCmdPath}" TextTrimming="CharacterEllipsis"
+                                   FontFamily="Cascadia Mono, Consolas, monospace" FontSize="11"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <ProgressBar Height="3" IsIndeterminate="True" Margin="0,14,0,0"
+                                 Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+
+                    <TextBlock Text="{Binding StatusMessage}" Opacity="0.75" FontSize="12" Margin="0,10,0,0"
+                               TextWrapping="Wrap"
+                               Visibility="{Binding StatusMessage, Converter={StaticResource TextToVis}}" />
+
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="IndianRed" FontSize="12"
+                               Margin="0,10,0,0" TextWrapping="Wrap"
+                               Visibility="{Binding ErrorMessage, Converter={StaticResource TextToVis}}" />
+                </StackPanel>
+            </ui:Card>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                <ui:Button Appearance="Primary" Padding="24,9"
+                           Icon="{ui:SymbolIcon Checkmark24}"
+                           Content="{loc:T Setup.Start}"
+                           IsEnabled="{Binding IsIdle}"
+                           Command="{Binding FinishCommand}" />
+
+                <ui:Button Appearance="Transparent" Margin="10,0,0,0" Padding="16,9"
+                           Content="{loc:T Setup.Later}"
+                           IsEnabled="{Binding IsIdle}"
+                           Visibility="{Binding NeedsSteamCmd, Converter={StaticResource BoolToVis}}"
+                           Command="{Binding SkipCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

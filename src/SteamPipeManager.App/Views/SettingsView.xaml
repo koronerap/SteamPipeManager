@@ -1,0 +1,119 @@
+﻿<UserControl x:Class="SteamPipeManager.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:loc="clr-namespace:SteamPipeManager.App.Localization">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+
+            <TextBlock Text="{loc:T Nav.Settings}" Style="{StaticResource SectionHeader}" />
+
+            <ui:Card Padding="20" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.Language}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,4" />
+                    <TextBlock Text="{loc:T Settings.Language.Body}"
+                               TextWrapping="Wrap" Opacity="0.75" Margin="0,0,0,12" />
+
+                    <ComboBox ItemsSource="{Binding Languages}"
+                              SelectedItem="{Binding SelectedLanguage}"
+                              DisplayMemberPath="Name"
+                              HorizontalAlignment="Left" MinWidth="220" />
+
+                    <TextBlock Text="{Binding LanguageDirectory}" TextWrapping="Wrap" Opacity="0.6"
+                               FontFamily="Cascadia Mono, Consolas, monospace" FontSize="11"
+                               Margin="0,12,0,0" />
+
+                    <ui:Button Margin="0,10,0,0" HorizontalAlignment="Left" Padding="14,7"
+                               Icon="{ui:SymbolIcon FolderOpen24}"
+                               Content="{loc:T Settings.Language.OpenFolder}"
+                               Command="{Binding OpenLanguageFolderCommand}" />
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Padding="20" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.SteamCmd}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,4" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.75" Margin="0,0,0,12"
+                               Text="{loc:T Settings.SteamCmd.Body}" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <ui:TextBox Grid.Column="0"
+                                    Text="{Binding SteamCmdPath, UpdateSourceTrigger=PropertyChanged}"
+                                    PlaceholderText="{loc:T Settings.SteamCmd.Placeholder}" />
+
+                        <ui:Button Grid.Column="1" Margin="8,0,0,0" Padding="10,8"
+                                   Icon="{ui:SymbolIcon FolderOpen24}"
+                                   AutomationProperties.Name="{loc:T Settings.SteamCmd.Pick.Tip}"
+                                   ToolTip="{loc:T Settings.SteamCmd.Pick.Tip}"
+                                   Command="{Binding BrowseSteamCmdCommand}" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <ui:Button Padding="14,7"
+                                   Icon="{ui:SymbolIcon CheckmarkCircle24}"
+                                   Content="{loc:T Settings.SteamCmd.Verify}"
+ToolTip="{loc:T Settings.SteamCmd.Verify.Tip}"
+                                   Command="{Binding VerifySteamCmdCommand}" />
+                        <ui:Button Margin="8,0,0,0" Padding="14,7"
+                                   Icon="{ui:SymbolIcon ArrowDownload24}"
+                                   Content="{loc:T Settings.SteamCmd.Download}"
+ToolTip="{loc:T Settings.SteamCmd.Download.Tip}"
+                                   Command="{Binding DownloadSteamCmdCommand}"
+                                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}" />
+                    </StackPanel>
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Padding="20" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.Timeouts}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,4" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.75" Margin="0,0,0,12"
+                               Text="{loc:T Settings.Timeouts.Body}" />
+
+                    <TextBlock Text="{loc:T Settings.StallSeconds}" Style="{StaticResource FieldLabel}" />
+                    <ui:TextBox Text="{Binding StallWarningSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBlock Opacity="0.55" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Text="{loc:T Settings.StallSeconds.Hint}" />
+
+                    <TextBlock Text="{loc:T Settings.SessionTimeout}" Style="{StaticResource FieldLabel}" Margin="0,12,0,4" />
+                    <ui:TextBox Text="{Binding SessionCheckTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+            </ui:Card>
+
+            <ui:Card Padding="20" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.DataLocation}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8" />
+
+                    <TextBlock Text="{Binding WorkspaceRoot}" TextWrapping="Wrap" Opacity="0.8"
+                               FontFamily="Cascadia Mono, Consolas, monospace" FontSize="12" />
+
+                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,8,0,0"
+                               Text="{loc:T Settings.DataLocation.Body}" />
+
+                    <ui:Button Margin="0,12,0,0" HorizontalAlignment="Left" Padding="14,7"
+                               Icon="{ui:SymbolIcon FolderOpen24}"
+                               Content="{loc:T Settings.OpenFolder}"
+ToolTip="{loc:T Settings.OpenFolder.Tip}"
+                               Command="{Binding OpenWorkspaceFolderCommand}" />
+                </StackPanel>
+            </ui:Card>
+
+            <StackPanel Orientation="Horizontal">
+                <ui:Button Appearance="Primary" Padding="16,7"
+                           Icon="{ui:SymbolIcon Save24}"
+                           Content="{loc:T Common.Save}"
+ToolTip="{loc:T Settings.Save.Tip}"
+                           Command="{Binding SaveCommand}" />
+                <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Margin="12,0,0,0"
+                           Opacity="0.85" TextWrapping="Wrap"
+                           Visibility="{Binding StatusMessage, Converter={StaticResource TextToVis}}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
