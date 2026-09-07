@@ -11,14 +11,22 @@ namespace SteamPipeManager.Core.SteamCmd;
 ///
 /// Dosya her SteamCMD başlangıcında sıfırlandığı için küçülme algılanır ve baştan okunur.
 /// </summary>
-public sealed class ConsoleLogTail(string filePath, TimeSpan? pollInterval = null)
+public sealed class ConsoleLogTail(
+    string filePath,
+    TimeSpan? pollInterval = null,
+    long startPosition = 0)
 {
     private readonly TimeSpan _poll = pollInterval ?? TimeSpan.FromMilliseconds(250);
 
     public string FilePath { get; } = filePath;
 
-    /// <summary>En son okunan baytın konumu; donma dedektörü bunun artışını izler.</summary>
-    public long Position { get; private set; }
+    /// <summary>
+    /// En son okunan baytın konumu; donma dedektörü bunun artışını izler.
+    /// Log temizlenemediğinde okumaya mevcut sonundan başlanır (bkz.
+    /// <see cref="SteamCmdInstallation.ResetConsoleLog"/>), böylece önceki
+    /// çalıştırmanın satırları bu çalıştırmaya karışmaz.
+    /// </summary>
+    public long Position { get; private set; } = startPosition;
 
     /// <summary>Dosyaya en son yeni içerik geldiği an.</summary>
     public DateTimeOffset LastGrowthAt { get; private set; } = DateTimeOffset.UtcNow;

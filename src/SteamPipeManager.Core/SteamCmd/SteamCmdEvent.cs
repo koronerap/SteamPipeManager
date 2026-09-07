@@ -54,6 +54,12 @@ public sealed record SteamCmdEvent(
     /// </summary>
     public uint? SteamAccountId { get; init; }
 
+    /// <summary>
+    /// Giriş satırındaki hesap adı. Log dosyası tüm profiller arasında paylaşıldığı için,
+    /// bir giriş satırının beklenen hesaba ait olduğu buradan doğrulanır.
+    /// </summary>
+    public string? Username { get; init; }
+
     public bool IsFailure => Kind is SteamCmdEventKind.Error or SteamCmdEventKind.LoginFailed;
 }
 

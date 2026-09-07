@@ -83,7 +83,14 @@ public sealed class SteamCmdSessionService(SteamCmdInstallation installation)
             return new SessionCheckResult(state, failure.Message);
         }
 
-        if (result.Events.FirstOrDefault(e => e.Kind == SteamCmdEventKind.LoginSucceeded) is { } success)
+        // Hesap adı taşıyan bir giriş satırı yalnızca sorduğumuz hesaba aitse kabul edilir:
+        // paylaşılan console_log.txt'te başka bir profilin satırı kalmış olabilir.
+        var success = result.Events.FirstOrDefault(e =>
+            e.Kind == SteamCmdEventKind.LoginSucceeded &&
+            (e.Username is not { Length: > 0 } user ||
+             user.Equals(steamUsername, StringComparison.OrdinalIgnoreCase)));
+
+        if (success is not null)
         {
             return new SessionCheckResult(SessionState.Active, Loc.T("Session.Active"))
             {

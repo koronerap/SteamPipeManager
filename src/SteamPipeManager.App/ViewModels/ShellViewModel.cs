@@ -160,8 +160,15 @@ public sealed partial class ShellViewModel : ObservableObject
         }
     }
 
-    partial void OnCurrentPageChanged(ShellPage value)
+    partial void OnCurrentPageChanged(ShellPage oldValue, ShellPage newValue)
     {
+        // Build hedefi ekranı otomatik kaydediyor; sayfadan çıkarken bekleyen yazma
+        // gecikmesi beklenmeden diske geçirilir.
+        if (oldValue == ShellPage.SubAppWorkspace)
+        {
+            _ = Workspace.FlushAsync();
+        }
+
         OnPropertyChanged(nameof(IsProfilePicker));
         OnPropertyChanged(nameof(IsAppPicker));
         OnPropertyChanged(nameof(IsWorkspace));

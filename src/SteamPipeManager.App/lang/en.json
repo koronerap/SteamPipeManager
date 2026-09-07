@@ -100,7 +100,6 @@
     "General.AppId": "Steam AppID",
     "General.SharedContent": "Shared content folder (optional)",
     "General.SharedContent.Hint": "leave empty — each depot uses its own folder",
-    "General.Save.Tip": "Save changes to the profile",
     "Depot.Id": "Depot ID",
     "Depot.Label": "Label",
     "Depot.ContentRoot": "Content folder",
@@ -108,7 +107,6 @@
     "Depot.Add.Tip": "Add a new depot",
     "Depot.Remove.Tip": "Remove this depot",
     "Depot.PickContent.Tip": "Pick the content folder",
-    "Depot.Save.Tip": "Save depot settings",
     "Build.Start": "Build",
     "Build.Start.Tip": "Upload the content to Steam (Ctrl+B)",
     "Build.Preview": "Preview",
@@ -124,7 +122,6 @@
     "Build.Branch.Note": "If empty, the build is uploaded but no branch is set live.",
     "Build.PreviewToggle": "Preview build — nothing is uploaded, it only reports what would be",
     "Build.Issues": "Needs fixing",
-    "Build.Save.Tip": "Save these settings",
     "Build.Summary.Target": "Target",
     "Build.Summary.AppId": "AppID",
     "Build.Summary.Account": "Account",
@@ -246,6 +243,7 @@
     "Apps.Deleted": "'{0}' deleted.",
     "Workspace.Delete.Tip": "Delete this build target",
     "Workspace.Delete.Title": "Delete build target",
-    "Workspace.Delete.Body": "Delete the build target '{0}' (AppID {1})?\n\nGenerated scripts and build history stay on disk — only the definition is removed."
+    "Workspace.Delete.Body": "Delete the build target '{0}' (AppID {1})?\n\nGenerated scripts and build history stay on disk — only the definition is removed.",
+    "Common.AutoSaved": "Changes are saved automatically"
   }
 }

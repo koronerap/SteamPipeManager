@@ -204,11 +204,16 @@ public sealed partial class SteamCmdLogParser
                 ? parsed
                 : (uint?)null;
 
+            var username = LoginUserPattern().Match(text) is { Success: true } user
+                ? user.Groups["user"].Value
+                : null;
+
             return Event(text.EndsWith("OK", StringComparison.Ordinal)
                 ? SteamCmdEventKind.LoginSucceeded
                 : SteamCmdEventKind.LoginStarted) with
             {
                 SteamAccountId = accountId,
+                Username = username,
             };
         }
 
@@ -289,6 +294,9 @@ public sealed partial class SteamCmdLogParser
 
     [GeneratedRegex(@"\[U:1:(?<acct>\d+)\]")]
     private static partial Regex SteamAccountPattern();
+
+    [GeneratedRegex(@"Logging in user\s+'(?<user>[^']*)'", RegexOptions.IgnoreCase)]
+    private static partial Regex LoginUserPattern();
 
     [GeneratedRegex(@"Starting appID (?<app>\d+) build", RegexOptions.IgnoreCase)]
     private static partial Regex BuildStartedPattern();

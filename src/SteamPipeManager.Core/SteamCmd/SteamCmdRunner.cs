@@ -40,7 +40,7 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
         IProgress<SteamCmdEvent>? progress = null,
         CancellationToken ct = default)
     {
-        Installation.ResetConsoleLog();
+        var logStart = Installation.ResetConsoleLog();
         Directory.CreateDirectory(Installation.LogsDirectory);
 
         var startInfo = new ProcessStartInfo(Installation.ExecutablePath, arguments)
@@ -66,7 +66,7 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
 
         var events = new List<SteamCmdEvent>();
         var parser = new SteamCmdLogParser();
-        var tail = new ConsoleLogTail(Installation.ConsoleLogPath);
+        var tail = new ConsoleLogTail(Installation.ConsoleLogPath, startPosition: logStart);
 
         using var stallSource = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var timedOut = false;

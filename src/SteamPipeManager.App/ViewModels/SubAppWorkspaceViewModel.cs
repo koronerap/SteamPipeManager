@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.App.Localization;
@@ -31,6 +33,17 @@ public sealed partial class SubAppCard(SubApp subApp) : ObservableObject
     private string? _capsulePath;
 
     public bool HasCapsule => CapsulePath is { Length: > 0 };
+
+    /// <summary>
+    /// Model üzerindeki alanlar doğrudan düzenlendiği için (POCO, bildirim yok) soldaki
+    /// listenin metinlerini tazelemek gerekiyor.
+    /// </summary>
+    public void NotifyModelChanged()
+    {
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(Subtitle));
+        OnPropertyChanged(nameof(Initial));
+    }
 }
 
 /// <summary>
@@ -76,6 +89,78 @@ public sealed partial class SubAppWorkspaceViewModel(
 
     private bool _refreshing;
 
+    private CancellationTokenSource? _autoSave;
+
+    /// <summary>
+    /// Otomatik kaydetme gecikmesi. Her tuş vuruşunda diske yazmamak için kısa bir
+    /// bekleme var; yazmadan önce sayfadan çıkılırsa <see cref="FlushAsync"/> devreye girer.
+    /// </summary>
+    public TimeSpan AutoSaveDelay { get; set; } = TimeSpan.FromMilliseconds(400);
+
+    /// <summary>
+    /// Arayüzdeki her düzenleme buradan geçer: doğrulama ve script önizlemesi anında
+    /// güncellenir, diske yazma ise kısa bir gecikmeyle yapılır. Kaydet butonları
+    /// bunun yerine kaldırıldı.
+    /// </summary>
+    public void ScheduleSave()
+    {
+        Validate();
+        UpdatePreview();
+        SelectedCard?.NotifyModelChanged();
+
+        _autoSave?.Cancel();
+        _autoSave?.Dispose();
+
+        var pending = new CancellationTokenSource();
+        _autoSave = pending;
+
+        _ = SaveAfterDelayAsync(pending.Token);
+    }
+
+    private async Task SaveAfterDelayAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(AutoSaveDelay, ct);
+            await repository.SaveAsync(ct);
+            StatusMessage = null;
+        }
+        catch (OperationCanceledException)
+        {
+            // Ardından gelen düzenleme yazmayı devraldı.
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
+    /// <summary>
+    /// Bekleyen otomatik kaydı hemen diske yazar. Hedef değiştirilirken, sayfadan
+    /// çıkılırken ve uygulama kapanırken çağrılır; aksi hâlde son 400 ms'lik
+    /// düzenleme kaybolabilirdi.
+    /// </summary>
+    public async Task FlushAsync()
+    {
+        if (_autoSave is not { } pending)
+        {
+            return;
+        }
+
+        await pending.CancelAsync();
+        pending.Dispose();
+        _autoSave = null;
+
+        try
+        {
+            await repository.SaveAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+    }
+
     public void Refresh()
     {
         if (_refreshing)
@@ -107,11 +192,71 @@ public sealed partial class SubAppWorkspaceViewModel(
         }
     }
 
-    partial void OnSelectedCardChanged(SubAppCard? value)
+    partial void OnSelectedCardChanged(SubAppCard? oldValue, SubAppCard? newValue)
     {
-        Navigation.SubApp = value?.SubApp;
+        // Önceki hedefin bekleyen düzenlemesi burada yazılır; yoksa hedef değiştirince
+        // kaybolurdu.
+        _ = FlushAsync();
+
+        Unhook(oldValue?.SubApp);
+        Hook(newValue?.SubApp);
+
+        Navigation.SubApp = newValue?.SubApp;
         Validate();
         UpdatePreview();
+    }
+
+    /// <summary>
+    /// Seçili hedefin ve depot'larının değişimlerini dinlemeye başlar. Arayüz modele
+    /// doğrudan yazdığı için otomatik kaydetmenin tetiklendiği yer burası.
+    /// </summary>
+    private void Hook(SubApp? subApp)
+    {
+        if (subApp is null)
+        {
+            return;
+        }
+
+        subApp.PropertyChanged += OnModelChanged;
+        subApp.Depots.CollectionChanged += OnDepotsChanged;
+
+        foreach (var depot in subApp.Depots)
+        {
+            depot.PropertyChanged += OnModelChanged;
+        }
+    }
+
+    private void Unhook(SubApp? subApp)
+    {
+        if (subApp is null)
+        {
+            return;
+        }
+
+        subApp.PropertyChanged -= OnModelChanged;
+        subApp.Depots.CollectionChanged -= OnDepotsChanged;
+
+        foreach (var depot in subApp.Depots)
+        {
+            depot.PropertyChanged -= OnModelChanged;
+        }
+    }
+
+    private void OnModelChanged(object? sender, PropertyChangedEventArgs e) => ScheduleSave();
+
+    private void OnDepotsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        ScheduleSave();
+
+        foreach (var depot in e.OldItems?.OfType<DepotConfig>() ?? [])
+        {
+            depot.PropertyChanged -= OnModelChanged;
+        }
+
+        foreach (var depot in e.NewItems?.OfType<DepotConfig>() ?? [])
+        {
+            depot.PropertyChanged += OnModelChanged;
+        }
     }
 
     public void Validate()
@@ -252,10 +397,11 @@ public sealed partial class SubAppWorkspaceViewModel(
         Refresh();
     }
 
+    /// <summary>Ctrl+S: kaydetme zaten otomatik, bu yalnızca beklemeyi atlar.</summary>
     [RelayCommand]
     private async Task SaveAsync()
     {
-        await repository.SaveAsync();
+        await FlushAsync();
         Validate();
         UpdatePreview();
         StatusMessage = AppLocalizer.Instance.Get("Settings.Saved");
@@ -264,9 +410,13 @@ public sealed partial class SubAppWorkspaceViewModel(
     [RelayCommand]
     private void AddDepot()
     {
-        Selected?.Depots.Add(new DepotConfig());
-        Validate();
-        UpdatePreview();
+        if (Selected is null)
+        {
+            return;
+        }
+
+        // Koleksiyon değişimi Hook üzerinden otomatik kaydetmeyi tetikliyor.
+        Selected.Depots.Add(new DepotConfig());
     }
 
     [RelayCommand]
@@ -275,8 +425,6 @@ public sealed partial class SubAppWorkspaceViewModel(
         if (dialogs.PickFolder(AppLocalizer.Instance.Get("Depot.ContentRoot"), depot.ContentRoot) is { } picked)
         {
             depot.ContentRoot = picked;
-            Validate();
-            UpdatePreview();
         }
     }
 
@@ -291,18 +439,19 @@ public sealed partial class SubAppWorkspaceViewModel(
         if (dialogs.PickFolder(AppLocalizer.Instance.Get("General.SharedContent"), Selected.ContentRoot) is { } picked)
         {
             Selected.ContentRoot = picked;
-            Validate();
-            UpdatePreview();
         }
     }
 
+    /// <summary>
+    /// Depot silme. Onay istenmiyor: silinen depot'un yeniden eklenmesi birkaç saniyelik
+    /// iş ve içerik klasörüne dokunulmuyor — oyun ya da build hedefi silmekten farklı.
+    /// </summary>
     [RelayCommand]
     private void RemoveDepot(DepotConfig depot)
     {
         Selected?.Depots.Remove(depot);
-        Validate();
-        UpdatePreview();
     }
+
 }
 
 /// <summary>Build açıklaması şablonundaki yer tutucuları doldurur.</summary>

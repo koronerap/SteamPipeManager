@@ -100,7 +100,6 @@
     "General.AppId": "Steam AppID",
     "General.SharedContent": "Ortak içerik klasörü (opsiyonel)",
     "General.SharedContent.Hint": "boş bırak — her depot kendi klasörünü kullanır",
-    "General.Save.Tip": "Değişiklikleri profile kaydet",
     "Depot.Id": "DepotID",
     "Depot.Label": "Etiket",
     "Depot.ContentRoot": "İçerik klasörü",
@@ -108,7 +107,6 @@
     "Depot.Add.Tip": "Yeni depot ekle",
     "Depot.Remove.Tip": "Bu depotu kaldır",
     "Depot.PickContent.Tip": "İçerik klasörünü seç",
-    "Depot.Save.Tip": "Depot ayarlarını kaydet",
     "Build.Start": "Build al",
     "Build.Start.Tip": "İçeriği Steam'e yükle (Ctrl+B)",
     "Build.Preview": "Preview",
@@ -124,7 +122,6 @@
     "Build.Branch.Note": "Boş bırakılırsa build yüklenir ama hiçbir branch canlıya alınmaz.",
     "Build.PreviewToggle": "Preview build — içerik yüklenmez, sadece ne yükleneceği raporlanır",
     "Build.Issues": "Çözülmesi gerekenler",
-    "Build.Save.Tip": "Bu ayarları kaydet",
     "Build.Summary.Target": "Hedef",
     "Build.Summary.AppId": "AppID",
     "Build.Summary.Account": "Hesap",
@@ -246,6 +243,7 @@
     "Apps.Deleted": "'{0}' silindi.",
     "Workspace.Delete.Tip": "Bu build hedefini sil",
     "Workspace.Delete.Title": "Build hedefini sil",
-    "Workspace.Delete.Body": "'{0}' build hedefi (AppID {1}) silinsin mi?\n\nÜretilmiş script'ler ve build geçmişi diskte kalır; yalnızca tanım silinir."
+    "Workspace.Delete.Body": "'{0}' build hedefi (AppID {1}) silinsin mi?\n\nÜretilmiş script'ler ve build geçmişi diskte kalır; yalnızca tanım silinir.",
+    "Common.AutoSaved": "Değişiklikler otomatik kaydedilir"
   }
 }

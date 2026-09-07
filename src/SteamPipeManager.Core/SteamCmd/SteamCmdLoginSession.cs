@@ -62,7 +62,7 @@ public sealed class SteamCmdLoginSession(SteamCmdInstallation installation)
                 LoginStage.Failed, Loc.T("SteamCmd.NotFoundAt", installation.ExecutablePath));
         }
 
-        installation.ResetConsoleLog();
+        var logStart = installation.ResetConsoleLog();
         Directory.CreateDirectory(installation.LogsDirectory);
 
         var startInfo = new ProcessStartInfo(installation.ExecutablePath, $"+login {username} +quit")
@@ -94,7 +94,7 @@ public sealed class SteamCmdLoginSession(SteamCmdInstallation installation)
         var drain = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
         var drainError = process.StandardError.ReadToEndAsync(CancellationToken.None);
 
-        var result = await WatchAsync(process, username, progress, timeout);
+        var result = await WatchAsync(process, username, logStart, progress, timeout);
 
         if (!process.HasExited)
         {
@@ -110,11 +110,13 @@ public sealed class SteamCmdLoginSession(SteamCmdInstallation installation)
     private async Task<LoginResult> WatchAsync(
         Process process,
         string username,
+        long logStart,
         IProgress<LoginProgress>? progress,
         CancellationTokenSource timeout)
     {
         var parser = new SteamCmdLogParser();
-        var tail = new ConsoleLogTail(installation.ConsoleLogPath, TimeSpan.FromMilliseconds(200));
+        var tail = new ConsoleLogTail(
+            installation.ConsoleLogPath, TimeSpan.FromMilliseconds(200), logStart);
         var guardRequested = false;
 
         progress?.Report(new LoginProgress(LoginStage.SigningIn, Loc.T("Login.Connecting")));
@@ -124,6 +126,16 @@ public sealed class SteamCmdLoginSession(SteamCmdInstallation installation)
             await foreach (var line in tail.ReadLinesAsync(() => process.HasExited, timeout.Token))
             {
                 if (parser.Feed(line) is not { } evt)
+                {
+                    continue;
+                }
+
+                // console_log.txt tüm profiller arasında paylaşılıyor. Silinemediği bir
+                // durumda önceki hesabın satırları okunabilir; o satırlara dayanıp
+                // yanlış SteamID'yi (ve dolayısıyla yanlış avatarı) profile yazmamak için
+                // hesap adı eşleşmeyen giriş olayları atlanıyor.
+                if (evt.Username is { Length: > 0 } lineUser &&
+                    !lineUser.Equals(username, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }

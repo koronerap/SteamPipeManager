@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using SteamPipeManager.App.ViewModels;
@@ -10,6 +11,21 @@ public partial class MainWindow : FluentWindow
     public MainWindow()
     {
         InitializeComponent();
+    }
+
+    /// <summary>
+    /// Build hedefi ayarları otomatik kaydediliyor ama yazma kısa bir gecikmeyle
+    /// yapılıyor; son düzenlemeden hemen sonra kapatılırsa kaybolmasın diye
+    /// kapanışta bekleyen kayıt diske geçirilir.
+    /// </summary>
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (DataContext is ShellViewModel shell)
+        {
+            shell.Workspace.FlushAsync().GetAwaiter().GetResult();
+        }
+
+        base.OnClosing(e);
     }
 
     /// <summary>

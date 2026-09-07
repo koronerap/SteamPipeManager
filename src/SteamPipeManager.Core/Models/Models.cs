@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
 namespace SteamPipeManager.Core.Models;
@@ -40,39 +41,90 @@ public enum CredentialMode
 }
 
 /// <summary>Bir oyun. Kendisi build almaz; build hedefleri <see cref="SubApps"/> içindedir.</summary>
-public sealed class SteamApp
+public sealed class SteamApp : ObservableModel
 {
+    private string _title = "";
+
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string Title { get; set; } = "";
+
+    public string Title
+    {
+        get => _title;
+        set => Set(ref _title, value);
+    }
+
     public string? CoverImagePath { get; set; }
     public string Notes { get; set; } = "";
     public List<SubApp> SubApps { get; set; } = [];
 }
 
 /// <summary>Build hedefi: ana oyun, demo, playtest veya beta. Bir Steam AppID'ye karşılık gelir.</summary>
-public sealed class SubApp
+public sealed class SubApp : ObservableModel
 {
+    private string _title = "";
+    private SubAppKind _kind = SubAppKind.Main;
+    private uint _steamAppId;
+    private string? _contentRoot;
+    private string _buildDescriptionTemplate = "{app} {kind} — {date} {time}";
+    private string _setLiveBranch = "";
+    private bool _preview;
+
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string Title { get; set; } = "";
-    public SubAppKind Kind { get; set; } = SubAppKind.Main;
-    public uint SteamAppId { get; set; }
+
+    public string Title
+    {
+        get => _title;
+        set => Set(ref _title, value);
+    }
+
+    public SubAppKind Kind
+    {
+        get => _kind;
+        set => Set(ref _kind, value);
+    }
+
+    public uint SteamAppId
+    {
+        get => _steamAppId;
+        set => Set(ref _steamAppId, value);
+    }
 
     /// <summary>
     /// App script'indeki <c>contentroot</c>. Null ise boş string yazılır ve her depot
     /// kendi <see cref="DepotConfig.ContentRoot"/> değerini kullanır — referans
     /// script'lerdeki düzen budur.
     /// </summary>
-    public string? ContentRoot { get; set; }
+    public string? ContentRoot
+    {
+        get => _contentRoot;
+        set => Set(ref _contentRoot, value);
+    }
 
-    public string BuildDescriptionTemplate { get; set; } = "{app} {kind} — {date} {time}";
+    public string BuildDescriptionTemplate
+    {
+        get => _buildDescriptionTemplate;
+        set => Set(ref _buildDescriptionTemplate, value);
+    }
 
     /// <summary>Build'in canlı alınacağı beta branch'i. Boş = hiçbir branch'e alma.</summary>
-    public string SetLiveBranch { get; set; } = "";
+    public string SetLiveBranch
+    {
+        get => _setLiveBranch;
+        set => Set(ref _setLiveBranch, value);
+    }
 
     /// <summary>Preview build: içerik yüklenmez, sadece ne yükleneceği raporlanır.</summary>
-    public bool Preview { get; set; }
+    public bool Preview
+    {
+        get => _preview;
+        set => Set(ref _preview, value);
+    }
 
-    public List<DepotConfig> Depots { get; set; } = [];
+    /// <summary>
+    /// Depot listesi. Arayüzdeki liste doğrudan buna bağlandığı için gözlemlenebilir
+    /// olmak zorunda: düz <c>List</c> iken eklenen/silinen depot ekrana yansımıyordu.
+    /// </summary>
+    public ObservableCollection<DepotConfig> Depots { get; set; } = [];
 }
 
 public enum SubAppKind
@@ -86,15 +138,31 @@ public enum SubAppKind
 }
 
 /// <summary>Tek bir depot ve içeriğinin nasıl eşleneceği.</summary>
-public sealed class DepotConfig
+public sealed class DepotConfig : ObservableModel
 {
-    public uint DepotId { get; set; }
+    private uint _depotId;
+    private string _label = "";
+    private string? _contentRoot;
+
+    public uint DepotId
+    {
+        get => _depotId;
+        set => Set(ref _depotId, value);
+    }
 
     /// <summary>Sadece arayüzde gösterilir (ör. "Windows"), VDF'ye yazılmaz.</summary>
-    public string Label { get; set; } = "";
+    public string Label
+    {
+        get => _label;
+        set => Set(ref _label, value);
+    }
 
     /// <summary>Bu depot'un içerik kökü. Null ise <see cref="SubApp.ContentRoot"/> kullanılır.</summary>
-    public string? ContentRoot { get; set; }
+    public string? ContentRoot
+    {
+        get => _contentRoot;
+        set => Set(ref _contentRoot, value);
+    }
 
     public List<FileMapping> FileMappings { get; set; } = [FileMapping.Everything()];
     public List<string> FileExclusions { get; set; } = [];

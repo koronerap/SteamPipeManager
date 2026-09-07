@@ -129,12 +129,12 @@ ToolTip="{loc:T Workspace.AddSubApp.Tip}"
                                            Command="{Binding BrowseSubAppContentCommand}" />
                             </Grid>
 
-                            <ui:Button Appearance="Primary" Margin="0,20,0,0" Padding="16,7"
-                                       HorizontalAlignment="Left"
-                                       Icon="{ui:SymbolIcon Save24}"
-                                       Content="{loc:T Common.Save}"
-ToolTip="{loc:T General.Save.Tip}"
-                                       Command="{Binding SaveCommand}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,20,0,0" Opacity="0.55">
+                                <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="15"
+                                               VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:T Common.AutoSaved}" Margin="6,0,0,0"
+                                           FontSize="12" VerticalAlignment="Center" />
+                            </StackPanel>
 
                             <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" Margin="0,8,0,0"
                                        Visibility="{Binding StatusMessage, Converter={StaticResource TextToVis}}" />
@@ -207,11 +207,13 @@ ToolTip="{loc:T General.Save.Tip}"
                                            Content="{loc:T Depot.Add}"
 ToolTip="{loc:T Depot.Add.Tip}"
                                            Command="{Binding AddDepotCommand}" />
-                                <ui:Button Appearance="Primary" Margin="8,0,0,0" Padding="14,7"
-                                           Icon="{ui:SymbolIcon Save24}"
-                                           Content="{loc:T Common.Save}"
-ToolTip="{loc:T Depot.Save.Tip}"
-                                           Command="{Binding SaveCommand}" />
+                                <StackPanel Orientation="Horizontal" Margin="12,0,0,0" Opacity="0.55"
+                                            VerticalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="15"
+                                                   VerticalAlignment="Center" />
+                                    <TextBlock Text="{loc:T Common.AutoSaved}" Margin="6,0,0,0"
+                                               FontSize="12" VerticalAlignment="Center" />
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
@@ -318,11 +320,13 @@ ToolTip="{loc:T Build.Preview.Tip}"
                                               Content="{loc:T Build.PreviewToggle}"
                                               IsChecked="{Binding Selected.Preview}" />
 
-                                    <ui:Button HorizontalAlignment="Right" Padding="12,5"
-                                               Icon="{ui:SymbolIcon Save24}"
-                                               AutomationProperties.Name="{loc:T Build.Save.Tip}"
-                                   ToolTip="{loc:T Build.Save.Tip}"
-                                               Command="{Binding SaveCommand}" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                                Opacity="0.55" VerticalAlignment="Center">
+                                        <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="15"
+                                                       VerticalAlignment="Center" />
+                                        <TextBlock Text="{loc:T Common.AutoSaved}" Margin="6,0,0,0"
+                                                   FontSize="12" VerticalAlignment="Center" />
+                                    </StackPanel>
                                 </Grid>
                             </StackPanel>
                         </ui:Card>
