@@ -5,7 +5,7 @@
              xmlns:loc="clr-namespace:SteamPipeManager.App.Localization"
                  xmlns:views="clr-namespace:SteamPipeManager.App.Views"
                  xmlns:conv="clr-namespace:SteamPipeManager.App.Converters"
-                 Title="Steam Pipe Manager"
+                 Title="{Binding ProductName}"
                  Width="1280" Height="820"
                  MinWidth="900" MinHeight="600"
                  WindowStartupLocation="CenterScreen"
@@ -24,7 +24,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar Grid.Row="0" Title="Steam Pipe Manager" />
+        <ui:TitleBar Grid.Row="0" Title="{Binding ProductName}" />
 
         <!-- Breadcrumb: ev ikonu → profil avatarı → oyun adı -->
         <StackPanel Grid.Row="1"
@@ -44,24 +44,37 @@
 
             <!-- Profil: yalnızca avatar; adı tooltip'te -->
             <ui:Button Appearance="Transparent" Padding="4"
-                       AutomationProperties.Name="{Binding Navigation.Profile.DisplayName}"
-                       ToolTip="{Binding Navigation.Profile.DisplayName}"
+                       AutomationProperties.Name="{Binding ActiveProfileTooltip}"
+                       ToolTip="{Binding ActiveProfileTooltip}"
                        Command="{Binding GoToAppsCommand}"
                        Visibility="{Binding Navigation.HasProfile, Converter={StaticResource BoolToVisibility}}">
-                <Grid Width="26" Height="26">
-                    <Border CornerRadius="13" Background="#2F6FEB"
+                <!-- Rozet 26x26; oturum noktası taşabilsin diye kap biraz daha geniş. -->
+                <Grid Width="30" Height="30">
+                    <Border CornerRadius="13" Background="#2F6FEB" Width="26" Height="26"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
                             Visibility="{Binding HasActiveAvatar, Converter={StaticResource BoolToVisibilityInverted}}">
                         <TextBlock Text="{Binding ActiveInitial}" FontSize="12" FontWeight="SemiBold"
                                    Foreground="White"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
 
-                    <Border CornerRadius="13"
+                    <Border CornerRadius="13" Width="26" Height="26"
+                            HorizontalAlignment="Left" VerticalAlignment="Top"
                             Visibility="{Binding HasActiveAvatar, Converter={StaticResource BoolToVisibility}}">
                         <Border.Background>
                             <ImageBrush Stretch="UniformToFill"
                                         ImageSource="{Binding ActiveAvatarPath, Converter={StaticResource PathToImage}}" />
                         </Border.Background>
+                    </Border>
+
+                    <!-- Oturum durumu: avatarın sağ alt köşesinde küçük bir nokta.
+                         Dış halka pencere zeminiyle aynı renkte, böylece koyu bir
+                         avatarın üzerinde de nokta okunur kalıyor. -->
+                    <Border Width="12" Height="12" CornerRadius="6"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Background="{DynamicResource ApplicationBackgroundBrush}">
+                        <Border Width="8" Height="8" CornerRadius="4"
+                                Background="{Binding ActiveSessionBrush}" />
                     </Border>
                 </Grid>
             </ui:Button>
@@ -104,9 +117,14 @@
                                               Converter={StaticResource BoolToVisibility}}" />
 
             <views:SubAppWorkspaceView DataContext="{Binding Workspace}"
-                                       Visibility="{Binding DataContext.IsWorkspace,
+                                       Visibility="{Binding DataContext.IsSteamWorkspace,
                                                     RelativeSource={RelativeSource AncestorType=Window},
                                                     Converter={StaticResource BoolToVisibility}}" />
+
+            <views:EpicWorkspaceView DataContext="{Binding EpicWorkspace}"
+                                     Visibility="{Binding DataContext.IsEpicWorkspace,
+                                                  RelativeSource={RelativeSource AncestorType=Window},
+                                                  Converter={StaticResource BoolToVisibility}}" />
 
             <views:SetupView DataContext="{Binding Setup}"
                              Visibility="{Binding DataContext.IsSetup,

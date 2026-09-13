@@ -18,6 +18,13 @@ public sealed class AppSettings
     /// </summary>
     public string? SteamCmdPath { get; set; }
 
+    /// <summary>
+    /// Kullanıcının BuildPatchTool kopyasının yolu. SteamCMD'nin aksine biz
+    /// indiremiyoruz — Epic Dev Portal'ın arkasında ve dağıtım hakkımız yok — bu yüzden
+    /// Epic profilleri için kullanıcının göstermesi gerekiyor.
+    /// </summary>
+    public string? BuildPatchToolPath { get; set; }
+
     /// <summary>İlk çalıştırma sihirbazı tamamlandı mı.</summary>
     public bool SetupCompleted { get; set; }
 

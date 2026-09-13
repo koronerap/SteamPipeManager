@@ -1,31 +1,9 @@
 using System.Diagnostics;
 
 using SteamPipeManager.Core.Localization;
+using SteamPipeManager.Core.Publishing;
 
 namespace SteamPipeManager.Core.SteamCmd;
-
-public enum SessionState
-{
-    /// <summary>Henüz kontrol edilmedi.</summary>
-    Unknown,
-
-    /// <summary>Oturum cache'li; build etkileşimsiz çalışabilir.</summary>
-    Active,
-
-    /// <summary>Giriş gerekiyor — görünür konsol login akışı çalıştırılmalı.</summary>
-    LoginRequired,
-
-    /// <summary>Kontrol zaman aşımına uğradı ya da beklenmedik bir hata verdi.</summary>
-    CheckFailed,
-}
-
-public sealed record SessionCheckResult(SessionState State, string Detail)
-{
-    public bool CanBuild => State == SessionState.Active;
-
-    /// <summary>Giriş satırından okunan hesap numarası; avatar çekmek için kullanılır.</summary>
-    public ulong? SteamId64 { get; init; }
-}
 
 /// <summary>
 /// SteamCMD oturumunu yönetir.

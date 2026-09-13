@@ -7,23 +7,13 @@ using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.App.Localization;
 using SteamPipeManager.App.Services;
 using SteamPipeManager.Core.Models;
+using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 
 namespace SteamPipeManager.App.ViewModels;
 
 /// <summary>Build'in hangi aşamada olduğunu özetler; ham log yerine bu gösterilir.</summary>
-public enum BuildPhase
-{
-    Idle,
-    LoggingIn,
-    Preparing,
-    Scanning,
-    Uploading,
-    Succeeded,
-    Failed,
-}
-
 /// <summary>Build özetindeki tek satır (etiket + değer).</summary>
 public sealed record SummaryRow(string Label, string Value);
 
@@ -105,25 +95,25 @@ public sealed partial class BuildPanelViewModel(
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PhaseText))]
     [NotifyPropertyChangedFor(nameof(IsFinished))]
-    private BuildPhase _phase = BuildPhase.Idle;
+    private PublishPhase _phase = PublishPhase.Idle;
 
     public string LogToggleText => AppLocalizer.Instance.Get(
         IsLogVisible ? "Build.ToggleLog.Hide" : "Build.ToggleLog.Show");
 
     public string PhaseText => AppLocalizer.Instance.Get(Phase switch
     {
-        BuildPhase.LoggingIn => "Phase.LoggingIn",
-        BuildPhase.Preparing => "Phase.Preparing",
-        BuildPhase.Scanning => "Phase.Scanning",
-        BuildPhase.Uploading => "Phase.Uploading",
-        BuildPhase.Succeeded => "Phase.Succeeded",
-        BuildPhase.Failed => "Phase.Failed",
+        PublishPhase.LoggingIn => "Phase.LoggingIn",
+        PublishPhase.Preparing => "Phase.Preparing",
+        PublishPhase.Scanning => "Phase.Scanning",
+        PublishPhase.Uploading => "Phase.Uploading",
+        PublishPhase.Succeeded => "Phase.Succeeded",
+        PublishPhase.Failed => "Phase.Failed",
         _ => "Phase.Idle",
     });
 
-    public bool IsFinished => Phase is BuildPhase.Succeeded or BuildPhase.Failed;
+    public bool IsFinished => Phase.IsFinished();
 
-    public bool HasFailed => Phase == BuildPhase.Failed;
+    public bool HasFailed => Phase == PublishPhase.Failed;
 
     [ObservableProperty]
     private string? _lastBuildSummary;
@@ -181,7 +171,7 @@ public sealed partial class BuildPanelViewModel(
         Log.Clear();
         ProgressPercent = null;
         LastBuildSummary = null;
-        Phase = BuildPhase.LoggingIn;
+        Phase = PublishPhase.LoggingIn;
         IsBusy = true;
 
         _cancellation = new CancellationTokenSource();
@@ -235,36 +225,26 @@ public sealed partial class BuildPanelViewModel(
     }
 
     /// <summary>
-    /// Aşama yalnızca ileri gider. İlerleme satırları ("668.1MB (93%)") hem tarama hem
-    /// yükleme sırasında geliyor; doğrudan eşlense "Uploading content"ten sonra başlık
-    /// tekrar "İçerik taranıyor"a düşüyordu.
+    /// SteamCMD olayını aşamaya çevirir. Geri düşmeyi engelleyen kural
+    /// <see cref="PublishPhases.Advance"/> içinde ve sağlayıcıdan bağımsız;
+    /// buradaki eşleme yalnızca Steam'e özgü olan kısım.
     /// </summary>
-    private static BuildPhase Advance(BuildPhase current, SteamCmdEvent evt)
+    private static PublishPhase Advance(PublishPhase current, SteamCmdEvent evt)
     {
         var candidate = evt.Kind switch
         {
-            SteamCmdEventKind.LoginStarted => BuildPhase.LoggingIn,
-            SteamCmdEventKind.LoginSucceeded => BuildPhase.Preparing,
-            SteamCmdEventKind.BuildStarted => BuildPhase.Preparing,
-            SteamCmdEventKind.ScanningContent => BuildPhase.Scanning,
-            SteamCmdEventKind.DepotProgress when evt.Percent is not null => BuildPhase.Scanning,
-            SteamCmdEventKind.UploadingContent => BuildPhase.Uploading,
-            SteamCmdEventKind.BuildSucceeded => BuildPhase.Succeeded,
+            SteamCmdEventKind.LoginStarted => PublishPhase.LoggingIn,
+            SteamCmdEventKind.LoginSucceeded => PublishPhase.Preparing,
+            SteamCmdEventKind.BuildStarted => PublishPhase.Preparing,
+            SteamCmdEventKind.ScanningContent => PublishPhase.Scanning,
+            SteamCmdEventKind.DepotProgress when evt.Percent is not null => PublishPhase.Scanning,
+            SteamCmdEventKind.UploadingContent => PublishPhase.Uploading,
+            SteamCmdEventKind.BuildSucceeded => PublishPhase.Succeeded,
             _ => current,
         };
 
-        return Rank(candidate) > Rank(current) ? candidate : current;
+        return PublishPhases.Advance(current, candidate);
     }
-
-    private static int Rank(BuildPhase phase) => phase switch
-    {
-        BuildPhase.Idle => 0,
-        BuildPhase.LoggingIn => 1,
-        BuildPhase.Preparing => 2,
-        BuildPhase.Scanning => 3,
-        BuildPhase.Uploading => 4,
-        _ => 5,
-    };
 
     private void Summarize(BuildOutcomeResult result, bool preview)
     {
@@ -274,7 +254,7 @@ public sealed partial class BuildPanelViewModel(
             // yalnızca "başlatılmadı" görmesin.
             LastBuildSummary = result.BlockedReason;
             StatusMessage = result.BlockedReason ?? AppLocalizer.Instance.Get("Build.NotStarted");
-            Phase = BuildPhase.Failed;
+            Phase = PublishPhase.Failed;
             IsLogVisible = true;
 
             return;
@@ -282,7 +262,7 @@ public sealed partial class BuildPanelViewModel(
 
         var record = result.Record;
 
-        Phase = record.Outcome == BuildOutcome.Succeeded ? BuildPhase.Succeeded : BuildPhase.Failed;
+        Phase = record.Outcome == BuildOutcome.Succeeded ? PublishPhase.Succeeded : PublishPhase.Failed;
 
         // Hata durumunda log otomatik açılır — asıl ihtiyaç duyulduğu an orası.
         if (record.Outcome != BuildOutcome.Succeeded)
@@ -314,7 +294,7 @@ public sealed partial class BuildPanelViewModel(
             Log.Clear();
             ProgressPercent = null;
             LastBuildSummary = null;
-            Phase = BuildPhase.Idle;
+            Phase = PublishPhase.Idle;
             StatusMessage = isValid ? "" : AppLocalizer.Instance.Get("Build.TargetInvalid");
         }
 

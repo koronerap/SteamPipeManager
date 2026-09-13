@@ -4,7 +4,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.App.Localization;
 using SteamPipeManager.App.Services;
+using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Models;
+using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 
 namespace SteamPipeManager.App.ViewModels;
@@ -21,6 +23,26 @@ public sealed partial class ProfileCard(UserProfile profile) : ObservableObject
     public string DisplayName => Profile.DisplayName;
 
     public string SteamUsername => Profile.SteamUsername;
+
+    public PublishProviderId Provider => Profile.Provider;
+
+    /// <summary>Epic profilleri kartta ayırt edilsin; destek henüz deneysel.</summary>
+    public bool IsEpic => Profile.Provider == PublishProviderId.Epic;
+
+    /// <summary>Kartın üzerindeki küçük mağaza etiketi. Yalnızca Hub'da gösteriliyor.</summary>
+    public string ProviderName => IsEpic ? "Epic" : "Steam";
+
+    public Brush ProviderBrush => IsEpic
+        ? new SolidColorBrush(Color.FromArgb(0x55, 0x2B, 0x2B, 0x2B))
+        : new SolidColorBrush(Color.FromArgb(0x55, 0x1B, 0x2A, 0x47));
+
+    /// <summary>
+    /// Kartta hesabın altında gösterilen satır. Steam'de kullanıcı adı, Epic'te
+    /// organizasyon kimliği — ikisi de "bu profil hangi hesap" sorusunun cevabı.
+    /// </summary>
+    public string AccountLine => IsEpic
+        ? Profile.Epic?.OrganizationId ?? ""
+        : Profile.SteamUsername;
 
     /// <summary>
     /// Steam avatarı (varsa). Yoksa baş harf rozetine düşülür — hesabın Steam profili
@@ -88,7 +110,9 @@ public sealed partial class ProfilePickerViewModel(
     IConfirmationService confirmation,
     BuildCoordinator coordinator,
     SteamImageService images,
-    LoginViewModel login) : ObservableObject
+    LoginViewModel login,
+    EpicSecretStore secrets,
+    ProductProfile product) : ObservableObject
 {
     /// <summary>Uygulama ömrü boyunca bir kez otomatik kontrol yapılır.</summary>
     private bool _autoCheckDone;
@@ -106,6 +130,34 @@ public sealed partial class ProfilePickerViewModel(
 
     [ObservableProperty]
     private string _newSteamUsername = "";
+
+    /// <summary>Yeni profilin sağlayıcısı. Varsayılan Steam; Epic deneysel.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNewProfileEpic))]
+    private PublishProviderId _newProvider = PublishProviderId.Steam;
+
+    public bool IsNewProfileEpic => NewProvider == PublishProviderId.Epic;
+
+    [ObservableProperty]
+    private string _newOrganizationId = "";
+
+    [ObservableProperty]
+    private string _newClientId = "";
+
+    [ObservableProperty]
+    private string _newClientSecret = "";
+
+    /// <summary>
+    /// Sağlayıcı seçicideki liste — ürüne göre. Steam Pipe Manager'da tek eleman
+    /// olduğu için seçici hiç gösterilmiyor; kullanıcı olmayan bir seçenekle
+    /// karşılaşmıyor.
+    /// </summary>
+    public IReadOnlyList<PublishProviderId> Providers => product.Providers;
+
+    /// <summary>Birden çok sağlayıcı varsa seçici gösterilir.</summary>
+    public bool ShowProviderChoice => product.HasProviderChoice;
+
+    public string ProductName => product.Name;
 
     [ObservableProperty]
     private string? _errorMessage;
@@ -127,7 +179,27 @@ public sealed partial class ProfilePickerViewModel(
     [ObservableProperty]
     private string _editUsername = "";
 
+    [ObservableProperty]
+    private string _editOrganizationId = "";
+
+    [ObservableProperty]
+    private string _editClientId = "";
+
+    /// <summary>
+    /// Düzenleme formuna secret hiç yüklenmiyor; boş bırakılırsa kayıtlı secret
+    /// olduğu gibi kalıyor. Var olan bir sırrı ekranda göstermenin faydası yok.
+    /// </summary>
+    [ObservableProperty]
+    private string _editClientSecret = "";
+
     public bool IsEditing => Editing is not null;
+
+    /// <summary>Düzenlenen profil Epic mi — form hangi alanları göstereceğini buna bakıyor.</summary>
+    public bool IsEditingEpic => Editing?.IsEpic ?? false;
+
+    /// <summary>Kayıtlı bir secret var mı; forma "girilmiş" bilgisi olarak yansıyor.</summary>
+    public bool EditHasStoredSecret =>
+        Editing is { } card && secrets.Has(card.Profile.Id);
 
     public void Refresh()
     {
@@ -135,7 +207,9 @@ public sealed partial class ProfilePickerViewModel(
 
         Cards.Clear();
 
-        foreach (var profile in repository.Profiles)
+        // Ürünün desteklemediği profiller gizleniyor ama SİLİNMİYOR: kullanıcı Hub'da
+        // Epic profili oluşturup Steam Pipe Manager'a dönerse verisini kaybetmemeli.
+        foreach (var profile in repository.Profiles.Where(product.CanShow))
         {
             var card = new ProfileCard(profile);
 
@@ -375,6 +449,10 @@ public sealed partial class ProfilePickerViewModel(
     {
         NewProfileName = "";
         NewSteamUsername = "";
+        NewProvider = product.DefaultProvider;
+        NewOrganizationId = "";
+        NewClientId = "";
+        NewClientSecret = "";
         ErrorMessage = null;
         IsAddingProfile = true;
     }
@@ -389,27 +467,77 @@ public sealed partial class ProfilePickerViewModel(
     [RelayCommand]
     private async Task ConfirmAddProfileAsync()
     {
+        var profile = NewProvider == PublishProviderId.Epic
+            ? CreateEpicProfile()
+            : CreateSteamProfile();
+
+        if (profile is null)
+        {
+            return;
+        }
+
+        await repository.SaveAsync();
+
+        IsAddingProfile = false;
+        Refresh();
+        navigation.SelectProfile(profile);
+    }
+
+    private UserProfile? CreateSteamProfile()
+    {
         var name = NewProfileName.Trim();
         var username = NewSteamUsername.Trim();
 
         if (name.Length == 0 || username.Length == 0)
         {
             ErrorMessage = AppLocalizer.Instance.Get("Profile.Error.Required");
-            return;
+            return null;
         }
 
-        if (repository.Profiles.Any(p => string.Equals(p.SteamUsername, username, StringComparison.OrdinalIgnoreCase)))
+        if (repository.Profiles.Any(p =>
+                p.Provider == PublishProviderId.Steam &&
+                string.Equals(p.SteamUsername, username, StringComparison.OrdinalIgnoreCase)))
         {
             ErrorMessage = AppLocalizer.Instance.Format("Profile.Error.Duplicate", username);
-            return;
+            return null;
         }
 
-        var profile = repository.AddProfile(name, username);
-        await repository.SaveAsync();
+        return repository.AddProfile(name, username);
+    }
 
-        IsAddingProfile = false;
-        Refresh();
-        navigation.SelectProfile(profile);
+    /// <summary>
+    /// Epic profilinde Steam kullanıcı adı yok; kimlik organizasyon + client id ile
+    /// kuruluyor. Secret profil dosyasına değil, şifreli ayrı depoya gidiyor.
+    /// </summary>
+    private UserProfile? CreateEpicProfile()
+    {
+        var name = NewProfileName.Trim();
+        var organizationId = NewOrganizationId.Trim();
+        var clientId = NewClientId.Trim();
+
+        if (name.Length == 0 || organizationId.Length == 0 || clientId.Length == 0)
+        {
+            ErrorMessage = AppLocalizer.Instance.Get("Epic.Error.Required");
+            return null;
+        }
+
+        var profile = repository.AddProfile(name, steamUsername: "");
+        profile.Provider = PublishProviderId.Epic;
+        profile.Epic = new EpicProfileSettings
+        {
+            OrganizationId = organizationId,
+            ClientId = clientId,
+        };
+
+        if (NewClientSecret is { Length: > 0 } secret)
+        {
+            secrets.Write(profile.Id, secret);
+        }
+
+        // Formdaki secret hemen unutuluyor; bellekte gereğinden uzun durmasın.
+        NewClientSecret = "";
+
+        return profile;
     }
 
     /// <summary>

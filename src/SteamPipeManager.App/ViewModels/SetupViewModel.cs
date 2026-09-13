@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.App.Localization;
+using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.App.Services;
 using SteamPipeManager.Core.Localization;
 using SteamPipeManager.Core.SteamCmd;
@@ -17,8 +18,15 @@ namespace SteamPipeManager.App.ViewModels;
 public sealed partial class SetupViewModel(
     ISettingsStore store,
     BuildCoordinator coordinator,
-    IDialogService dialogs) : ObservableObject
+    IDialogService dialogs,
+    ProductProfile product) : ObservableObject
 {
+    /// <summary>
+    /// Karşılama başlığı ürün adını taşıyor — üç üründen hangisi çalışıyorsa onu.
+    /// Ürün adları çevrilmiyor, cümle çevriliyor.
+    /// </summary>
+    public string WelcomeText => AppLocalizer.Instance.Format("Setup.Welcome", product.Name);
+
     private AppSettings _settings = new();
 
     public IReadOnlyList<LanguagePack> Languages => AppLocalizer.Instance.Available;

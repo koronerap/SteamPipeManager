@@ -1,3 +1,4 @@
+using System.Reflection;
 // WPF'in örtük using'leri System.IO'yu kapsamıyor.
 using System.IO;
 using System.Windows;
@@ -6,6 +7,8 @@ using SteamPipeManager.App.Localization;
 using SteamPipeManager.App.Services;
 using SteamPipeManager.App.ViewModels;
 using SteamPipeManager.Core.Localization;
+using SteamPipeManager.Core.Epic;
+using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.Workspace;
@@ -147,6 +150,15 @@ public partial class App : Application
         services.AddSingleton<NavigationState>();
         services.AddSingleton<SteamCmdProvisioner>();
         services.AddSingleton(_ => new SteamImageService(layout.CoversDirectory));
+
+        // Hangi ürün çalışıyor: derleme sırasında assembly meta verisine yazılıyor.
+        services.AddSingleton(_ => ProductProfile.Parse(
+            System.Reflection.Assembly.GetExecutingAssembly()
+                .GetCustomAttributes<System.Reflection.AssemblyMetadataAttribute>()
+                .FirstOrDefault(a => a.Key == "SpmProduct")?.Value));
+
+        // Epic client secret'ları profil dosyasının dışında, DPAPI ile şifreli duruyor.
+        services.AddSingleton(_ => new EpicSecretStore(layout.EpicSecretsFile));
         services.AddSingleton<IConfirmationService, MessageBoxConfirmationService>();
         services.AddSingleton<IDialogService, WindowsDialogService>();
         services.AddSingleton(_ => new BuildHistoryStore(layout));
@@ -158,6 +170,8 @@ public partial class App : Application
         services.AddSingleton<ProfilePickerViewModel>();
         services.AddSingleton<AppPickerViewModel>();
         services.AddSingleton<SubAppWorkspaceViewModel>();
+        services.AddSingleton<EpicBuildPanelViewModel>();
+        services.AddSingleton<EpicWorkspaceViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<SetupViewModel>();
         services.AddSingleton<ShellViewModel>();

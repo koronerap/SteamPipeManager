@@ -24,7 +24,10 @@ public sealed class StorageTests : IDisposable
         var db = await new JsonProfileStore(Layout).LoadAsync();
 
         Assert.Empty(db.Profiles);
-        Assert.Equal(1, db.SchemaVersion);
+
+        // Yeni bir veritabanı güncel şemayla doğar; sürüm sabiti değiştiğinde bu da
+        // onunla birlikte gelmeli, yoksa sabit bir sayı testi her göçte kırılır.
+        Assert.Equal(ProfileSchema.Current, db.SchemaVersion);
     }
 
     [Fact]

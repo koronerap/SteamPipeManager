@@ -1,17 +1,22 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace SteamPipeManager.Core.SteamCmd;
+namespace SteamPipeManager.Core.Publishing;
 
 /// <summary>
-/// SteamCMD'nin <c>logs/console_log.txt</c> dosyasını canlı takip eder.
+/// Bir yayınlama aracının canlı yazdığı log dosyasını takip eder.
 ///
-/// M0'da ölçüldü: stdout pipe'a bağlıyken bloklar halinde tamponlanıyor ama bu dosya
-/// iş sürerken artımlı olarak yazılıyor. Canlı ilerleme buradan okunur.
+/// İki sağlayıcıda da ölçülen aynı tablo yüzünden var: aracın stdout'u pipe'a bağlıyken
+/// bloklar hâlinde tamponlanıyor, ama yanına yazdığı log dosyası iş sürerken artımlı
+/// olarak büyüyor. Canlı ilerleme oradan okunuyor.
 ///
-/// Dosya her SteamCMD başlangıcında sıfırlandığı için küçülme algılanır ve baştan okunur.
+///   * SteamCMD → <c>logs/console_log.txt</c> (bkz. docs/M0-FINDINGS.md, Bulgu 8)
+///   * BuildPatchTool → <c>%LocalAppData%\BuildPatchTool\Saved\Logs\BuildPatchTool.log</c>
+///
+/// Dosya çalıştırma başında sıfırlandığı (ya da yenisiyle değiştirildiği) için küçülme
+/// algılanır ve baştan okunur.
 /// </summary>
-public sealed class ConsoleLogTail(
+public sealed class LogTail(
     string filePath,
     TimeSpan? pollInterval = null,
     long startPosition = 0)
@@ -23,7 +28,7 @@ public sealed class ConsoleLogTail(
     /// <summary>
     /// En son okunan baytın konumu; donma dedektörü bunun artışını izler.
     /// Log temizlenemediğinde okumaya mevcut sonundan başlanır (bkz.
-    /// <see cref="SteamCmdInstallation.ResetConsoleLog"/>), böylece önceki
+    /// <c>SteamCmdInstallation.ResetConsoleLog</c>), böylece önceki
     /// çalıştırmanın satırları bu çalıştırmaya karışmaz.
     /// </summary>
     public long Position { get; private set; } = startPosition;

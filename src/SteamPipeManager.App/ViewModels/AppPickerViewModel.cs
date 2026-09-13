@@ -55,6 +55,13 @@ public sealed partial class AppPickerViewModel(
 
     public bool HasApps => Cards.Count > 0;
 
+    /// <summary>
+    /// ContentBuilder içe aktarma Steam'e özel: Epic'te script dosyası kavramı yok,
+    /// dolayısıyla o düğme Epic profillerinde gösterilmiyor.
+    /// </summary>
+    public bool IsSteamProfile =>
+        navigation.Profile?.Provider != PublishProviderId.Epic;
+
     [ObservableProperty]
     private string? _statusMessage;
 
@@ -86,6 +93,7 @@ public sealed partial class AppPickerViewModel(
         }
 
         OnPropertyChanged(nameof(HasApps));
+        OnPropertyChanged(nameof(IsSteamProfile));
 
         _ = LoadCapsulesAsync();
     }
@@ -117,6 +125,7 @@ public sealed partial class AppPickerViewModel(
     [RelayCommand]
     private void Select(AppCard card) => navigation.SelectApp(card.App);
 
+
     [RelayCommand]
     private async Task AddAppAsync()
     {
@@ -126,6 +135,14 @@ public sealed partial class AppPickerViewModel(
         }
 
         var app = new SteamApp { Title = AppLocalizer.Instance.Get("Apps.NewGame") };
+
+        // Epic profilindeki bir oyunun Epic ayarları olmalı; artifact listesi orada
+        // yaşıyor ve çalışma alanı onu bekliyor.
+        if (profile.Provider == PublishProviderId.Epic)
+        {
+            app.Epic = new EpicGameSettings();
+        }
+
         profile.Apps.Add(app);
         await repository.SaveAsync();
 

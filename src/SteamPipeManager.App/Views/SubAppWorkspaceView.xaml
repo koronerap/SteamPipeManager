@@ -43,6 +43,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
                             <!-- Her yan uygulamanın kendi Steam kapsülü -->
@@ -69,7 +70,17 @@
                                            TextTrimming="CharacterEllipsis" />
                             </StackPanel>
 
+                            <!-- Hızlı build: hedefi seçip Build sekmesine geçerek başlatır. -->
                             <ui:Button Grid.Column="2" Padding="6,4" Appearance="Transparent"
+                                       VerticalAlignment="Center"
+                                       Icon="{ui:SymbolIcon CloudArrowUp24}"
+                                       AutomationProperties.Name="{loc:T Apps.QuickBuild.Tip}"
+                                       ToolTip="{loc:T Apps.QuickBuild.Tip}"
+                                       Command="{Binding DataContext.QuickBuildCommand,
+                                                 RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                       CommandParameter="{Binding}" />
+
+                            <ui:Button Grid.Column="3" Padding="6,4" Appearance="Transparent"
                                        VerticalAlignment="Center"
                                        Icon="{ui:SymbolIcon Delete24}"
                                        AutomationProperties.Name="{loc:T Workspace.Delete.Tip}"
@@ -97,7 +108,8 @@ ToolTip="{loc:T Workspace.AddSubApp.Tip}"
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisInverted}}" />
 
-            <TabControl Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
+            <TabControl SelectedIndex="{Binding SelectedTabIndex}"
+                        Visibility="{Binding HasSelection, Converter={StaticResource BoolToVis}}">
 
                 <TabItem Header="{loc:T Tab.General}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">

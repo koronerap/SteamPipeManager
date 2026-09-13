@@ -73,6 +73,12 @@ public sealed partial class SubAppWorkspaceViewModel(
     /// <summary>Seçili hedefin modeli; XAML bağlamaları bunun üzerinden çalışıyor.</summary>
     public SubApp? Selected => SelectedCard?.SubApp;
 
+    /// <summary>Sekmelerdeki Build'in sırası; hızlı build oraya geçiyor.</summary>
+    public const int BuildTabIndex = 2;
+
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
     [ObservableProperty]
     private string _scriptPreview = "";
 
@@ -347,6 +353,41 @@ public sealed partial class SubAppWorkspaceViewModel(
         }
     }
 
+    /// <summary>
+    /// Hedef satırındaki build düğmesi: hedefi seçer, Build sekmesine geçer ve
+    /// build'i başlatır. Sekmeye geçmek şart — kullanıcı ne olduğunu görmeli.
+    ///
+    /// Canlıya alma onayı atlanmıyor; onu build paneli soruyor.
+    /// </summary>
+    [RelayCommand]
+    private void QuickBuild(SubAppCard? card)
+    {
+        if (card is not null)
+        {
+            SelectedCard = card;
+        }
+
+        StartQuickBuild();
+    }
+
+    public void StartQuickBuild()
+    {
+        SelectedTabIndex = BuildTabIndex;
+
+        if (BuildPanel.BuildCommand.CanExecute(null))
+        {
+            BuildPanel.BuildCommand.Execute(null);
+            return;
+        }
+
+        // Başlayamıyorsa sebebi söylenmeli. Sessizce "Hazır"da durmak, kullanıcıya
+        // düğmenin çalışmadığını düşündürür; oysa sorun hedefte.
+        BuildPanel.StatusMessage = Issues.Count > 0
+            ? AppLocalizer.Instance.Format(
+                "Apps.QuickBuild.Blocked", string.Join(" ", Issues.Select(i => i.Message)))
+            : AppLocalizer.Instance.Get("Build.NotStarted");
+    }
+
     [RelayCommand]
     private async Task AddSubAppAsync()
     {
@@ -443,13 +484,33 @@ public sealed partial class SubAppWorkspaceViewModel(
     }
 
     /// <summary>
-    /// Depot silme. Onay istenmiyor: silinen depot'un yeniden eklenmesi birkaç saniyelik
-    /// iş ve içerik klasörüne dokunulmuyor — oyun ya da build hedefi silmekten farklı.
+    /// Depot siler. Yanlışlıkla silinen bir depot build'i bozacağı (ve eksik depot
+    /// Steam'de fark edilmeden yayına çıkabileceği) için onay isteniyor.
     /// </summary>
     [RelayCommand]
-    private void RemoveDepot(DepotConfig depot)
+    private async Task RemoveDepotAsync(DepotConfig depot)
     {
-        Selected?.Depots.Remove(depot);
+        if (Selected is not { } subApp)
+        {
+            return;
+        }
+
+        var label = depot.Label is { Length: > 0 } named
+            ? $"{depot.DepotId} · {named}"
+            : depot.DepotId.ToString();
+
+        var confirmed = await confirmation.ConfirmAsync(
+            AppLocalizer.Instance.Get("Depot.Delete.Title"),
+            AppLocalizer.Instance.Format("Depot.Delete.Body", label),
+            confirmText: AppLocalizer.Instance.Get("Common.Delete"),
+            isDestructive: true);
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        subApp.Depots.Remove(depot);
     }
 
 }

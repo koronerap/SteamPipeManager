@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Text;
 
+using SteamPipeManager.Core.Publishing;
+
 namespace SteamPipeManager.Core.SteamCmd;
 
 /// <summary>Bir SteamCMD çalıştırmasının sonucu.</summary>
@@ -66,7 +68,7 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
 
         var events = new List<SteamCmdEvent>();
         var parser = new SteamCmdLogParser();
-        var tail = new ConsoleLogTail(Installation.ConsoleLogPath, startPosition: logStart);
+        var tail = new LogTail(Installation.ConsoleLogPath, startPosition: logStart);
 
         using var stallSource = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var timedOut = false;
@@ -129,7 +131,7 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
     }
 
     private async Task WatchStallAsync(
-        ConsoleLogTail tail,
+        LogTail tail,
         Process process,
         CancellationTokenSource source,
         Action onStalled)

@@ -3,6 +3,8 @@ using System.Text;
 
 using SteamPipeManager.Core.Localization;
 
+using SteamPipeManager.Core.Publishing;
+
 namespace SteamPipeManager.Core.SteamCmd;
 
 public enum LoginStage
@@ -115,7 +117,7 @@ public sealed class SteamCmdLoginSession(SteamCmdInstallation installation)
         CancellationTokenSource timeout)
     {
         var parser = new SteamCmdLogParser();
-        var tail = new ConsoleLogTail(
+        var tail = new LogTail(
             installation.ConsoleLogPath, TimeSpan.FromMilliseconds(200), logStart);
         var guardRequested = false;
 

@@ -19,9 +19,27 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <!--
+    Üç ürün, tek koddan. Yayımlarken seçiliyor:
+      dotnet publish -p:SpmProduct=PipeManagerHub
+    Geçerli değerler: SteamPipeManager (varsayılan), EpicBuildManager, PipeManagerHub.
+  -->
   <PropertyGroup>
-    <AssemblyTitle>Steam Pipe Manager</AssemblyTitle>
-    <Product>Steam Pipe Manager</Product>
+    <SpmProduct Condition="'$(SpmProduct)' == ''">SteamPipeManager</SpmProduct>
+
+    <SpmProductName Condition="'$(SpmProduct)' == 'SteamPipeManager'">Steam Pipe Manager</SpmProductName>
+    <SpmProductName Condition="'$(SpmProduct)' == 'EpicBuildManager'">Epic Build Manager</SpmProductName>
+    <SpmProductName Condition="'$(SpmProduct)' == 'PipeManagerHub'">Pipe Manager Hub</SpmProductName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Koşullu derleme yerine meta veri: tek kod yolu, hepsi her üründe derleniyor. -->
+    <AssemblyMetadata Include="SpmProduct" Value="$(SpmProduct)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <AssemblyTitle>$(SpmProductName)</AssemblyTitle>
+    <Product>$(SpmProductName)</Product>
     <Description>Tek bir SteamCMD kurulumundan birden çok Steam hesabı, oyun ve yan uygulamanın build'lerini yönetir.</Description>
     <Version>1.0.1</Version>
     <FileVersion>1.0.1.0</FileVersion>
@@ -30,12 +48,19 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Tek dosya dağıtım: kullanıcıda .NET kurulumu gerekmesin. -->
+    <!--
+      Kendi kendine yeten klasör dağıtımı: kullanıcıda .NET kurulumu gerekmiyor.
+
+      Tek dosya (PublishSingleFile + sıkıştırma) bilerek kullanılmıyor: kendi kendini
+      açan sıkıştırılmış exe'ler SmartScreen ve kurumsal virüs taramalarında sık sık
+      şüpheli işaretleniyor ve indirme engelleniyordu. Sıradan bir exe ile yanındaki
+      DLL'ler bu tetiklemeyi yapmıyor.
+    -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <DebugType>embedded</DebugType>
   </PropertyGroup>

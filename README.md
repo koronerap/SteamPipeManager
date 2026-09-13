@@ -24,12 +24,14 @@ the scripts for you, and never asks you to edit a `.vdf` by hand.
 - **Build history** with the BuildID Steam returned and a link to the archived log
 - **Script preview** — see the exact `.vdf` files that will be written before you build
 - **Store art** — game capsules and profile avatars pulled from Steam's public endpoints
-- **Localisable** — English and Turkish included, and language files are plain JSON you can add to
+- **Eight languages** — English, Turkish, German, French, Russian, Japanese, Korean and
+  Simplified Chinese, and language files are plain JSON you can add to
 
 ## Getting started
 
-1. Download `SteamPipeManager.exe` from [Releases](../../releases). It is a single file;
-   no installation and no .NET runtime required.
+1. Download the zip from [Releases](../../releases) and unpack it anywhere, then run
+   `SteamPipeManager.exe`. No installation and no .NET runtime required — the folder
+   holds the exe and the five native libraries WPF needs beside it.
 2. On first run, pick a language and let the app download SteamCMD (or point it at one
    you already have).
 3. Create a profile for your Steam account and sign in once from its card.
@@ -102,8 +104,8 @@ The solution is split so the interesting parts are testable without a UI or a St
 - `SteamPipeManager.App` — WPF/MVVM front end.
 - `tests/FakeSteamCmd` — a stand-in for `steamcmd.exe` that reproduces its measured
   behaviour, so the build engine can be tested end to end without signing in to Steam.
-- `ref_scripts/` — anonymised reference scripts the parser and writer are calibrated
-  against. See [ref_scripts/README.md](ref_scripts/README.md).
+- `tests/fixtures/content_builder/` — reference scripts the parser and writer are
+  calibrated against. See [its README](tests/fixtures/content_builder/README.md).
 
 [docs/M0-FINDINGS.md](docs/M0-FINDINGS.md) records what SteamCMD actually does when you
 drive it as a subprocess — output buffering, where the live log really comes from, how the

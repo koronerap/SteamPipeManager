@@ -1,3 +1,4 @@
+using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 
 namespace SteamPipeManager.Core.Tests;

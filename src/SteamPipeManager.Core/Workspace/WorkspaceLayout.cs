@@ -20,6 +20,12 @@ public sealed class WorkspaceLayout(string rootDirectory)
 
     public string SettingsFile => Path.Combine(Root, "settings.json");
 
+    /// <summary>
+    /// Epic client secret'larının şifreli deposu. <c>profiles.json</c>'dan ayrı bir
+    /// dosya, çünkü profil dosyasının paylaşılabilir kalması gerekiyor.
+    /// </summary>
+    public string EpicSecretsFile => Path.Combine(Root, "epic-secrets.json");
+
     public string LogsDirectory => Path.Combine(Root, "logs");
 
     public string CoversDirectory => Path.Combine(Root, "covers");

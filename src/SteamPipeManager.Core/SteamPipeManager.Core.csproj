@@ -10,4 +10,8 @@
     <InternalsVisibleTo Include="SteamPipeManager.Core.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
+  </ItemGroup>
+
 </Project>

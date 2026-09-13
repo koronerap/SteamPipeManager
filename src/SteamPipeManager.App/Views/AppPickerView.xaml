@@ -16,7 +16,8 @@
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
                 <ui:Button Padding="14,8"
                            Icon="{ui:SymbolIcon FolderArrowRight24}"
-                           AutomationProperties.Name="{loc:T Apps.Import.Tip}"
+                           Visibility="{Binding IsSteamProfile, Converter={StaticResource BoolToVis}}"
+                       AutomationProperties.Name="{loc:T Apps.Import.Tip}"
                                    ToolTip="{loc:T Apps.Import.Tip}"
                            Command="{Binding BeginImportCommand}" />
                 <ui:Button Appearance="Primary" Margin="8,0,0,0" Padding="14,8"

@@ -3,6 +3,9 @@ using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.App.Localization;
 using SteamPipeManager.App.Services;
 using SteamPipeManager.Core.Localization;
+using SteamPipeManager.Core.Epic;
+using SteamPipeManager.Core.Models;
+using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.Workspace;
@@ -16,7 +19,8 @@ public sealed partial class SettingsViewModel(
     ISettingsStore store,
     WorkspaceLayout layout,
     BuildCoordinator coordinator,
-    IDialogService dialogs) : ObservableObject
+    IDialogService dialogs,
+    ProductProfile product) : ObservableObject
 {
     private AppSettings _settings = new();
 
@@ -28,8 +32,20 @@ public sealed partial class SettingsViewModel(
 
     public string LanguageDirectory => AppLocalizer.Instance.LanguageDirectory;
 
+    /// <summary>Araç kartları ürüne göre gösteriliyor; kullanılmayan araç ekranda durmasın.</summary>
+    public bool SupportsSteam => product.Supports(PublishProviderId.Steam);
+
+    public bool SupportsEpic => product.Supports(PublishProviderId.Epic);
+
     [ObservableProperty]
     private string _steamCmdPath = "";
+
+    /// <summary>
+    /// Kullanıcının BuildPatchTool kopyasının yolu. SteamCMD'nin aksine indirme
+    /// seçeneği <b>yok</b>: araç Epic Dev Portal'ın arkasında ve dağıtma hakkımız yok.
+    /// </summary>
+    [ObservableProperty]
+    private string _buildPatchToolPath = "";
 
     [ObservableProperty]
     private int _stallWarningSeconds = 120;
@@ -52,6 +68,7 @@ public sealed partial class SettingsViewModel(
         _settings = await store.LoadAsync();
 
         SteamCmdPath = _settings.SteamCmdPath ?? "";
+        BuildPatchToolPath = _settings.BuildPatchToolPath ?? "";
 
         OnPropertyChanged(nameof(Languages));
         SelectedLanguage = Languages.FirstOrDefault(
@@ -92,6 +109,7 @@ public sealed partial class SettingsViewModel(
     private async Task SaveAsync()
     {
         _settings.SteamCmdPath = SteamCmdPath is { Length: > 0 } ? SteamCmdPath : null;
+        _settings.BuildPatchToolPath = BuildPatchToolPath is { Length: > 0 } ? BuildPatchToolPath : null;
         _settings.StallWarningSeconds = Math.Max(10, StallWarningSeconds);
         _settings.SessionCheckTimeoutSeconds = Math.Max(10, SessionCheckTimeoutSeconds);
 
@@ -156,6 +174,46 @@ public sealed partial class SettingsViewModel(
         StatusMessage = SteamCmdProvisioner.LocateExecutable(SteamCmdPath) is { } located
             ? AppLocalizer.Instance.Format("Settings.SteamCmd.Valid", located)
             : AppLocalizer.Instance.Get("Settings.SteamCmd.NotFound");
+    }
+
+    /// <summary>
+    /// BuildPatchTool'un yerini sorar. Kullanıcı exe'yi de, zip'in açıldığı kök
+    /// klasörü de gösterebilir; ikisi de kabul ediliyor.
+    /// </summary>
+    [RelayCommand]
+    private void BrowseBuildPatchTool()
+    {
+        var initial = BuildPatchToolPath is { Length: > 0 }
+            ? System.IO.Path.GetDirectoryName(BuildPatchToolPath)
+            : null;
+
+        if (dialogs.PickExecutable(AppLocalizer.Instance.Get("Epic.Tool.Pick.Tip"), initial) is { } picked)
+        {
+            BuildPatchToolPath = picked;
+        }
+    }
+
+    /// <summary>Girilen yolda gerçekten bir BuildPatchTool var mı ve hangi sürüm.</summary>
+    [RelayCommand]
+    private void VerifyBuildPatchTool()
+    {
+        if (BuildPatchToolPath.Length == 0)
+        {
+            StatusMessage = AppLocalizer.Instance.Get("Epic.Tool.Empty");
+            return;
+        }
+
+        if (BptInstallation.LocateExecutable(BuildPatchToolPath) is not { } located)
+        {
+            StatusMessage = AppLocalizer.Instance.Get("Epic.Tool.NotFound");
+            return;
+        }
+
+        var version = new BptInstallation(located).VersionFromPath();
+
+        StatusMessage = version is { Length: > 0 }
+            ? AppLocalizer.Instance.Format("Epic.Tool.ValidVersion", located, version)
+            : AppLocalizer.Instance.Format("Settings.SteamCmd.Valid", located);
     }
 
     [RelayCommand]

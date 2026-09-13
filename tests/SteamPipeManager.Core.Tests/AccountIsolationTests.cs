@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using SteamPipeManager.Core.Models;
+using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 
 namespace SteamPipeManager.Core.Tests;
@@ -106,7 +107,7 @@ public sealed class AccountIsolationTests : IDisposable
         var stale = "Logging in user 'example_partner' [U:1:111] to Steam Public...OK\r\n";
         File.WriteAllText(path, stale);
 
-        var tail = new ConsoleLogTail(
+        var tail = new LogTail(
             path, TimeSpan.FromMilliseconds(10), startPosition: new FileInfo(path).Length);
 
         File.AppendAllText(path, "Logging in user 'example_dev' [U:1:222] to Steam Public...OK\r\n");

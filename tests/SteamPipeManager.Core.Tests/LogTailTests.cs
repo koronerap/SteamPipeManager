@@ -1,14 +1,15 @@
+using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 
 namespace SteamPipeManager.Core.Tests;
 
-public sealed class ConsoleLogTailTests : IDisposable
+public sealed class LogTailTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), $"spm_tail_{Guid.NewGuid():N}");
 
     private string LogPath => Path.Combine(_dir, "console_log.txt");
 
-    public ConsoleLogTailTests() => Directory.CreateDirectory(_dir);
+    public LogTailTests() => Directory.CreateDirectory(_dir);
 
     public void Dispose()
     {
@@ -28,7 +29,7 @@ public sealed class ConsoleLogTailTests : IDisposable
     [Fact]
     public async Task Reads_lines_appended_while_running()
     {
-        var tail = new ConsoleLogTail(LogPath, TimeSpan.FromMilliseconds(20));
+        var tail = new LogTail(LogPath, TimeSpan.FromMilliseconds(20));
         var done = false;
         var lines = new List<string>();
 
@@ -56,7 +57,7 @@ public sealed class ConsoleLogTailTests : IDisposable
     [Fact]
     public async Task Does_not_emit_partial_line_until_it_completes()
     {
-        var tail = new ConsoleLogTail(LogPath, TimeSpan.FromMilliseconds(20));
+        var tail = new LogTail(LogPath, TimeSpan.FromMilliseconds(20));
         var done = false;
         var lines = new List<string>();
 
@@ -84,7 +85,7 @@ public sealed class ConsoleLogTailTests : IDisposable
     {
         Append(LogPath, "son satir sonsuz");
 
-        var tail = new ConsoleLogTail(LogPath, TimeSpan.FromMilliseconds(20));
+        var tail = new LogTail(LogPath, TimeSpan.FromMilliseconds(20));
         var lines = new List<string>();
 
         await foreach (var line in tail.ReadLinesAsync(() => true).WithCancellation(TestTimeout()))
@@ -104,7 +105,7 @@ public sealed class ConsoleLogTailTests : IDisposable
     {
         Append(LogPath, "eski calistirma satiri 1\r\neski satir 2\r\n");
 
-        var tail = new ConsoleLogTail(LogPath, TimeSpan.FromMilliseconds(20));
+        var tail = new LogTail(LogPath, TimeSpan.FromMilliseconds(20));
         var done = false;
         var lines = new List<string>();
 
@@ -130,7 +131,7 @@ public sealed class ConsoleLogTailTests : IDisposable
     [Fact]
     public async Task Tolerates_missing_file()
     {
-        var tail = new ConsoleLogTail(LogPath, TimeSpan.FromMilliseconds(20));
+        var tail = new LogTail(LogPath, TimeSpan.FromMilliseconds(20));
         var lines = new List<string>();
 
         await foreach (var line in tail.ReadLinesAsync(() => true).WithCancellation(TestTimeout()))
@@ -144,7 +145,7 @@ public sealed class ConsoleLogTailTests : IDisposable
     [Fact]
     public async Task Tracks_growth_time_for_stall_detection()
     {
-        var tail = new ConsoleLogTail(LogPath, TimeSpan.FromMilliseconds(20));
+        var tail = new LogTail(LogPath, TimeSpan.FromMilliseconds(20));
         var before = tail.LastGrowthAt;
 
         await Task.Delay(30);

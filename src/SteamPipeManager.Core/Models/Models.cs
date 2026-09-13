@@ -6,8 +6,83 @@ namespace SteamPipeManager.Core.Models;
 /// <summary>Kök depo nesnesi; <c>profiles.json</c> bunun serileştirilmiş halidir.</summary>
 public sealed class ProfileDatabase
 {
-    public int SchemaVersion { get; set; } = 1;
+    /// <summary>
+    /// Diskteki biçimin sürümü. v1'de sağlayıcı kavramı yoktu ve her profil Steam'di;
+    /// v2 <see cref="UserProfile.Provider"/> alanını ekledi. Okuma sırasında eski
+    /// dosyalar yükseltilir, bkz. <see cref="ProfileSchema"/>.
+    /// </summary>
+    public int SchemaVersion { get; set; } = ProfileSchema.Current;
+
     public List<UserProfile> Profiles { get; set; } = [];
+}
+
+/// <summary>
+/// <c>profiles.json</c> biçim sürümleri arasındaki geçişler.
+///
+/// Göç okuma anında yapılıyor ve dosya ancak kullanıcı bir şey değiştirdiğinde yeni
+/// sürümle yazılıyor; uygulamayı bir kez açıp kapatmak kimsenin dosyasını dönüştürmüyor.
+/// </summary>
+public static class ProfileSchema
+{
+    public const int Current = 3;
+
+    /// <summary>
+    /// Eski bir veritabanını güncel şemaya taşır.
+    ///
+    /// Adımlar <b>sırayla</b> uygulanıyor: v1'den gelen bir dosya v2 adımından geçip
+    /// sonra v3 adımına giriyor. Doğrudan güncel sürüme atlamak bugün çalışırdı çünkü
+    /// adımların ikisi de veri taşımıyor, ama ileride gerçek iş yapan bir adım
+    /// eklendiğinde eski dosyalar onu sessizce atlardı.
+    ///
+    /// Bilinmeyen (daha yeni) sürümlere dokunulmaz: ileri sürümden dönen bir
+    /// kullanıcının verisini bozmaktansa olduğu gibi bırakmak yeğdir.
+    /// </summary>
+    public static ProfileDatabase Upgrade(ProfileDatabase database)
+    {
+        ArgumentNullException.ThrowIfNull(database);
+
+        // Sürüm alanı hiç olmayan çok eski bir dosya 0 olarak okunur; o da v1 sayılır.
+        if (database.SchemaVersion < 1)
+        {
+            database.SchemaVersion = 1;
+        }
+
+        while (database.SchemaVersion < Current)
+        {
+            database = database.SchemaVersion switch
+            {
+                1 => ToVersion2(database),
+                2 => ToVersion3(database),
+
+                // Buraya düşmek, Current arttırılıp adımının yazılmadığı anlamına gelir.
+                _ => throw new InvalidOperationException(
+                    $"profiles.json şema sürümü {database.SchemaVersion} için geçiş adımı tanımlı değil."),
+            };
+        }
+
+        return database;
+    }
+
+    /// <summary>
+    /// v1 → v2: sağlayıcı kavramı eklendi. v1'de her profil Steam'di ve enum'un
+    /// varsayılanı zaten Steam olduğu için taşınacak veri yok.
+    /// </summary>
+    private static ProfileDatabase ToVersion2(ProfileDatabase database)
+    {
+        database.SchemaVersion = 2;
+        return database;
+    }
+
+    /// <summary>
+    /// v2 → v3: Epic alanları eklendi (<see cref="UserProfile.Epic"/>,
+    /// <see cref="SteamApp.Epic"/>). Hepsi isteğe bağlı ve null; Steam profilleri
+    /// hiç etkilenmiyor, dosyalarında bu alanlar görünmüyor bile.
+    /// </summary>
+    private static ProfileDatabase ToVersion3(ProfileDatabase database)
+    {
+        database.SchemaVersion = 3;
+        return database;
+    }
 }
 
 /// <summary>Bir Steam hesabı. SteamCMD oturumu hesap başına cache'lenir.</summary>
@@ -15,6 +90,19 @@ public sealed class UserProfile
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string DisplayName { get; set; } = "";
+
+    /// <summary>
+    /// Bu profilin build'lerini gönderdiği mağaza. Şema v1'den gelen dosyalarda alan
+    /// yok; enum varsayılanı Steam olduğu için eski profiller doğru okunuyor.
+    /// </summary>
+    public PublishProviderId Provider { get; set; } = PublishProviderId.Steam;
+
+    /// <summary>
+    /// Epic profillerinin hesap ayarları; Steam profillerinde null ve dosyada hiç
+    /// görünmüyor. Client secret burada değil — şifreli ayrı depoda.
+    /// </summary>
+    public EpicProfileSettings? Epic { get; set; }
+
     public string SteamUsername { get; set; } = "";
 
     /// <summary>v1.0'da tek geçerli değer <see cref="CredentialMode.SteamCmdCache"/>.</summary>
@@ -55,7 +143,18 @@ public sealed class SteamApp : ObservableModel
 
     public string? CoverImagePath { get; set; }
     public string Notes { get; set; } = "";
+
+    /// <summary>Steam build hedefleri. Epic profillerindeki oyunlarda boş kalır.</summary>
     public List<SubApp> SubApps { get; set; } = [];
+
+    /// <summary>
+    /// Oyunun Epic tarafı: product kimliği ve artifact'ler. Steam oyunlarında null.
+    ///
+    /// İki liste yan yana duruyor çünkü bir oyun profilin altında yaşıyor ve profilin
+    /// sağlayıcısı belli — yani ikisi aynı anda dolu olmuyor. Ortak bir "hedef"
+    /// soyutlaması, iki tarafın da somutlaştığı bu noktada tasarlanacak.
+    /// </summary>
+    public EpicGameSettings? Epic { get; set; }
 }
 
 /// <summary>Build hedefi: ana oyun, demo, playtest veya beta. Bir Steam AppID'ye karşılık gelir.</summary>
@@ -193,7 +292,17 @@ public sealed class FileProperty
 public sealed class BuildRecord
 {
     public Guid Id { get; set; } = Guid.NewGuid();
+
+    /// <summary>
+    /// Build hedefinin kimliği. Adı Steam'den kalma; Epic kayıtlarında
+    /// <see cref="EpicArtifact.Id"/> tutuluyor. Yeniden adlandırmak var olan
+    /// <c>history.json</c> kayıtlarındaki alanı kopardığı için adı korunuyor.
+    /// </summary>
     public Guid SubAppId { get; set; }
+
+    /// <summary>Kaydın hangi mağazaya ait olduğu. Eski kayıtlarda alan yok, Steam sayılır.</summary>
+    public PublishProviderId Provider { get; set; } = PublishProviderId.Steam;
+
     public uint SteamAppId { get; set; }
     public DateTimeOffset StartedAt { get; set; }
     public DateTimeOffset? FinishedAt { get; set; }
@@ -208,8 +317,17 @@ public sealed class BuildRecord
     public int? ExitCode { get; set; }
     public string? FailureReason { get; set; }
 
-    /// <summary>Ham SteamCMD çıktısının kaydedildiği dosya.</summary>
+    /// <summary>Ham araç çıktısının kaydedildiği dosya.</summary>
     public string? LogFilePath { get; set; }
+
+    /// <summary>Yalnızca Epic: yayınlanan artifact.</summary>
+    public string? EpicArtifactId { get; set; }
+
+    /// <summary>
+    /// Yalnızca Epic: gönderilen sürüm dizesi. Steam'de karşılığı
+    /// <see cref="SteamBuildId"/>, ama onu Steam üretiyor; bunu biz veriyoruz.
+    /// </summary>
+    public string? EpicBuildVersion { get; set; }
 
     [JsonIgnore]
     public TimeSpan? Duration => FinishedAt - StartedAt;

@@ -1,4 +1,8 @@
+using System.IO;
+using SteamPipeManager.Core.Epic;
+using SteamPipeManager.App.Localization;
 using SteamPipeManager.Core.Models;
+using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.Workspace;
@@ -12,7 +16,8 @@ namespace SteamPipeManager.App.Services;
 public sealed class BuildCoordinator(
     WorkspaceLayout layout,
     ISettingsStore settingsStore,
-    SteamCmdProvisioner provisioner)
+    SteamCmdProvisioner provisioner,
+    EpicSecretStore secrets)
 {
     private SteamCmdInstallation? _installation;
 
@@ -82,11 +87,21 @@ public sealed class BuildCoordinator(
         return _installation;
     }
 
+    /// <summary>
+    /// Profilin yayın yapmaya hazır olup olmadığını sorar. Soru iki sağlayıcıda da aynı,
+    /// cevabın bulunma yolu farklı: Steam'de SteamCMD'nin önbelleklediği oturum,
+    /// Epic'te <c>UploadBinary -DryRun</c> ile kimlik doğrulaması.
+    /// </summary>
     public async Task<SessionCheckResult> CheckSessionAsync(
         UserProfile profile,
         IProgress<string>? status = null,
         CancellationToken ct = default)
     {
+        if (profile.Provider == PublishProviderId.Epic)
+        {
+            return await CheckEpicSessionAsync(profile, status, ct);
+        }
+
         var installation = await EnsureInstallationAsync(status, ct);
         var settings = await settingsStore.LoadAsync(ct);
 
@@ -139,6 +154,89 @@ public sealed class BuildCoordinator(
         await process.WaitForExitAsync(ct);
 
         return await CheckSessionAsync(profile, status, ct);
+    }
+
+    /// <summary>
+    /// Epic kimlik kontrolü. Araç yoksa ya da secret kayıtlı değilse kontrol
+    /// başarısız sayılıyor — kimlik reddedildi demek değil, ikisini karıştırmak
+    /// kullanıcıyı boşuna kimlik bilgisi girmeye yönlendirir.
+    /// </summary>
+    private async Task<SessionCheckResult> CheckEpicSessionAsync(
+        UserProfile profile,
+        IProgress<string>? status,
+        CancellationToken ct)
+    {
+        if (profile.Epic is not { IsComplete: true } epic)
+        {
+            return new SessionCheckResult(
+                SessionState.CheckFailed, AppLocalizer.Instance.Get("Epic.Validate.ProfileIncomplete"));
+        }
+
+        var settings = await settingsStore.LoadAsync(ct);
+
+        if (BptInstallation.LocateExecutable(settings.BuildPatchToolPath ?? "") is not { } exe)
+        {
+            return new SessionCheckResult(
+                SessionState.CheckFailed, AppLocalizer.Instance.Get("Epic.ToolPathMissing"));
+        }
+
+        if (secrets.Read(profile.Id) is not { Length: > 0 } secret)
+        {
+            return new SessionCheckResult(
+                SessionState.LoginRequired, AppLocalizer.Instance.Get("Epic.SecretMissing"));
+        }
+
+        // Epic'te kimlik bilgileri tek başına doğrulanamıyor: BuildPatchTool argüman
+        // doğrulamasını kimlik doğrulamasından önce yapıyor, yani ProductId ve
+        // ArtifactId olmadan kimliğe hiç sıra gelmiyor. Steam'de oturum hesap
+        // düzeyindeydi; burada kontrol ancak gerçek bir hedef üzerinden yapılabiliyor.
+        if (FirstEpicTarget(profile) is not { } target)
+        {
+            return new SessionCheckResult(
+                SessionState.Unknown, AppLocalizer.Instance.Get("Epic.NoTargetToCheck"));
+        }
+
+        var (productId, artifactId) = target;
+
+        status?.Report(AppLocalizer.Instance.Get("Session.Checking"));
+
+        var service = new BptSessionService(new BptInstallation(exe))
+        {
+            CheckTimeout = TimeSpan.FromSeconds(settings.SessionCheckTimeoutSeconds),
+        };
+
+        var logPath = Path.Combine(
+            layout.LogsDirectory, "epic", $"check-{profile.Id:N}.log");
+
+        return await service.CheckAsync(
+            new EpicCredentials(epic.OrganizationId, productId, artifactId, epic.ClientId, secret),
+            logPath,
+            ct: ct);
+    }
+
+    /// <summary>
+    /// Kontrol için kullanılacak ilk tam tanımlı hedef. Bulunamazsa null — profilde
+    /// henüz oyun/artifact yok demektir ve kimlik doğrulanamaz.
+    /// </summary>
+    private static (string ProductId, string ArtifactId)? FirstEpicTarget(UserProfile profile)
+    {
+        foreach (var app in profile.Apps)
+        {
+            if (app.Epic is not { ProductId: { Length: > 0 } productId } game)
+            {
+                continue;
+            }
+
+            foreach (var artifact in game.Artifacts)
+            {
+                if (artifact.ArtifactId is { Length: > 0 } artifactId)
+                {
+                    return (productId, artifactId);
+                }
+            }
+        }
+
+        return null;
     }
 
     public async Task<BuildOutcomeResult> BuildAsync(

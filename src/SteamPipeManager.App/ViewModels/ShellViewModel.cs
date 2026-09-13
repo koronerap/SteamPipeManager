@@ -1,7 +1,9 @@
+using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.App.Services;
 using SteamPipeManager.Core.Models;
+using SteamPipeManager.Core.Publishing;
 
 namespace SteamPipeManager.App.ViewModels;
 
@@ -28,18 +30,22 @@ public sealed partial class ShellViewModel : ObservableObject
         ProfilePickerViewModel profilePicker,
         AppPickerViewModel appPicker,
         SubAppWorkspaceViewModel workspace,
+        EpicWorkspaceViewModel epicWorkspace,
         SettingsViewModel settings,
         LoginViewModel login,
-        SetupViewModel setup)
+        SetupViewModel setup,
+        ProductProfile product)
     {
         _repository = repository;
         Navigation = navigation;
         ProfilePicker = profilePicker;
         AppPicker = appPicker;
         Workspace = workspace;
+        EpicWorkspace = epicWorkspace;
         Settings = settings;
         Login = login;
         Setup = setup;
+        Product = product;
 
         // Sihirbaz bitince normal gezinmeye dönülür.
         setup.Completed += (_, _) => OnNavigationChanged();
@@ -80,11 +86,21 @@ public sealed partial class ShellViewModel : ObservableObject
 
     public SubAppWorkspaceViewModel Workspace { get; }
 
+    public EpicWorkspaceViewModel EpicWorkspace { get; }
+
     public SettingsViewModel Settings { get; }
 
     public LoginViewModel Login { get; }
 
     public SetupViewModel Setup { get; }
+
+    /// <summary>
+    /// Çalışan ürün. Pencere başlığı buradan geliyor — ürün adları çevrilmiyor,
+    /// "Epic Build Manager" her dilde aynı.
+    /// </summary>
+    public ProductProfile Product { get; }
+
+    public string ProductName => Product.Name;
 
     [ObservableProperty]
     private ShellPage _currentPage = ShellPage.ProfilePicker;
@@ -98,6 +114,17 @@ public sealed partial class ShellViewModel : ObservableObject
 
     public bool IsWorkspace => CurrentPage == ShellPage.SubAppWorkspace;
 
+    /// <summary>
+    /// Çalışma alanı sağlayıcıya göre değişiyor: Steam'de depot'lu ekran, Epic'te
+    /// artifact ekranı. İçerik modelleri farklı olduğu için tek ekranı koşullu
+    /// sekmelerle esnetmek yerine iki ayrı ekran tutuluyor.
+    /// </summary>
+    public bool IsSteamWorkspace =>
+        IsWorkspace && Navigation.Profile?.Provider != PublishProviderId.Epic;
+
+    public bool IsEpicWorkspace =>
+        IsWorkspace && Navigation.Profile?.Provider == PublishProviderId.Epic;
+
     public bool IsSettings => CurrentPage == ShellPage.Settings;
 
     public bool IsSetup => CurrentPage == ShellPage.Setup;
@@ -105,11 +132,28 @@ public sealed partial class ShellViewModel : ObservableObject
     /// <summary>Kurulum sırasında breadcrumb ve ayarlar butonu gizlenir.</summary>
     public bool IsChromeVisible => CurrentPage != ShellPage.Setup;
 
+    private ProfileCard? ActiveCard =>
+        ProfilePicker.Cards.FirstOrDefault(c => c.Profile == Navigation.Profile);
+
     /// <summary>Breadcrumb'daki profil rozeti için: seçili profilin avatarı.</summary>
-    public string? ActiveAvatarPath =>
-        ProfilePicker.Cards.FirstOrDefault(c => c.Profile == Navigation.Profile)?.AvatarPath;
+    public string? ActiveAvatarPath => ActiveCard?.AvatarPath;
 
     public bool HasActiveAvatar => ActiveAvatarPath is { Length: > 0 };
+
+    /// <summary>
+    /// Rozetin sağ alt köşesindeki oturum noktası. Oturum kontrolü arka planda sürerken
+    /// kullanıcı içeri girip ayar yapabildiği için durum profil ekranından çıkınca da
+    /// takip edilebilmeli.
+    /// </summary>
+    public Brush ActiveSessionBrush => ActiveCard?.SessionBrush ?? Brushes.Gray;
+
+    /// <summary>Profil rozetinin tooltip'i: hesap adı ve oturum durumu birlikte.</summary>
+    public string ActiveProfileTooltip => (Navigation.Profile?.DisplayName, ActiveCard) switch
+    {
+        (null, _) => "",
+        ({ } name, null) => name,
+        ({ } name, { } card) => $"{name} — {card.SessionText}",
+    };
 
     /// <summary>Avatar yoksa profilin baş harfi gösterilir.</summary>
     public string ActiveInitial => Navigation.Profile?.DisplayName is { Length: > 0 } name
@@ -139,6 +183,8 @@ public sealed partial class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(ActiveAvatarPath));
         OnPropertyChanged(nameof(HasActiveAvatar));
         OnPropertyChanged(nameof(ActiveInitial));
+        OnPropertyChanged(nameof(ActiveSessionBrush));
+        OnPropertyChanged(nameof(ActiveProfileTooltip));
     }
 
     private void OnNavigationChanged()
@@ -154,6 +200,11 @@ public sealed partial class ShellViewModel : ObservableObject
         {
             AppPicker.Refresh();
         }
+        else if (CurrentPage == ShellPage.SubAppWorkspace &&
+                 Navigation.Profile?.Provider == PublishProviderId.Epic)
+        {
+            EpicWorkspace.Refresh();
+        }
         else if (CurrentPage == ShellPage.SubAppWorkspace)
         {
             Workspace.Refresh();
@@ -167,11 +218,14 @@ public sealed partial class ShellViewModel : ObservableObject
         if (oldValue == ShellPage.SubAppWorkspace)
         {
             _ = Workspace.FlushAsync();
+            _ = EpicWorkspace.FlushAsync();
         }
 
         OnPropertyChanged(nameof(IsProfilePicker));
         OnPropertyChanged(nameof(IsAppPicker));
         OnPropertyChanged(nameof(IsWorkspace));
+        OnPropertyChanged(nameof(IsSteamWorkspace));
+        OnPropertyChanged(nameof(IsEpicWorkspace));
         OnPropertyChanged(nameof(IsSettings));
         OnPropertyChanged(nameof(IsSetup));
         OnPropertyChanged(nameof(IsChromeVisible));

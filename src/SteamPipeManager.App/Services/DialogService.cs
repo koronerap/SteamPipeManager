@@ -12,6 +12,9 @@ public interface IDialogService
     string? PickFolder(string title, string? initialDirectory = null);
 
     string? PickExecutable(string title, string? initialDirectory = null);
+
+    /// <summary>Kaydedilecek dosyanın yerini sorar; iptal edilirse null.</summary>
+    string? PickSaveFile(string title, string suggestedFileName, string filter);
 }
 
 public sealed class WindowsDialogService : IDialogService
@@ -30,6 +33,19 @@ public sealed class WindowsDialogService : IDialogService
         }
 
         return dialog.ShowDialog() == true ? dialog.FolderName : null;
+    }
+
+    public string? PickSaveFile(string title, string suggestedFileName, string filter)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = title,
+            FileName = suggestedFileName,
+            Filter = filter,
+            AddExtension = true,
+        };
+
+        return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
 
     public string? PickExecutable(string title, string? initialDirectory = null)

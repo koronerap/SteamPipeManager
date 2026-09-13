@@ -80,7 +80,12 @@ public sealed class JsonProfileStore(WorkspaceLayout layout) : IProfileStore
 
     public string FilePath => _store.FilePath;
 
-    public Task<ProfileDatabase> LoadAsync(CancellationToken ct = default) => _store.LoadAsync(ct);
+    /// <summary>
+    /// Okurken şema göçü uygulanır; diske ancak bir sonraki kaydetmede yeni sürümle
+    /// yazılır. Böylece uygulamayı açıp hiçbir şey yapmamak kimsenin dosyasını değiştirmez.
+    /// </summary>
+    public async Task<ProfileDatabase> LoadAsync(CancellationToken ct = default) =>
+        ProfileSchema.Upgrade(await _store.LoadAsync(ct));
 
     public Task SaveAsync(ProfileDatabase database, CancellationToken ct = default) =>
         _store.SaveAsync(database, ct);

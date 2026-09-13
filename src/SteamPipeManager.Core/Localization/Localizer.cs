@@ -163,6 +163,18 @@ public sealed class Localizer : INotifyPropertyChanged
             ? Directory.EnumerateFiles(directory, "*.json").Order()
             : [];
 
+    /// <summary>
+    /// Gömülü dil dosyalarını kullanıcının klasörüne yazar.
+    ///
+    /// Buradaki denge ince: kullanıcının <b>düzenlediği</b> dosyanın üzerine yazmak
+    /// emeğini siler; ama hiç dokunmadığı bir dosyaya da yazmamak, uygulama
+    /// güncellemeleriyle gelen metin düzeltmelerinin ona hiç ulaşmaması demek —
+    /// yalnızca yeni anahtarlar ulaşır, düzeltilen cümleler ulaşmaz.
+    ///
+    /// Çözüm: yazdığımız içeriğin parmak izini yanına bırakıyoruz. Dosya hâlâ bizim
+    /// yazdığımızla aynıysa kullanıcı ona dokunmamış demektir ve güncellenebilir;
+    /// farklıysa düzenlenmiştir ve olduğu gibi bırakılır.
+    /// </summary>
     private static void WriteMissingBuiltIns(
         IReadOnlyDictionary<string, string> builtIn,
         string userDirectory)
@@ -171,21 +183,69 @@ public sealed class Localizer : INotifyPropertyChanged
         {
             var target = Path.Combine(userDirectory, fileName);
 
-            if (File.Exists(target))
+            if (File.Exists(target) && !IsUntouched(target))
             {
-                // Kullanıcının düzenlemiş olabileceği dosyanın üzerine yazılmaz;
-                // eksik anahtarlar zaten gömülü sürümden tamamlanıyor.
+                // Kullanıcı düzenlemiş; emeği korunuyor. Eksik anahtarlar zaten
+                // gömülü sürümden tamamlanıyor.
                 continue;
             }
 
             try
             {
                 File.WriteAllText(target, content);
+                WriteFingerprint(target, content);
             }
             catch (IOException)
             {
                 // Yazılamazsa gömülü sürüm yine de kullanılabiliyor.
             }
+        }
+    }
+
+    /// <summary>Parmak izi dosyası; kullanıcının göreceği bir şey değil.</summary>
+    private static string FingerprintPath(string languageFile) => languageFile + ".spm";
+
+    private static string Fingerprint(string content)
+    {
+        var bytes = System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(content));
+
+        return Convert.ToHexString(bytes);
+    }
+
+    private static void WriteFingerprint(string languageFile, string content)
+    {
+        try
+        {
+            File.WriteAllText(FingerprintPath(languageFile), Fingerprint(content));
+        }
+        catch (IOException)
+        {
+            // Parmak izi yazılamazsa dosya "düzenlenmiş" sayılır; kötü senaryo
+            // yalnızca metin düzeltmelerinin gecikmesi.
+        }
+    }
+
+    /// <summary>
+    /// Dosya en son bizim yazdığımız hâlinde mi. Parmak izi yoksa — eski
+    /// sürümlerden kalan dosyalar — dokunulmamış sayılmıyor: kullanıcının
+    /// düzenlemiş olma ihtimaline karşı temkinli davranılıyor.
+    /// </summary>
+    private static bool IsUntouched(string languageFile)
+    {
+        try
+        {
+            var fingerprint = FingerprintPath(languageFile);
+
+            return File.Exists(fingerprint) &&
+                   string.Equals(
+                       File.ReadAllText(fingerprint).Trim(),
+                       Fingerprint(File.ReadAllText(languageFile)),
+                       StringComparison.OrdinalIgnoreCase);
+        }
+        catch (IOException)
+        {
+            return false;
         }
     }
 
