@@ -7,7 +7,7 @@ public class BuildScriptBuilderTests
 {
     private const string SdkRoot = @"D:\sdk\tools\ContentBuilder";
 
-    /// <summary>ref_scripts/app_1200000.vdf (Skyward) modelinin karşılığı.</summary>
+    /// <summary>app_1200000.vdf (Skyward) referans script'inin model karşılığı.</summary>
     private static SubApp Skyward() => new()
     {
         Title = "Skyward",

@@ -5,7 +5,7 @@ namespace SteamPipeManager.Core.Vdf;
 /// <summary>
 /// KeyValues ağacını ContentBuilder script'lerinin formatında yazar.
 ///
-/// Format <c>ref_scripts/</c> altındaki çalışan dosyalardan çıkarıldı: CRLF satır sonu,
+/// Format <c>tests/fixtures/content_builder/</c> altındaki çalışan dosyalardan çıkarıldı: CRLF satır sonu,
 /// tab girinti, anahtar ile değer arasında tek boşluk, BOM yok, son <c>}</c> sonrasında
 /// satır sonu yok.
 /// </summary>

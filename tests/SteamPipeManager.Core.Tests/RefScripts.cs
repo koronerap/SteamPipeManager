@@ -2,7 +2,13 @@ using System.Runtime.CompilerServices;
 
 namespace SteamPipeManager.Core.Tests;
 
-/// <summary>Depodaki <c>ref_scripts/</c> klasörüne erişim; testlerin referans kaynağı.</summary>
+/// <summary>
+/// <c>tests/fixtures/content_builder/</c> altındaki referans script'lere erişim.
+///
+/// Bunlar gerçek bir ContentBuilder kurulumunun bayt biçimini taklit eder: CRLF satır
+/// sonu, BOM yok, sonda satır sonu yok, sekme girintisi. VDF ayrıştırıcısı ve yazıcısı
+/// bu dosyalara göre ayarlandığı için biçimleri anlamlı — bkz. yanındaki README.
+/// </summary>
 internal static class RefScripts
 {
     public static string Directory { get; } = FindDirectory();
@@ -31,7 +37,7 @@ internal static class RefScripts
 
         while (dir is not null)
         {
-            var candidate = System.IO.Path.Combine(dir, "ref_scripts");
+            var candidate = System.IO.Path.Combine(dir, "tests", "fixtures", "content_builder");
 
             if (System.IO.Directory.Exists(candidate))
             {
@@ -41,6 +47,7 @@ internal static class RefScripts
             dir = System.IO.Path.GetDirectoryName(dir);
         }
 
-        throw new DirectoryNotFoundException("ref_scripts klasörü bulunamadı.");
+        throw new DirectoryNotFoundException(
+            "tests/fixtures/content_builder klasörü bulunamadı.");
     }
 }

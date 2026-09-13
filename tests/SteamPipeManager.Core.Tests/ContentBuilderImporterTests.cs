@@ -6,11 +6,11 @@ namespace SteamPipeManager.Core.Tests;
 public class ContentBuilderImporterTests
 {
     [Fact]
-    public void Imports_every_real_app_script_from_ref_scripts()
+    public void Imports_every_real_app_script_from_the_reference_folder()
     {
         var result = ContentBuilderImporter.ImportFrom(RefScripts.Directory);
 
-        // ref_scripts dört gerçek app script'i ve iki SDK örneği içeriyor; hepsi appbuild kökü.
+        // Referans klasörü dört gerçek app script'i ve iki SDK örneği içeriyor; hepsi appbuild kökü.
         var appIds = result.SubApps.Select(s => s.SubApp.SteamAppId).ToHashSet();
 
         Assert.Contains(1200000u, appIds);
@@ -43,7 +43,7 @@ public class ContentBuilderImporterTests
     public void Resolves_depot_scripts_by_filename_when_absolute_path_is_stale()
     {
         // App script'leri D:\sdk\... mutlak yolunu gösteriyor; o klasör bu makinede yok,
-        // importer dosya adına düşerek ref_scripts içinden çözmeli.
+        // importer dosya adına düşerek referans klasöründen çözmeli.
         var skyward = Import(1200000);
 
         Assert.All(skyward.Depots, d => Assert.NotNull(d.ContentRoot));
