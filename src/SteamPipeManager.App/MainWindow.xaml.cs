@@ -23,6 +23,7 @@ public partial class MainWindow : FluentWindow
         if (DataContext is ShellViewModel shell)
         {
             shell.Workspace.FlushAsync().GetAwaiter().GetResult();
+            shell.EpicWorkspace.FlushAsync().GetAwaiter().GetResult();
         }
 
         base.OnClosing(e);

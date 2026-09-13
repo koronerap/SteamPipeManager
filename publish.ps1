@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
 .SYNOPSIS
     Ürünleri kendi kendine yeten, derli toplu birer klasör olarak yayımlar ve zip'ler.
@@ -25,6 +25,11 @@ param(
     [string]$Output = "publish",
     [string]$Runtime = "win-x64",
     [string]$Configuration = "Release",
+
+    # Boşsa csproj'daki sürüm kullanılır. Güncelleyiciyi sınamak için eski/yeni
+    # sürüm üretirken işe yarıyor.
+    [string]$Version = "",
+
     [switch]$SkipTests
 )
 
@@ -59,7 +64,10 @@ foreach ($id in $products) {
     Write-Host ""
     Write-Host "Yayımlanıyor: $($info.Name) ($Runtime, $Configuration)…" -ForegroundColor Cyan
 
-    dotnet publish $project -c $Configuration -r $Runtime -o $productDir --nologo -p:SpmProduct=$id
+    $extra = @()
+    if ($Version) { $extra += "-p:Version=$Version" }
+
+    dotnet publish $project -c $Configuration -r $Runtime -o $productDir --nologo -p:SpmProduct=$id @extra
     if ($LASTEXITCODE -ne 0) { throw "Yayımlama başarısız: $id" }
 
     # Kullanıcının çift tıklayacağı dosya ürünün adını taşısın.
@@ -74,3 +82,15 @@ foreach ($id in $products) {
     Write-Host "  Hazır: $productZip" -ForegroundColor Green
     Write-Host "  $rawMb MB · $($files.Count) dosya · zip: $zipMb MB"
 }
+
+# Uygulama içi güncelleyicinin doğruladığı sağlama listesi. Bu dosyada adı geçmeyen
+# ya da sağlaması tutmayan paket kurulmuyor; yayına zip'lerle birlikte eklenmeli.
+$sums = @(Get-ChildItem $staging -Filter "*-$Runtime.zip" | Sort-Object Name | ForEach-Object {
+    "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
+})
+$sumsPath = Join-Path $staging "SHA256SUMS.txt"
+[IO.File]::WriteAllLines($sumsPath, [string[]]$sums, (New-Object Text.UTF8Encoding $false))
+
+Write-Host ""
+Write-Host "Sağlama listesi: $sumsPath" -ForegroundColor Green
+Write-Host "  Yayına zip'lerle birlikte SHA256SUMS.txt de yüklenmeli; yoksa uygulama içi güncelleme sunulmaz."

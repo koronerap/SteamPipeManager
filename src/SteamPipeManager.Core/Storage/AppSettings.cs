@@ -48,6 +48,12 @@ public sealed class AppSettings
     /// </summary>
     public int StallWarningSeconds { get; set; } = 120;
 
+    /// <summary>
+    /// Açılışta GitHub'daki son sürüme bakılsın mı. Kurulum her zaman kullanıcının
+    /// onayıyla yapılıyor; bu yalnızca soruyu soruyor.
+    /// </summary>
+    public bool CheckForUpdates { get; set; } = true;
+
     /// <summary>Build öncesi oturum kontrolünün zaman aşımı.</summary>
     public int SessionCheckTimeoutSeconds { get; set; } = 45;
 }

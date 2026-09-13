@@ -105,7 +105,61 @@
                        Visibility="{Binding IsSettings, Converter={StaticResource BoolToVisibility}}" />
         </StackPanel>
 
-        <Grid Grid.Row="2" Margin="24,0,24,24">
+        <DockPanel Grid.Row="2" Margin="24,0,24,24">
+
+            <!-- Güncelleme şeridi: yeni sürüm, indirme ilerlemesi ya da "güncellendi" bildirimi.
+                 Her sayfanın üstünde; kurulum yalnızca düğmeye basınca başlıyor. -->
+            <Border DockPanel.Dock="Top" Margin="0,0,0,12" Padding="14,10" CornerRadius="6"
+                    Background="#1F2F6FEB" BorderBrush="#552F6FEB" BorderThickness="1"
+                    DataContext="{Binding Updates}"
+                    AutomationProperties.AutomationId="UpdateBanner"
+                    Visibility="{Binding IsBannerVisible, Converter={StaticResource BoolToVisibility}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ui:SymbolIcon Grid.Column="0" Symbol="ArrowSync24" FontSize="18"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding BannerText}" TextWrapping="Wrap"
+                                   AutomationProperties.AutomationId="UpdateBannerText" />
+                        <TextBlock Text="{Binding Note}" TextWrapping="Wrap" Opacity="0.75" FontSize="12"
+                                   Margin="0,2,0,0"
+                                   Visibility="{Binding Note, Converter={StaticResource TextToVis}}" />
+                        <ProgressBar Margin="0,6,0,0" Height="4" Minimum="0" Maximum="1"
+                                     Value="{Binding Progress, Mode=OneWay}"
+                                     IsIndeterminate="{Binding IsProgressIndeterminate, Mode=OneWay}"
+                                     Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <ui:Button Appearance="Primary" Padding="12,6"
+                                   Icon="{ui:SymbolIcon ArrowDownload24}"
+                                   Content="{loc:T Update.Install}"
+                                   ToolTip="{loc:T Update.Install.Tip}"
+                                   AutomationProperties.AutomationId="UpdateInstallButton"
+                                   Command="{Binding InstallCommand}"
+                                   Visibility="{Binding CanInstall, Converter={StaticResource BoolToVisibility}}" />
+                        <ui:Button Margin="8,0,0,0" Padding="12,6"
+                                   Icon="{ui:SymbolIcon Open24}"
+                                   Content="{Binding ReleasePageLabel}"
+                                   Command="{Binding OpenReleasePageCommand}"
+                                   Visibility="{Binding CanOpenReleasePage, Converter={StaticResource BoolToVisibility}}" />
+                        <ui:Button Margin="4,0,0,0" Padding="8,6" Appearance="Transparent"
+                                   Icon="{ui:SymbolIcon Dismiss24}"
+                                   AutomationProperties.Name="{loc:T Update.Later}"
+                                   ToolTip="{loc:T Update.Later}"
+                                   Command="{Binding DismissCommand}"
+                                   Visibility="{Binding CanDismiss, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+        <Grid>
             <views:ProfilePickerView DataContext="{Binding ProfilePicker}"
                                      Visibility="{Binding DataContext.IsProfilePicker,
                                                   RelativeSource={RelativeSource AncestorType=Window},
@@ -136,6 +190,7 @@
                                              RelativeSource={RelativeSource AncestorType=Window},
                                              Converter={StaticResource BoolToVisibility}}" />
         </Grid>
+        </DockPanel>
 
         <!-- Giriş penceresi tüm satırların üstünü kaplar -->
         <views:LoginOverlay Grid.Row="0" Grid.RowSpan="3"

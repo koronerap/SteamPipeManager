@@ -38,6 +38,11 @@ the scripts for you, and never asks you to edit a `.vdf` by hand.
 4. Either add a game manually, or use **Import** to read an existing `ContentBuilder` folder.
 5. Select a build target, try **Preview** first, then build.
 
+The app checks GitHub for a newer release when it starts and offers to update itself.
+Nothing is installed until you click **Update and restart**, a download is only used if it
+matches the SHA-256 checksum published with the release, and if any file cannot be replaced
+the current version is kept. The check can be turned off in Settings.
+
 > Preview is worth using the first time: it runs the whole pipeline and reports exactly
 > what would be uploaded, without uploading anything.
 
@@ -94,8 +99,20 @@ Requires the .NET 9 SDK.
 ```bash
 dotnet build                                    # build
 dotnet test tests/SteamPipeManager.Core.Tests   # run the tests
-.\publish.ps1                                   # produce the single-file exe
+.\publish.ps1                                   # produce the zipped app folder
 ```
+
+### Publishing a release
+
+```powershell
+.\publish.ps1 -Product All
+```
+
+This writes one zip per product and a `SHA256SUMS.txt` to `publish/`. Upload **all** of them
+to the GitHub release, tagged `vX.Y.Z` to match `<Version>` in the app project. The in-app
+updater looks for `<Product>-win-x64.zip` and refuses to install it unless `SHA256SUMS.txt`
+lists a matching checksum, so a release without that file is only offered as a manual
+download.
 
 The solution is split so the interesting parts are testable without a UI or a Steam account:
 

@@ -34,6 +34,7 @@ public sealed partial class ShellViewModel : ObservableObject
         SettingsViewModel settings,
         LoginViewModel login,
         SetupViewModel setup,
+        UpdateViewModel updates,
         ProductProfile product)
     {
         _repository = repository;
@@ -45,6 +46,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Settings = settings;
         Login = login;
         Setup = setup;
+        Updates = updates;
         Product = product;
 
         // Sihirbaz bitince normal gezinmeye dönülür.
@@ -93,6 +95,9 @@ public sealed partial class ShellViewModel : ObservableObject
     public LoginViewModel Login { get; }
 
     public SetupViewModel Setup { get; }
+
+    /// <summary>Pencerenin üstündeki güncelleme şeridi ve ayarlardaki kart.</summary>
+    public UpdateViewModel Updates { get; }
 
     /// <summary>
     /// Çalışan ürün. Pencere başlığı buradan geliyor — ürün adları çevrilmiyor,

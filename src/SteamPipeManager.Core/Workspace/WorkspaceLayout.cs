@@ -33,6 +33,9 @@ public sealed class WorkspaceLayout(string rootDirectory)
     /// <summary>Kullanıcının kendi dil dosyalarını bırakabildiği klasör.</summary>
     public string LanguageDirectory => Path.Combine(Root, "lang");
 
+    /// <summary>İndirilen güncelleme paketleri ve açıldıkları hazırlık klasörü.</summary>
+    public string UpdatesDirectory => Path.Combine(Root, "updates");
+
     /// <summary>Uygulamanın kendi indirdiği SteamCMD kurulumu.</summary>
     public string ManagedSteamCmdDirectory => Path.Combine(Root, "steamcmd");
 

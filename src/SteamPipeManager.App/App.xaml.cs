@@ -50,6 +50,9 @@ public partial class App : Application
         var window = _services.GetRequiredService<MainWindow>();
         window.DataContext = shell;
         window.Show();
+
+        // Pencere açıldıktan sonra: ağ beklemesi açılışı geciktirmesin.
+        _ = shell.Updates.StartAsync(e.Args);
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -172,6 +175,7 @@ public partial class App : Application
         services.AddSingleton<SubAppWorkspaceViewModel>();
         services.AddSingleton<EpicBuildPanelViewModel>();
         services.AddSingleton<EpicWorkspaceViewModel>();
+        services.AddSingleton<UpdateViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<SetupViewModel>();
         services.AddSingleton<ShellViewModel>();

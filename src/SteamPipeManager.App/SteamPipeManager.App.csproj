@@ -41,9 +41,12 @@
     <AssemblyTitle>$(SpmProductName)</AssemblyTitle>
     <Product>$(SpmProductName)</Product>
     <Description>Tek bir SteamCMD kurulumundan birden çok Steam hesabı, oyun ve yan uygulamanın build'lerini yönetir.</Description>
+    <!--
+      Tek sürüm kaynağı. Dosya ve derleme sürümleri buradan türetiliyor; güncelleyici
+      çalışan sürümü buradan okuyup GitHub'daki etiketle karşılaştırıyor. Elle yazılan
+      ayrı FileVersion/AssemblyVersion unutulup eski kalırsa güncelleme döngüye girerdi.
+    -->
     <Version>1.0.1</Version>
-    <FileVersion>1.0.1.0</FileVersion>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
     <Copyright>© 2026</Copyright>
   </PropertyGroup>
 

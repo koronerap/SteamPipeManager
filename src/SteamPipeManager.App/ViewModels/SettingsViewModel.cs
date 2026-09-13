@@ -20,9 +20,29 @@ public sealed partial class SettingsViewModel(
     WorkspaceLayout layout,
     BuildCoordinator coordinator,
     IDialogService dialogs,
+    UpdateViewModel updates,
     ProductProfile product) : ObservableObject
 {
     private AppSettings _settings = new();
+
+    private bool _loading;
+
+    public UpdateViewModel Updates => updates;
+
+    /// <summary>Açılışta yeni sürüm sorulsun mu; değişiklik anında kaydediliyor.</summary>
+    [ObservableProperty]
+    private bool _checkForUpdates = true;
+
+    partial void OnCheckForUpdatesChanged(bool value)
+    {
+        if (_loading)
+        {
+            return;
+        }
+
+        _settings.CheckForUpdates = value;
+        _ = store.SaveAsync(_settings);
+    }
 
     /// <summary>Dil klasöründe bulunan diller; kullanıcı kendi dosyasını ekleyebilir.</summary>
     public IReadOnlyList<LanguagePack> Languages => AppLocalizer.Instance.Available;
@@ -66,6 +86,10 @@ public sealed partial class SettingsViewModel(
     public async Task LoadAsync()
     {
         _settings = await store.LoadAsync();
+
+        _loading = true;
+        CheckForUpdates = _settings.CheckForUpdates;
+        _loading = false;
 
         SteamCmdPath = _settings.SteamCmdPath ?? "";
         BuildPatchToolPath = _settings.BuildPatchToolPath ?? "";

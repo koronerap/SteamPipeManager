@@ -31,6 +31,42 @@
                 </StackPanel>
             </ui:Card>
 
+            <!-- Güncellemeler: sürüm, açılışta kontrol ve elle kontrol -->
+            <ui:Card Padding="20" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.Updates}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,4" />
+                    <TextBlock Text="{loc:T Settings.Updates.Body}"
+                               TextWrapping="Wrap" Opacity="0.75" Margin="0,0,0,12" />
+
+                    <TextBlock Text="{Binding Updates.InstalledVersionText}" FontWeight="SemiBold"
+                               AutomationProperties.AutomationId="InstalledVersion" />
+
+                    <CheckBox Margin="0,10,0,0"
+                              Content="{loc:T Settings.Updates.AutoCheck}"
+                              IsChecked="{Binding CheckForUpdates}" />
+
+                    <WrapPanel Margin="0,12,0,0">
+                        <ui:Button Padding="14,7" Margin="0,0,8,0"
+                                   Icon="{ui:SymbolIcon ArrowSync24}"
+                                   Content="{loc:T Settings.Updates.CheckNow}"
+                                   ToolTip="{loc:T Settings.Updates.CheckNow.Tip}"
+                                   AutomationProperties.AutomationId="CheckForUpdatesButton"
+                                   Command="{Binding Updates.CheckNowCommand}" />
+                        <ui:Button Padding="14,7" Appearance="Primary"
+                                   Icon="{ui:SymbolIcon ArrowDownload24}"
+                                   Content="{loc:T Update.Install}"
+                                   ToolTip="{loc:T Update.Install.Tip}"
+                                   Command="{Binding Updates.InstallCommand}"
+                                   Visibility="{Binding Updates.CanInstall, Converter={StaticResource BoolToVis}}" />
+                    </WrapPanel>
+
+                    <TextBlock Text="{Binding Updates.StatusText}" TextWrapping="Wrap" Margin="0,10,0,0"
+                               Opacity="0.85"
+                               AutomationProperties.AutomationId="UpdateStatusText"
+                               Visibility="{Binding Updates.StatusText, Converter={StaticResource TextToVis}}" />
+                </StackPanel>
+            </ui:Card>
+
             <!-- SteamCMD kartı yalnızca Steam'i destekleyen ürünlerde -->
             <ui:Card Padding="20" Margin="0,0,0,16"
                      Visibility="{Binding SupportsSteam, Converter={StaticResource BoolToVis}}">
