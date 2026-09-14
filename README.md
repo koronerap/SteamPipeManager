@@ -99,13 +99,13 @@ Requires the .NET 9 SDK.
 ```bash
 dotnet build                                    # build
 dotnet test tests/SteamPipeManager.Core.Tests   # run the tests
-.\publish.ps1                                   # produce the zipped app folder
+.\publish.ps1                                   # zip all three products (asks whether to skip tests)
 ```
 
 ### Publishing a release
 
 ```powershell
-.\publish.ps1 -Product All
+.\publish.ps1
 ```
 
 This writes one zip per product and a `SHA256SUMS.txt` to `publish/`. Upload **all** of them
