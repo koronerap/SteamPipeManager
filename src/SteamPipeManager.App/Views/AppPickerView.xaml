@@ -132,7 +132,11 @@
                         <TextBlock Text="{loc:T Apps.Empty.Title}"
                                    FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8" />
                         <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                                   Text="{loc:T Apps.Empty.Body}" />
+                                   Text="{loc:T Apps.Empty.Body}"
+                                   Visibility="{Binding IsSteamProfile, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                                   Text="{loc:T Apps.Empty.Body.Epic}"
+                                   Visibility="{Binding IsSteamProfile, Converter={StaticResource BoolToVisInverted}}" />
                     </StackPanel>
                 </ui:Card>
 

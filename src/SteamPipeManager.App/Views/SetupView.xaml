@@ -22,7 +22,9 @@
                 </StackPanel>
             </ui:Card>
 
-            <ui:Card Padding="20" Margin="0,16,0,0">
+            <!-- SteamCMD: yalnızca Steam'i destekleyen ürünlerde -->
+            <ui:Card Padding="20" Margin="0,16,0,0"
+                     Visibility="{Binding SupportsSteam, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
                     <TextBlock Text="{loc:T Settings.SteamCmd}" FontWeight="SemiBold" Margin="0,0,0,6" />
                     <TextBlock Text="{loc:T Setup.SteamCmd.Body}" TextWrapping="Wrap"
@@ -64,6 +66,56 @@
                 </StackPanel>
             </ui:Card>
 
+            <!-- BuildPatchTool: yalnızca Epic'i destekleyen ürünlerde. İndirme düğmesi yok;
+                 araç Epic Dev Portal'ın arkasında, kullanıcının göstermesi gerekiyor. -->
+            <ui:Card Padding="20" Margin="0,16,0,0"
+                     Visibility="{Binding SupportsEpic, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <Grid Margin="0,0,0,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="{loc:T Epic.Tool}" FontWeight="SemiBold" />
+
+                        <Border Grid.Column="1" Background="#33B8860B" CornerRadius="4"
+                                Padding="7,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="{loc:T Epic.ExperimentalBadge}" FontSize="10"
+                                       FontWeight="SemiBold" />
+                        </Border>
+                    </Grid>
+
+                    <TextBlock Text="{loc:T Epic.Tool.Body}" TextWrapping="Wrap"
+                               Opacity="0.75" FontSize="12" Margin="0,0,0,14" />
+
+                    <ui:Button Appearance="Primary" Padding="16,8" HorizontalAlignment="Left"
+                               Icon="{ui:SymbolIcon FolderOpen24}"
+                               Content="{loc:T Setup.Epic.Pick}"
+                               ToolTip="{loc:T Epic.Tool.Pick.Tip}"
+                               IsEnabled="{Binding IsIdle}"
+                               Command="{Binding PickBuildPatchToolCommand}"
+                               Visibility="{Binding NeedsBuildPatchTool, Converter={StaticResource BoolToVis}}" />
+
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding BuildPatchToolReady, Converter={StaticResource BoolToVis}}">
+                        <Ellipse Width="9" Height="9" Fill="MediumSeaGreen"
+                                 VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Text="{Binding BuildPatchToolPath}" TextTrimming="CharacterEllipsis"
+                                   FontFamily="Cascadia Mono, Consolas, monospace" FontSize="11"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding BuildPatchToolStatus}" Opacity="0.75" FontSize="12" Margin="0,10,0,0"
+                               TextWrapping="Wrap"
+                               Visibility="{Binding BuildPatchToolStatus, Converter={StaticResource TextToVis}}" />
+
+                    <TextBlock Text="{Binding BuildPatchToolError}" Foreground="IndianRed" FontSize="12"
+                               Margin="0,10,0,0" TextWrapping="Wrap"
+                               Visibility="{Binding BuildPatchToolError, Converter={StaticResource TextToVis}}" />
+                </StackPanel>
+            </ui:Card>
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
                 <ui:Button Appearance="Primary" Padding="24,9"
                            Icon="{ui:SymbolIcon Checkmark24}"
@@ -74,7 +126,7 @@
                 <ui:Button Appearance="Transparent" Margin="10,0,0,0" Padding="16,9"
                            Content="{loc:T Setup.Later}"
                            IsEnabled="{Binding IsIdle}"
-                           Visibility="{Binding NeedsSteamCmd, Converter={StaticResource BoolToVis}}"
+                           Visibility="{Binding ShowLater, Converter={StaticResource BoolToVis}}"
                            Command="{Binding SkipCommand}" />
             </StackPanel>
         </StackPanel>

@@ -3,14 +3,18 @@ using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.App.Localization;
 using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.App.Services;
+using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Localization;
+using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 
 namespace SteamPipeManager.App.ViewModels;
 
 /// <summary>
-/// İlk çalıştırma sihirbazı: dili doğrular ve SteamCMD'yi hazırlar.
+/// İlk çalıştırma sihirbazı: dili doğrular ve ürünün kullandığı yayın aracını hazırlar —
+/// Steam için SteamCMD, Epic için BuildPatchTool. Ürünün desteklemediği aracın adımı
+/// hiç gösterilmiyor.
 ///
 /// SteamCMD kurulumu ilk build'e bırakılabilirdi ama o zaman kullanıcı ilk kez
 /// build alırken 43 MB'lık bir indirmeyle karşılaşırdı. Burada bir kez hallediliyor.
@@ -45,8 +49,35 @@ public sealed partial class SetupViewModel(
     private string? _errorMessage;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NeedsSteamCmd))]
+    [NotifyPropertyChangedFor(nameof(NeedsSteamCmd), nameof(ShowLater))]
     private bool _steamCmdReady;
+
+    public bool SupportsSteam => product.Supports(PublishProviderId.Steam);
+
+    public bool SupportsEpic => product.Supports(PublishProviderId.Epic);
+
+    /// <summary>
+    /// BuildPatchTool'un yeri. İndirme seçeneği yok: araç Epic Dev Portal'ın arkasında
+    /// ve dağıtma hakkımız yok, kullanıcının göstermesi gerekiyor.
+    /// </summary>
+    [ObservableProperty]
+    private string _buildPatchToolPath = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NeedsBuildPatchTool), nameof(ShowLater))]
+    private bool _buildPatchToolReady;
+
+    [ObservableProperty]
+    private string _buildPatchToolStatus = "";
+
+    [ObservableProperty]
+    private string? _buildPatchToolError;
+
+    public bool NeedsBuildPatchTool => !BuildPatchToolReady;
+
+    /// <summary>"Sonra yaparım" yalnızca eksik bir araç varsa anlamlı.</summary>
+    public bool ShowLater =>
+        (SupportsSteam && NeedsSteamCmd) || (SupportsEpic && NeedsBuildPatchTool);
 
     [ObservableProperty]
     private string _steamCmdPath = "";
@@ -66,13 +97,22 @@ public sealed partial class SetupViewModel(
         SelectedLanguage = Languages.FirstOrDefault(
             l => string.Equals(l.Code, AppLocalizer.Instance.CurrentCode, StringComparison.OrdinalIgnoreCase));
 
-        // Zaten kurulu bir SteamCMD varsa adım atlanabilir.
-        SteamCmdReady = await coordinator.IsInstalledAsync();
-
-        if (SteamCmdReady)
+        if (SupportsSteam)
         {
-            SteamCmdPath = _settings.SteamCmdPath ?? "";
-            StatusMessage = AppLocalizer.Instance.Get("Settings.SteamCmd.Ready");
+            // Zaten kurulu bir SteamCMD varsa adım atlanabilir.
+            SteamCmdReady = await coordinator.IsInstalledAsync();
+
+            if (SteamCmdReady)
+            {
+                SteamCmdPath = _settings.SteamCmdPath ?? "";
+                StatusMessage = AppLocalizer.Instance.Get("Settings.SteamCmd.Ready");
+            }
+        }
+
+        if (SupportsEpic && _settings.BuildPatchToolPath is { Length: > 0 } saved &&
+            BptInstallation.LocateExecutable(saved) is { } located)
+        {
+            ShowBuildPatchTool(located);
         }
     }
 
@@ -138,6 +178,40 @@ public sealed partial class SetupViewModel(
         await store.SaveAsync(_settings);
     }
 
+    /// <summary>Kullanıcı exe'yi de, zip'in açıldığı klasörü de gösterebilir.</summary>
+    [RelayCommand]
+    private async Task PickBuildPatchToolAsync()
+    {
+        if (dialogs.PickExecutable(AppLocalizer.Instance.Get("Epic.Tool.Pick.Tip")) is not { } picked)
+        {
+            return;
+        }
+
+        if (BptInstallation.LocateExecutable(picked) is not { } located)
+        {
+            BuildPatchToolError = AppLocalizer.Instance.Get("Epic.Tool.NotFound");
+            return;
+        }
+
+        ShowBuildPatchTool(located);
+
+        _settings.BuildPatchToolPath = located;
+        await store.SaveAsync(_settings);
+    }
+
+    private void ShowBuildPatchTool(string located)
+    {
+        BuildPatchToolPath = located;
+        BuildPatchToolReady = true;
+        BuildPatchToolError = null;
+
+        var version = new BptInstallation(located).VersionFromPath();
+
+        BuildPatchToolStatus = version is { Length: > 0 }
+            ? AppLocalizer.Instance.Format("Epic.Tool.ValidVersion", located, version)
+            : AppLocalizer.Instance.Format("Settings.SteamCmd.Valid", located);
+    }
+
     [RelayCommand]
     private async Task FinishAsync()
     {
@@ -148,7 +222,8 @@ public sealed partial class SetupViewModel(
     }
 
     /// <summary>
-    /// SteamCMD'yi sonra kurmak isteyen kullanıcı için: ilk build'de indirilecek.
+    /// Aracı sonra kurmak isteyen kullanıcı için: SteamCMD ilk build'de indiriliyor,
+    /// BuildPatchTool'u Ayarlar'dan gösterebiliyor.
     /// </summary>
     [RelayCommand]
     private Task SkipAsync() => FinishAsync();

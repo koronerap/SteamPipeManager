@@ -37,7 +37,11 @@
                         <TextBlock Text="{loc:T Profile.Empty.Title}"
                                    FontSize="17" FontWeight="SemiBold" Margin="0,0,0,10" />
                         <TextBlock TextWrapping="Wrap" Opacity="0.8" LineHeight="21"
-                                   Text="{loc:T Profile.Empty.Body}" />
+                                   Text="{loc:T Profile.Empty.Body}"
+                                   Visibility="{Binding SupportsSteam, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.8" LineHeight="21"
+                                   Text="{loc:T Profile.Empty.Body.Epic}"
+                                   Visibility="{Binding IsEpicOnly, Converter={StaticResource BoolToVis}}" />
                     </StackPanel>
                 </ui:Card>
 
@@ -189,10 +193,34 @@ ToolTip="{loc:T Profile.Open.Tip}"
                         <TextBlock Text="{loc:T Profile.Name}" Style="{StaticResource FieldLabel}" />
                         <ui:TextBox Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" />
 
-                        <TextBlock Text="{loc:T Profile.Username}" Style="{StaticResource FieldLabel}" Margin="0,14,0,4" />
-                        <ui:TextBox Text="{Binding EditUsername, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Opacity="0.55" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
-                                   Text="{loc:T Profile.Edit.Warning}" />
+                        <!-- Steam: kullanıcı adı -->
+                        <StackPanel Visibility="{Binding IsEditingSteam, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{loc:T Profile.Username}" Style="{StaticResource FieldLabel}" Margin="0,14,0,4" />
+                            <ui:TextBox Text="{Binding EditUsername, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Opacity="0.55" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                       Text="{loc:T Profile.Edit.Warning}" />
+                        </StackPanel>
+
+                        <!-- Epic: organizasyon, client ve secret. Secret forma hiç yüklenmiyor;
+                             boş bırakılırsa kayıtlı olan korunuyor. -->
+                        <StackPanel Visibility="{Binding IsEditingEpic, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{loc:T Epic.OrganizationId}" Style="{StaticResource FieldLabel}" Margin="0,14,0,4" />
+                            <ui:TextBox Text="{Binding EditOrganizationId, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Text="{loc:T Epic.ClientId}" Style="{StaticResource FieldLabel}" Margin="0,14,0,4" />
+                            <ui:TextBox Text="{Binding EditClientId, UpdateSourceTrigger=PropertyChanged}" />
+
+                            <TextBlock Text="{loc:T Epic.ClientSecret}" Style="{StaticResource FieldLabel}" Margin="0,14,0,4" />
+                            <PasswordBox x:Name="EditClientSecretInput"
+                                         PasswordChanged="OnEditClientSecretChanged"
+                                         Padding="10,8" />
+                            <TextBlock Opacity="0.55" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                       Text="{loc:T Epic.SecretUnchanged}"
+                                       Visibility="{Binding EditHasStoredSecret, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Opacity="0.55" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                       Text="{loc:T Epic.Credentials.Hint}"
+                                       Visibility="{Binding EditHasStoredSecret, Converter={StaticResource BoolToVisInverted}}" />
+                        </StackPanel>
 
                         <TextBlock Text="{Binding ErrorMessage}" Foreground="IndianRed" Margin="0,14,0,0"
                                    TextWrapping="Wrap"

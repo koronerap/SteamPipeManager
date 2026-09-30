@@ -170,7 +170,8 @@ public sealed partial class ProfilePickerViewModel(
 
     /// <summary>Düzenlenen profil; null ise düzenleme kapalı.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEditing))]
+    [NotifyPropertyChangedFor(nameof(IsEditing), nameof(IsEditingEpic), nameof(IsEditingSteam),
+        nameof(EditHasStoredSecret))]
     private ProfileCard? _editing;
 
     [ObservableProperty]
@@ -196,6 +197,16 @@ public sealed partial class ProfilePickerViewModel(
 
     /// <summary>Düzenlenen profil Epic mi — form hangi alanları göstereceğini buna bakıyor.</summary>
     public bool IsEditingEpic => Editing?.IsEpic ?? false;
+
+    public bool IsEditingSteam => Editing is { IsEpic: false };
+
+    /// <summary>
+    /// Boş liste metni ürüne göre: Epic ürününde SteamPipe içe aktarmasından söz
+    /// etmek anlamsız ve kafa karıştırıcı.
+    /// </summary>
+    public bool SupportsSteam => product.Supports(PublishProviderId.Steam);
+
+    public bool IsEpicOnly => !SupportsSteam;
 
     /// <summary>Kayıtlı bir secret var mı; forma "girilmiş" bilgisi olarak yansıyor.</summary>
     public bool EditHasStoredSecret =>
@@ -390,6 +401,9 @@ public sealed partial class ProfilePickerViewModel(
         Editing = card;
         EditName = card.DisplayName;
         EditUsername = card.SteamUsername;
+        EditOrganizationId = card.Profile.Epic?.OrganizationId ?? "";
+        EditClientId = card.Profile.Epic?.ClientId ?? "";
+        EditClientSecret = "";
         ErrorMessage = null;
     }
 
@@ -405,6 +419,12 @@ public sealed partial class ProfilePickerViewModel(
     {
         if (Editing is not { } card)
         {
+            return;
+        }
+
+        if (card.IsEpic)
+        {
+            await ConfirmEpicEditAsync(card);
             return;
         }
 
@@ -545,6 +565,55 @@ public sealed partial class ProfilePickerViewModel(
     /// onay isteniyor.
     /// </summary>
     [RelayCommand]
+    /// <summary>
+    /// Epic profilinin düzenlenmesi. Steam'deki kullanıcı adı kuralı burada geçersiz —
+    /// Epic profilinde o alan hep boş, eskiden bu yüzden Epic profilleri hiç
+    /// kaydedilemiyordu. Secret boş bırakılırsa kayıtlı olan korunuyor.
+    /// </summary>
+    private async Task ConfirmEpicEditAsync(ProfileCard card)
+    {
+        var name = EditName.Trim();
+        var organizationId = EditOrganizationId.Trim();
+        var clientId = EditClientId.Trim();
+
+        if (name.Length == 0 || organizationId.Length == 0 || clientId.Length == 0)
+        {
+            ErrorMessage = AppLocalizer.Instance.Get("Epic.Error.Required");
+            return;
+        }
+
+        var epic = card.Profile.Epic ??= new EpicProfileSettings();
+
+        var identityChanged =
+            !string.Equals(epic.OrganizationId, organizationId, StringComparison.Ordinal) ||
+            !string.Equals(epic.ClientId, clientId, StringComparison.Ordinal) ||
+            EditClientSecret.Length > 0;
+
+        card.Profile.DisplayName = name;
+        epic.OrganizationId = organizationId;
+        epic.ClientId = clientId;
+
+        if (EditClientSecret is { Length: > 0 } secret)
+        {
+            secrets.Write(card.Profile.Id, secret);
+        }
+
+        // Formdaki secret hemen unutuluyor; bellekte gereğinden uzun durmasın.
+        EditClientSecret = "";
+
+        // Kimlik değiştiyse önceki doğrulamanın sonucu artık bu hesaba ait değil.
+        if (identityChanged)
+        {
+            card.Session = SessionState.Unknown;
+            card.SessionDetail = "";
+        }
+
+        await repository.SaveAsync();
+
+        Editing = null;
+        Refresh();
+    }
+
     private async Task DeleteAsync(ProfileCard card)
     {
         var detail = card.AppCount == 0
@@ -564,6 +633,13 @@ public sealed partial class ProfilePickerViewModel(
 
         repository.RemoveProfile(card.Profile);
         await repository.SaveAsync();
+
+        // Profilin şifreli secret'ı artık kimseye ait değil; dosyada kalmasın.
+        if (card.IsEpic)
+        {
+            secrets.Remove(card.Profile.Id);
+        }
+
         Refresh();
     }
 }
