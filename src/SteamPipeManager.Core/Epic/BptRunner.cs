@@ -22,7 +22,7 @@ public sealed record BptRunResult(
 /// <summary>
 /// BuildPatchTool'u çalıştırır ve ilerlemesini <b>log dosyasından</b> canlı olarak yayar.
 ///
-/// Neden stdout'tan değil: ölçüldü (docs/E0-BPT-FINDINGS.md, Bulgu 1) — çıktı pipe'a
+/// Neden stdout'tan değil: ölçüldü (BuildPatchTool 1.8.8 üzerinde, tools/BptProbe ile) — çıktı pipe'a
 /// bağlıyken tamponlanıyor, 1.4 saniyelik bir çalıştırmada bütün satırlar son 150 ms'de
 /// geldi. Buna karşılık aracın yazdığı log dosyası iş sürerken artımlı büyüyor
 /// (Bulgu 2). SteamCMD'de bulduğumuz tablonun aynısı, çözüm de aynı.

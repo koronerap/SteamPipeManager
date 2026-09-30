@@ -9,7 +9,7 @@ namespace SteamPipeManager.Core.Tests;
 /// <see cref="BptRunner"/>'ı <b>gerçek BuildPatchTool'a karşı</b> uçtan uca çalıştırır.
 ///
 /// Bu mümkün çünkü <c>ChunkBuildDirectory</c> offline bir mod: Epic hesabı, kimlik
-/// bilgisi ve ağ gerektirmiyor (docs/E0-BPT-FINDINGS.md, Bulgu 10). Steam tarafında
+/// bilgisi ve ağ gerektirmiyor (BuildPatchTool 1.8.8 üzerinde, tools/BptProbe ile). Steam tarafında
 /// aynı şeyi yapabilmek için <c>FakeSteamCmd</c> yazmak zorunda kalmıştık; burada
 /// aracın kendisiyle test edebiliyoruz.
 ///

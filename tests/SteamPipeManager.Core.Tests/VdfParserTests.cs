@@ -4,7 +4,7 @@ namespace SteamPipeManager.Core.Tests;
 
 public class VdfParserTests
 {
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Parses_real_app_script()
     {
         var root = VdfParser.ParseSingleRootFile(RefScripts.Path("app_1200000.vdf"));
@@ -24,7 +24,7 @@ public class VdfParserTests
             depots.Children.Select(d => d.Key));
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Keeps_windows_paths_literal()
     {
         var root = VdfParser.ParseSingleRootFile(RefScripts.Path("depot_1200002.vdf"));
@@ -35,7 +35,7 @@ public class VdfParserTests
             root.ValueOf("contentroot"));
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Reads_depot_build_config_root_key()
     {
         var root = VdfParser.ParseSingleRootFile(RefScripts.Path("depot_1200001.vdf"));
@@ -51,7 +51,7 @@ public class VdfParserTests
         Assert.True(mapping.BoolOf("recursive"));
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Ignores_line_comments_in_sdk_sample()
     {
         var root = VdfParser.ParseSingleRootFile(RefScripts.Path("app_build_1000.vdf"));
@@ -62,7 +62,7 @@ public class VdfParserTests
         Assert.Equal(2, root.Child("Depots")!.Children.Count);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Key_lookup_is_case_insensitive()
     {
         var root = VdfParser.ParseSingleRootFile(RefScripts.Path("app_build_1000.vdf"));
@@ -71,7 +71,7 @@ public class VdfParserTests
         Assert.Equal(root.ValueOf("AppID"), root.ValueOf("appid"));
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Reads_depot_blocks_nested_inside_app_script()
     {
         var root = VdfParser.ParseSingleRootFile(RefScripts.Path("simple_app_build.vdf"));
@@ -82,7 +82,7 @@ public class VdfParserTests
         Assert.Equal("*", depot.Child("FileMapping")!.ValueOf("LocalPath"));
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Reads_multiple_mappings_and_exclusions()
     {
         var root = VdfParser.ParseSingleRootFile(RefScripts.Path("depot_build_1002.vdf"));
@@ -124,7 +124,7 @@ public class VdfParserTests
         Assert.Throws<VdfParseException>(() => VdfParser.Parse("\"a\" \"1\"\r\n}"));
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void All_reference_scripts_parse()
     {
         foreach (var file in Directory.EnumerateFiles(RefScripts.Directory, "*.vdf"))

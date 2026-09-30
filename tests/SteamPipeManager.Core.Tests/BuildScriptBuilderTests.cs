@@ -44,7 +44,7 @@ public class BuildScriptBuilderTests
     private static Dictionary<uint, string> ScriptPaths(SubApp subApp) =>
         subApp.Depots.ToDictionary(d => d.DepotId, d => $@"{SdkRoot}\scripts\depot_{d.DepotId}.vdf");
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Depot_script_matches_reference_semantics()
     {
         var subApp = Skyward();
@@ -56,7 +56,7 @@ public class BuildScriptBuilderTests
         VdfWriterTests.AssertTreesEqual(reference, generated, "depot_1200002.vdf");
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Every_reference_depot_script_can_be_reproduced()
     {
         var subApp = Skyward();
@@ -71,7 +71,7 @@ public class BuildScriptBuilderTests
         }
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void App_script_matches_reference_semantics()
     {
         var subApp = Skyward();

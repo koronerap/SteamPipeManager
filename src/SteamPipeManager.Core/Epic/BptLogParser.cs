@@ -6,7 +6,7 @@ namespace SteamPipeManager.Core.Epic;
 /// <summary>
 /// BuildPatchTool'un log dosyasını satır satır olaylara çevirir.
 ///
-/// Biçim ölçümle çıkarıldı (bkz. docs/E0-BPT-FINDINGS.md), dokümantasyondan değil:
+/// Biçim ölçümle çıkarıldı (bkz. tools/BptProbe), dokümantasyondan değil:
 ///
 ///   [2026.09.10-13.56.44:462][  0]LogBuildPatchTool: Display: Beginning chunk generation…
 ///   [2026.09.10-13.56.44:497][  2]LogPatchGeneration: Enumerated 8 files in 197 us

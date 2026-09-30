@@ -69,7 +69,7 @@ public class VdfWriterTests
     /// Bayt düzeyinde eşitlik aranmaz: kaynak dosyalar tutarsız boşluk kullanıyor
     /// (<c>"appid" "…"</c> boşluklu ama <c>"local"</c> sekmeli), üretilen çıktı tutarlıdır.
     /// </summary>
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Round_trip_preserves_every_reference_script()
     {
         foreach (var file in Directory.EnumerateFiles(RefScripts.Directory, "*.vdf"))

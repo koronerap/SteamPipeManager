@@ -40,13 +40,13 @@
   <PropertyGroup>
     <AssemblyTitle>$(SpmProductName)</AssemblyTitle>
     <Product>$(SpmProductName)</Product>
-    <Description>Tek bir SteamCMD kurulumundan birden çok Steam hesabı, oyun ve yan uygulamanın build'lerini yönetir.</Description>
+    <Description>Steam ve Epic Games Store build'lerini birden çok hesap, oyun ve yan uygulama için tek yerden yönetir.</Description>
     <!--
       Tek sürüm kaynağı. Dosya ve derleme sürümleri buradan türetiliyor; güncelleyici
       çalışan sürümü buradan okuyup GitHub'daki etiketle karşılaştırıyor. Elle yazılan
       ayrı FileVersion/AssemblyVersion unutulup eski kalırsa güncelleme döngüye girerdi.
     -->
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Copyright>© 2026</Copyright>
   </PropertyGroup>
 

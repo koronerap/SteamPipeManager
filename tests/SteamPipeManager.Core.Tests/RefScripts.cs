@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace SteamPipeManager.Core.Tests;
 
 /// <summary>
@@ -8,6 +6,7 @@ namespace SteamPipeManager.Core.Tests;
 /// Bunlar gerçek bir ContentBuilder kurulumunun bayt biçimini taklit eder: CRLF satır
 /// sonu, BOM yok, sonda satır sonu yok, sekme girintisi. VDF ayrıştırıcısı ve yazıcısı
 /// bu dosyalara göre ayarlandığı için biçimleri anlamlı — bkz. yanındaki README.
+/// Klasör depoya dahil değil; yoksa ona dayanan testler atlanıyor.
 /// </summary>
 internal static class RefScripts
 {
@@ -28,26 +27,8 @@ internal static class RefScripts
             .Order();
 
     /// <summary>
-    /// Test derlemesi <c>bin/</c> altından çalıştığı için klasör kaynak dosya konumundan bulunur;
-    /// böylece dosyaları çıktıya kopyalamaya gerek kalmaz.
+    /// Klasör depoda olmayabilir (bkz. <see cref="Fixtures"/>); o zaman buna dayanan
+    /// testler zaten atlanıyor ve bu yola hiç dokunulmuyor.
     /// </summary>
-    private static string FindDirectory([CallerFilePath] string callerPath = "")
-    {
-        var dir = System.IO.Path.GetDirectoryName(callerPath);
-
-        while (dir is not null)
-        {
-            var candidate = System.IO.Path.Combine(dir, "tests", "fixtures", "content_builder");
-
-            if (System.IO.Directory.Exists(candidate))
-            {
-                return candidate;
-            }
-
-            dir = System.IO.Path.GetDirectoryName(dir);
-        }
-
-        throw new DirectoryNotFoundException(
-            "tests/fixtures/content_builder klasörü bulunamadı.");
-    }
+    private static string FindDirectory() => Fixtures.PathOf(Fixtures.ContentBuilder);
 }

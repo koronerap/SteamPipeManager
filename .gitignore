@@ -23,3 +23,7 @@ BuildPatchTool_*/
 # Published binaries
 *.exe
 !src/**/app.ico
+
+# Geliştirmede kullanılan örnek dosyalar: referans script'ler ve gerçek araç log'ları.
+# Depoya dahil değil; yoksa onlara dayanan testler atlanıyor (tests/.../Fixtures.cs).
+tests/fixtures/

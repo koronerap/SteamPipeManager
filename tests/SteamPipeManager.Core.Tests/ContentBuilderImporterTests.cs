@@ -5,7 +5,7 @@ namespace SteamPipeManager.Core.Tests;
 
 public class ContentBuilderImporterTests
 {
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Imports_every_real_app_script_from_the_reference_folder()
     {
         var result = ContentBuilderImporter.ImportFrom(RefScripts.Directory);
@@ -19,7 +19,7 @@ public class ContentBuilderImporterTests
         Assert.Contains(1300020u, appIds);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Imports_skyward_with_three_platform_depots()
     {
         var skyward = Import(1200000);
@@ -39,7 +39,7 @@ public class ContentBuilderImporterTests
         Assert.True(windows.FileMappings[0].Recursive);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Resolves_depot_scripts_by_filename_when_absolute_path_is_stale()
     {
         // App script'leri D:\sdk\... mutlak yolunu gösteriyor; o klasör bu makinede yok,
@@ -54,7 +54,7 @@ public class ContentBuilderImporterTests
     /// ikisi birden aktarılırsa "aynı AppID iki kez" doğrulama hatası çıkar.
     /// Gerçek bir kurulum tarandığında bu ortaya çıktı.
     /// </summary>
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Marks_sdk_sample_scripts()
     {
         var result = ContentBuilderImporter.ImportFrom(RefScripts.Directory);
@@ -68,7 +68,7 @@ public class ContentBuilderImporterTests
             s => Assert.False(s.IsSdkSample));
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Sdk_samples_carry_an_explaining_warning()
     {
         var sample = ContentBuilderImporter.ImportFrom(RefScripts.Directory).SubApps
@@ -83,7 +83,7 @@ public class ContentBuilderImporterTests
     /// desc alanı build notudur ("fix-update", "0.1.6 beta"); başlık olarak kullanılırsa
     /// oyun listesi anlamsız görünür. Başlık türden türetilir, not açıklamaya gider.
     /// </summary>
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Title_comes_from_kind_not_build_description()
     {
         var beta = Import(1300010);
@@ -97,13 +97,13 @@ public class ContentBuilderImporterTests
         Assert.Equal("fix-update", Import(1200000).BuildDescriptionTemplate);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Detects_demo_from_description()
     {
         Assert.Equal(SubAppKind.Demo, Import(1300020).Kind);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Detects_beta_from_description()
     {
         Assert.Equal(SubAppKind.Beta, Import(1300010).Kind);
@@ -132,7 +132,7 @@ public class ContentBuilderImporterTests
         Assert.Equal(expected, ContentBuilderImporter.GuessLabel(contentRoot));
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Imports_depot_block_embedded_in_app_script()
     {
         var simple = ContentBuilderImporter.ImportFrom(RefScripts.Directory).SubApps
@@ -144,7 +144,7 @@ public class ContentBuilderImporterTests
         Assert.Equal("*", depot.FileMappings[0].LocalPath);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Reports_missing_depot_script_as_warning_without_failing()
     {
         var dir = Path.Combine(Path.GetTempPath(), $"spm_import_{Guid.NewGuid():N}");
@@ -207,7 +207,7 @@ public class ContentBuilderImporterTests
     }
 
     /// <summary>İçe aktarılan model geri yazıldığında kaynak script'le aynı anlama gelmeli.</summary>
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void Imported_model_regenerates_equivalent_scripts()
     {
         var skyward = Import(1200000);
@@ -229,7 +229,7 @@ public class ContentBuilderImporterTests
     /// klasöründe duruyordu, bu yüzden script'in klasöründen ad türetmek yanlış sonuç verdi.
     /// İçerik klasörü çok daha güvenilir bir ipucu.
     /// </summary>
-    [Fact]
+    [FixtureFact(Fixtures.ContentBuilder)]
     public void App_title_comes_from_content_folder_when_it_is_meaningful()
     {
         var skyward = ContentBuilderImporter.ImportFrom(RefScripts.Directory).SubApps

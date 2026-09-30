@@ -97,7 +97,7 @@ Kod depoda bırakılmadı. v1.1'de uygulama içi login istenirse buradan devam e
 ## Bulgu 7 — Gerçek build çıktısı (2026-09-06, ilk gerçek preview)
 
 İlk gerçek preview build (example_partner / Pixel Racer, AppID 1300000) parser'da üç düzeltme
-gerektirdi. Ham log `tests/fixtures/real_preview_build_console_log.txt` içinde saklandı.
+gerektirdi. Ham log geliştirme makinesinde saklanıyor; depoya dahil değil.
 
 **a) Preview başarısında BuildID yok.** Gerçek satır:
 

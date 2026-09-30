@@ -7,7 +7,7 @@ namespace SteamPipeManager.Core.Tests;
 /// Epic'te sürüm numarasını uygulama üretiyor — Steam'de BuildID'yi Steam döndürdüğü
 /// için böyle bir sorumluluk yoktu.
 ///
-/// Kurallar ölçümden geliyor (docs/E0-BPT-FINDINGS.md, Bulgu 16 ve 18) — ve önemli bir
+/// Kurallar ölçümden geliyor (BuildPatchTool 1.8.8 üzerinde, tools/BptProbe ile) — ve önemli bir
 /// düzeltmeyle: ilk ölçüm offline <c>ChunkBuildDirectory</c> ile yapılmıştı, o mod
 /// gevşek. Gerçek <c>UploadBinary</c> katı bir karakter kümesi dayatıyor
 /// (<c>a-z A-Z 0-9 . + - _</c>). Testler katı olana göre.

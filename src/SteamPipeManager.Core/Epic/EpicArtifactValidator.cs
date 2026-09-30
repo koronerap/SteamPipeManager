@@ -7,7 +7,7 @@ namespace SteamPipeManager.Core.Epic;
 /// Bir Epic hedefinin build almaya hazır olup olmadığını denetler.
 ///
 /// Steam'deki <see cref="ProfileValidator"/>'ın karşılığı, ama kurallar farklı — ve bir
-/// kısmı doğrudan ölçümden geliyor (docs/E0-BPT-FINDINGS.md):
+/// kısmı doğrudan ölçümden geliyor (BuildPatchTool 1.8.8 üzerinde, tools/BptProbe ile):
 ///
 ///   * boş build kökünü araç zaten reddediyor (Bulgu 13), biz aynı şeyi <b>önceden</b>
 ///     söylüyoruz ki kullanıcı süreç başlatıp beklemesin

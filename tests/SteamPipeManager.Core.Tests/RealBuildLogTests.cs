@@ -38,7 +38,7 @@ public class RealBuildLogTests
     /// Asıl hata buydu: preview başarı satırında BuildID yok, desen onu zorunlu tutuyordu
     /// ve build "tamamlanamadı (exit code 0)" olarak raporlanıyordu.
     /// </summary>
-    [Fact]
+    [FixtureFact(Fixtures.SteamCmdPreviewLog)]
     public void Preview_success_is_recognised_without_a_build_id()
     {
         var success = Parse().SingleOrDefault(e => e.Kind == SteamCmdEventKind.BuildSucceeded);
@@ -70,7 +70,7 @@ public class RealBuildLogTests
         Assert.Equal(new DateTime(2026, 9, 6, 18, 26, 7), timestamp!.Value.DateTime);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.SteamCmdPreviewLog)]
     public void Detects_build_start()
     {
         var started = Parse().SingleOrDefault(e => e.Kind == SteamCmdEventKind.BuildStarted);
@@ -79,7 +79,7 @@ public class RealBuildLogTests
         Assert.Contains("1300000", started!.Message);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.SteamCmdPreviewLog)]
     public void Reads_scan_progress_percentages()
     {
         var percentages = Parse()
@@ -90,7 +90,7 @@ public class RealBuildLogTests
         Assert.Equal([12, 23, 35, 49, 60, 71, 82, 93], percentages);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.SteamCmdPreviewLog)]
     public void Detects_login_depot_and_scanning()
     {
         var events = Parse();
@@ -108,7 +108,7 @@ public class RealBuildLogTests
         Assert.Null(new SteamCmdLogParser().Feed("[2026-09-06 18:26:06] .........."));
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.SteamCmdPreviewLog)]
     public void No_failure_is_reported_for_a_successful_run()
     {
         var events = Parse();
@@ -118,7 +118,7 @@ public class RealBuildLogTests
     }
 
     /// <summary>Yerelleşen bootstrapper satırları hata sanılmamalı (M0 Bulgu 5).</summary>
-    [Fact]
+    [FixtureFact(Fixtures.SteamCmdPreviewLog)]
     public void Localized_updater_lines_stay_informational()
     {
         var turkish = Parse().Where(e => e.Message.Contains("Güncellemeler") || e.Message.Contains("Yükleme"));

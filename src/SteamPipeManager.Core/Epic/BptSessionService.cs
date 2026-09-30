@@ -20,7 +20,7 @@ public sealed record EpicCredentials(
 /// Epic kimlik bilgilerinin hâlâ çalışıp çalışmadığını <c>UploadBinary -DryRun</c> ile
 /// kontrol eder.
 ///
-/// Ölçüldü (docs/E0-BPT-FINDINGS.md, Bulgu 6): <c>-DryRun</c> argümanları, kimlik
+/// Ölçüldü (BuildPatchTool 1.8.8 üzerinde, tools/BptProbe ile): <c>-DryRun</c> argümanları, kimlik
 /// bilgilerini ve backend durumunu <b>hiçbir şey yüklemeden</b> doğruluyor ve sonucu
 /// tek satırlık <c>[DRYRUN][RESULT] PASS|FAIL</c> kararıyla bildiriyor. Steam'de ayrı
 /// bir oturum kontrolü mekanizması yazmak zorunda kalmıştık; burada aracın kendisi

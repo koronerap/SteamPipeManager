@@ -305,7 +305,7 @@ public sealed partial class EpicBuildPanelViewModel(
     /// <see cref="PublishPhases.Advance"/> içinde ve sağlayıcıdan bağımsız.
     ///
     /// Not: yükleme aşamasının satırları henüz gerçek bir hesapla ölçülemedi
-    /// (bkz. docs/E0-BPT-FINDINGS.md), bu yüzden eşleme bilerek toleranslı —
+    /// (hesap gerektiriyor), bu yüzden eşleme bilerek toleranslı —
     /// tanınmayan satır aşamayı değiştirmiyor, düşürülmüyor de.
     /// </summary>
     private static PublishPhase PhaseOf(BptEvent evt) => evt.Kind switch

@@ -5,7 +5,7 @@ namespace SteamPipeManager.Core.Tests;
 
 /// <summary>
 /// BuildPatchTool log ayrıştırıcısı. Satır biçimleri gerçek bir çalıştırmadan ölçüldü
-/// (bkz. docs/E0-BPT-FINDINGS.md); testlerin bir kısmı o çalıştırmanın kaydına karşı koşuyor.
+/// (bkz. tools/BptProbe); testlerin bir kısmı o çalıştırmanın kaydına karşı koşuyor.
 /// </summary>
 public sealed class BptLogParserTests
 {
@@ -204,7 +204,7 @@ public sealed class BptLogParserTests
 
     // --- Gerçek çalıştırmanın kaydına karşı ---
 
-    [Fact]
+    [FixtureFact(Fixtures.BptChunkLog)]
     public void The_real_run_is_recognised_from_start_to_finish()
     {
         var events = ParseRealLog();
@@ -217,7 +217,7 @@ public sealed class BptLogParserTests
         Assert.Single(events, e => e.Kind == BptEventKind.Succeeded);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.BptChunkLog)]
     public void The_real_run_reports_rising_scan_progress()
     {
         var offsets = ParseRealLog()
@@ -230,7 +230,7 @@ public sealed class BptLogParserTests
         Assert.Equal(0, offsets[0]);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.BptChunkLog)]
     public void The_real_run_maps_onto_a_percentage()
     {
         // Ölçüm çalıştırmasında build kökü 512 MiB idi.
@@ -245,14 +245,14 @@ public sealed class BptLogParserTests
         Assert.Equal(percentages.Order(), percentages);
     }
 
-    [Fact]
+    [FixtureFact(Fixtures.BptChunkLog)]
     public void The_real_run_contains_no_failures()
     {
         Assert.DoesNotContain(ParseRealLog(), e => e.IsFailure);
     }
 
     /// <summary>Hiçbir satır düşürülmemeli; log paneli ham çıktıyı gösterebilmeli.</summary>
-    [Fact]
+    [FixtureFact(Fixtures.BptChunkLog)]
     public void Every_non_blank_line_of_the_real_run_becomes_an_event()
     {
         var nonBlank = RealLog()

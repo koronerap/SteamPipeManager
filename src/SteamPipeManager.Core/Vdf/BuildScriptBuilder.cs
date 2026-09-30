@@ -12,7 +12,7 @@ public sealed record GeneratedDepotScript(uint DepotId, string FileName, string 
 
 /// <summary>
 /// Model nesnelerinden <c>app_&lt;appid&gt;.vdf</c> ve <c>depot_&lt;depotid&gt;.vdf</c> üretir.
-/// Anahtar adları ve sıralaması <c>tests/fixtures/content_builder/</c> altındaki
+/// Anahtar adları ve sıralaması gerçek ContentBuilder kurulumlarındaki
 /// çalışan dosyalarla aynıdır.
 /// </summary>
 public static class BuildScriptBuilder

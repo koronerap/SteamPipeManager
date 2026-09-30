@@ -11,7 +11,7 @@ namespace SteamPipeManager.Core.Epic;
 /// veriyoruz ve <b>tekrarlarsak çakışıyor</b>, dolayısıyla üretmek de doğrulamak da
 /// uygulamanın işi.
 ///
-/// Kurallar ölçümden geliyor (docs/E0-BPT-FINDINGS.md, Bulgu 16 ve 18).
+/// Kurallar ölçümden geliyor (BuildPatchTool 1.8.8 üzerinde, tools/BptProbe ile).
 ///
 /// <b>Önemli:</b> iki mod farklı davranıyor. Offline <c>ChunkBuildDirectory</c> gevşek —
 /// boşluğu sessizce siliyor, Türkçe karakteri kabul ediyor. Gerçek <c>UploadBinary</c>
