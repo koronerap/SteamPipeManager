@@ -12,7 +12,16 @@ public sealed class WorkspaceLayout(string rootDirectory)
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "SteamPipeManager");
 
-    public static WorkspaceLayout Default() => new(DefaultRoot);
+    /// <summary>
+    /// Veri klasörünü değiştiren ortam değişkeni. Uygulamayı gerçek profillere
+    /// dokunmadan, boş ya da hazırlanmış bir klasörle çalıştırıp sınamak için.
+    /// </summary>
+    public const string DataDirectoryVariable = "SPM_DATA_DIR";
+
+    public static WorkspaceLayout Default() =>
+        Environment.GetEnvironmentVariable(DataDirectoryVariable) is { Length: > 0 } custom
+            ? new(Path.GetFullPath(custom))
+            : new(DefaultRoot);
 
     public string Root { get; } = rootDirectory;
 

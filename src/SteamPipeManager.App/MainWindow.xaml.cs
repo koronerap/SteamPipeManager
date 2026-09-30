@@ -13,20 +13,65 @@ public partial class MainWindow : FluentWindow
         InitializeComponent();
     }
 
+    private bool _closeApproved;
+    private bool _closing;
+
     /// <summary>
     /// Build hedefi ayarları otomatik kaydediliyor ama yazma kısa bir gecikmeyle
-    /// yapılıyor; son düzenlemeden hemen sonra kapatılırsa kaybolmasın diye
-    /// kapanışta bekleyen kayıt diske geçirilir.
+    /// yapılıyor; son düzenlemeden hemen sonra kapatılırsa kaybolmasın diye kapanış
+    /// bekleyen kayıt bitene kadar erteleniyor.
+    ///
+    /// Kayıt burada <b>beklenerek</b> (bloklayarak) yapılamaz: kayıt tamamlanmak için
+    /// arayüz iş parçacığına dönmek istiyor, arayüz iş parçacığı da kaydı bekliyorsa
+    /// ikisi birbirini sonsuza kadar bekler. Eski sürümde tam olarak bu oluyordu:
+    /// pencere kayboluyor, süreç açık kalıyor ve kayıt dosyasını kilitli tutarak
+    /// sonraki açılışlardaki kayıtları da bozuyordu.
+    ///
+    /// Bu yüzden kapanış bir kez iptal ediliyor, kayıt beklenmeden (async) bitiriliyor
+    /// ve pencere yeniden kapatılıyor.
     /// </summary>
-    protected override void OnClosing(CancelEventArgs e)
+    protected override async void OnClosing(CancelEventArgs e)
     {
-        if (DataContext is ShellViewModel shell)
+        base.OnClosing(e);
+
+        if (e.Cancel || _closeApproved ||
+            DataContext is not ShellViewModel shell || !shell.HasUnsavedChanges)
         {
-            shell.Workspace.FlushAsync().GetAwaiter().GetResult();
-            shell.EpicWorkspace.FlushAsync().GetAwaiter().GetResult();
+            return;
         }
 
-        base.OnClosing(e);
+        e.Cancel = true;
+
+        // Kayıt sürerken çarpıya yeniden basılırsa ikinci bir kayıt başlatılmaz.
+        if (_closing)
+        {
+            return;
+        }
+
+        _closing = true;
+
+        try
+        {
+            if (!await shell.PrepareToCloseAsync())
+            {
+                return;
+            }
+        }
+        finally
+        {
+            _closing = false;
+        }
+
+        _closeApproved = true;
+
+        try
+        {
+            Close();
+        }
+        catch (InvalidOperationException)
+        {
+            // Pencere bu arada başka bir yoldan (ör. uygulama kapanışı) kapandı.
+        }
     }
 
     /// <summary>

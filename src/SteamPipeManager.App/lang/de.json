@@ -369,6 +369,11 @@
     "Update.Error.PackageInvalid": "das Paket enthält diese App nicht, daher wurde es nicht installiert.",
     "Update.Error.InstallFailed": "die App-Dateien konnten nicht ersetzt werden. Die aktuelle Version bleibt erhalten.",
     "Update.Error.RestartFailed": "die neue Version konnte nicht gestartet werden. Die vorherige Version wurde wiederhergestellt.",
-    "Update.Error.Unexpected": "unerwarteter Fehler: {0}"
+    "Update.Error.Unexpected": "unerwarteter Fehler: {0}",
+    "Common.SaveFailed": "Änderungen konnten nicht gespeichert werden: {0}",
+    "Close.Unsaved.Title": "Nicht gespeicherte Änderungen",
+    "Close.Unsaved.Body": "Deine letzten Änderungen konnten nicht gespeichert werden.\n\n{0}\n\nTrotzdem schließen und sie verwerfen?",
+    "Close.Unsaved.Confirm": "Ohne Speichern schließen",
+    "Close.SaveTimedOut": "Das Speichern hat zu lange gedauert."
   }
 }

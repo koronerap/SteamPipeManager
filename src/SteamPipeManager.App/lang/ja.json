@@ -369,6 +369,11 @@
     "Update.Error.PackageInvalid": "パッケージにこのアプリが含まれていないため、インストールしませんでした。",
     "Update.Error.InstallFailed": "アプリのファイルを置き換えられませんでした。現在のバージョンを維持しています。",
     "Update.Error.RestartFailed": "新しいバージョンを起動できませんでした。以前のバージョンに戻しました。",
-    "Update.Error.Unexpected": "予期しないエラー: {0}"
+    "Update.Error.Unexpected": "予期しないエラー: {0}",
+    "Common.SaveFailed": "変更を保存できませんでした: {0}",
+    "Close.Unsaved.Title": "保存されていない変更",
+    "Close.Unsaved.Body": "最新の変更を保存できませんでした。\n\n{0}\n\n変更を破棄して閉じますか?",
+    "Close.Unsaved.Confirm": "保存せずに閉じる",
+    "Close.SaveTimedOut": "保存に時間がかかりすぎました。"
   }
 }

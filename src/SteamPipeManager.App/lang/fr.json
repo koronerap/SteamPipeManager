@@ -369,6 +369,11 @@
     "Update.Error.PackageInvalid": "le paquet ne contient pas cette application, il n'a donc pas été installé.",
     "Update.Error.InstallFailed": "les fichiers de l'application n'ont pas pu être remplacés. La version actuelle est conservée.",
     "Update.Error.RestartFailed": "la nouvelle version n'a pas pu démarrer. La version précédente a été restaurée.",
-    "Update.Error.Unexpected": "erreur inattendue : {0}"
+    "Update.Error.Unexpected": "erreur inattendue : {0}",
+    "Common.SaveFailed": "Impossible d'enregistrer les modifications : {0}",
+    "Close.Unsaved.Title": "Modifications non enregistrées",
+    "Close.Unsaved.Body": "Vos dernières modifications n'ont pas pu être enregistrées.\n\n{0}\n\nFermer quand même et les perdre ?",
+    "Close.Unsaved.Confirm": "Fermer sans enregistrer",
+    "Close.SaveTimedOut": "L'enregistrement a pris trop de temps."
   }
 }

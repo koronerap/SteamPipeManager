@@ -369,6 +369,11 @@
     "Update.Error.PackageInvalid": "the package does not contain this app, so it was not installed.",
     "Update.Error.InstallFailed": "the app files could not be replaced. The current version was kept.",
     "Update.Error.RestartFailed": "the new version could not be started. The previous version was restored.",
-    "Update.Error.Unexpected": "unexpected error: {0}"
+    "Update.Error.Unexpected": "unexpected error: {0}",
+    "Common.SaveFailed": "Changes could not be saved: {0}",
+    "Close.Unsaved.Title": "Unsaved changes",
+    "Close.Unsaved.Body": "Your latest changes could not be saved.\n\n{0}\n\nClose anyway and lose them?",
+    "Close.Unsaved.Confirm": "Close without saving",
+    "Close.SaveTimedOut": "Saving took too long."
   }
 }

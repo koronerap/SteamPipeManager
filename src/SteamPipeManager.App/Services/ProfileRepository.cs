@@ -11,6 +11,9 @@ public sealed class ProfileRepository(IProfileStore store)
 {
     private ProfileDatabase _database = new();
 
+    /// <summary>Otomatik kayıt, komutlar ve kapanış aynı dosyaya yazıyor; sırayla.</summary>
+    private readonly SemaphoreSlim _saving = new(1, 1);
+
     public IReadOnlyList<UserProfile> Profiles => _database.Profiles;
 
     public event EventHandler? Changed;
@@ -23,7 +26,17 @@ public sealed class ProfileRepository(IProfileStore store)
 
     public async Task SaveAsync(CancellationToken ct = default)
     {
-        await store.SaveAsync(_database, ct);
+        await _saving.WaitAsync(ct);
+
+        try
+        {
+            await store.SaveAsync(_database, ct);
+        }
+        finally
+        {
+            _saving.Release();
+        }
+
         Changed?.Invoke(this, EventArgs.Empty);
     }
 

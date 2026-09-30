@@ -23,6 +23,10 @@ public interface ISettingsStore
 /// <summary>
 /// JSON dosya deposu. Yazma önce geçici dosyaya yapılır, sonra yerine taşınır: yazma
 /// sırasında uygulama çökerse mevcut dosya bozulmadan kalır.
+///
+/// Buradaki beklemeler arayüz iş parçacığına geri dönmüyor (<c>ConfigureAwait(false)</c>).
+/// Saf dosya işi; arayüze dönmesi gereken bir şey yok, ve dönmeye çalışması arayüz
+/// iş parçacığı bir kaydı beklerken kilitlenmeye yol açıyordu.
 /// </summary>
 public sealed class JsonFileStore<T>(string filePath, Func<T> createDefault)
     where T : class
@@ -46,11 +50,13 @@ public sealed class JsonFileStore<T>(string filePath, Func<T> createDefault)
             return createDefault();
         }
 
-        await using var stream = File.OpenRead(FilePath);
+        // Eşzamanlı Dispose: 'await using' arayüz bağlamına geri dönmeye çalışırdı.
+        using var stream = File.OpenRead(FilePath);
 
         try
         {
-            return await JsonSerializer.DeserializeAsync<T>(stream, Options, ct) ?? createDefault();
+            return await JsonSerializer.DeserializeAsync<T>(stream, Options, ct).ConfigureAwait(false)
+                   ?? createDefault();
         }
         catch (JsonException ex)
         {
@@ -61,16 +67,42 @@ public sealed class JsonFileStore<T>(string filePath, Func<T> createDefault)
 
     public async Task SaveAsync(T value, CancellationToken ct = default)
     {
+        // JSON çağıranın iş parçacığında, tek seferde üretiliyor. Model arayüzden
+        // düzenleniyor; serileştirme yazma ile iç içe ilerleseydi arka planda
+        // okunurken arayüz aynı listeyi değiştirebilirdi.
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(value, Options);
+
         Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
 
-        var tempPath = FilePath + ".tmp";
+        // Her yazma kendi geçici dosyasını kullanıyor. Sabit bir ad, yarıda kalmış
+        // (ya da hâlâ açık tutulan) eski bir yazma yüzünden sonraki bütün kayıtların
+        // başarısız olmasına yol açıyordu.
+        var tempPath = $"{FilePath}.{Guid.NewGuid():N}.tmp";
 
-        await using (var stream = File.Create(tempPath))
+        try
         {
-            await JsonSerializer.SerializeAsync(stream, value, Options, ct);
+            await File.WriteAllBytesAsync(tempPath, bytes, ct).ConfigureAwait(false);
+            File.Move(tempPath, FilePath, overwrite: true);
         }
+        finally
+        {
+            TryDelete(tempPath);
+        }
+    }
 
-        File.Move(tempPath, FilePath, overwrite: true);
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Artık bir geçici dosya kalır; asıl dosyaya zararı yok.
+        }
     }
 }
 
@@ -85,7 +117,7 @@ public sealed class JsonProfileStore(WorkspaceLayout layout) : IProfileStore
     /// yazılır. Böylece uygulamayı açıp hiçbir şey yapmamak kimsenin dosyasını değiştirmez.
     /// </summary>
     public async Task<ProfileDatabase> LoadAsync(CancellationToken ct = default) =>
-        ProfileSchema.Upgrade(await _store.LoadAsync(ct));
+        ProfileSchema.Upgrade(await _store.LoadAsync(ct).ConfigureAwait(false));
 
     public Task SaveAsync(ProfileDatabase database, CancellationToken ct = default) =>
         _store.SaveAsync(database, ct);

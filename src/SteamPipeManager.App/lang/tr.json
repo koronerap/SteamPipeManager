@@ -369,6 +369,11 @@
     "Update.Error.PackageInvalid": "paket bu uygulamayı içermiyor, bu yüzden kurulmadı.",
     "Update.Error.InstallFailed": "uygulama dosyaları değiştirilemedi. Mevcut sürüm korundu.",
     "Update.Error.RestartFailed": "yeni sürüm başlatılamadı. Önceki sürüm geri yüklendi.",
-    "Update.Error.Unexpected": "beklenmeyen hata: {0}"
+    "Update.Error.Unexpected": "beklenmeyen hata: {0}",
+    "Common.SaveFailed": "Değişiklikler kaydedilemedi: {0}",
+    "Close.Unsaved.Title": "Kaydedilmemiş değişiklikler",
+    "Close.Unsaved.Body": "Son değişiklikleriniz kaydedilemedi.\n\n{0}\n\nYine de kapatılsın mı? Bu değişiklikler kaybolacak.",
+    "Close.Unsaved.Confirm": "Kaydetmeden kapat",
+    "Close.SaveTimedOut": "Kaydetme çok uzun sürdü."
   }
 }

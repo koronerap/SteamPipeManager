@@ -369,6 +369,11 @@
     "Update.Error.PackageInvalid": "安装包中不包含此应用，因此未安装。",
     "Update.Error.InstallFailed": "无法替换应用文件。已保留当前版本。",
     "Update.Error.RestartFailed": "无法启动新版本。已恢复到之前的版本。",
-    "Update.Error.Unexpected": "意外错误：{0}"
+    "Update.Error.Unexpected": "意外错误：{0}",
+    "Common.SaveFailed": "无法保存更改：{0}",
+    "Close.Unsaved.Title": "未保存的更改",
+    "Close.Unsaved.Body": "无法保存最近的更改。\n\n{0}\n\n仍要关闭并放弃这些更改吗？",
+    "Close.Unsaved.Confirm": "不保存并关闭",
+    "Close.SaveTimedOut": "保存耗时过长。"
   }
 }

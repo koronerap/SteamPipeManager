@@ -24,6 +24,14 @@ public sealed partial class ShellViewModel : ObservableObject
 {
     private readonly ProfileRepository _repository;
 
+    private readonly IConfirmationService _confirmation;
+
+    /// <summary>
+    /// Kapanışta kaydın bekleneceği en uzun süre. Disk takılırsa pencere sonsuza kadar
+    /// açık kalmasın; süre dolarsa kullanıcıya sorulur.
+    /// </summary>
+    public static readonly TimeSpan CloseSaveTimeout = TimeSpan.FromSeconds(10);
+
     public ShellViewModel(
         ProfileRepository repository,
         NavigationState navigation,
@@ -35,9 +43,11 @@ public sealed partial class ShellViewModel : ObservableObject
         LoginViewModel login,
         SetupViewModel setup,
         UpdateViewModel updates,
+        IConfirmationService confirmation,
         ProductProfile product)
     {
         _repository = repository;
+        _confirmation = confirmation;
         Navigation = navigation;
         ProfilePicker = profilePicker;
         AppPicker = appPicker;
@@ -234,6 +244,33 @@ public sealed partial class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(IsSettings));
         OnPropertyChanged(nameof(IsSetup));
         OnPropertyChanged(nameof(IsChromeVisible));
+    }
+
+    public bool HasUnsavedChanges => Workspace.HasUnsavedChanges || EpicWorkspace.HasUnsavedChanges;
+
+    /// <summary>
+    /// Pencere kapanmadan önce bekleyen düzenlemeleri yazar. Yazılamazsa kullanıcıya
+    /// sorar; true dönerse pencere kapanabilir.
+    /// </summary>
+    public async Task<bool> PrepareToCloseAsync()
+    {
+        var flush = Task.WhenAll(Workspace.FlushAsync(), EpicWorkspace.FlushAsync());
+        var finished = await Task.WhenAny(flush, Task.Delay(CloseSaveTimeout)) == flush;
+
+        if (finished && !HasUnsavedChanges)
+        {
+            return true;
+        }
+
+        var reason = finished
+            ? Workspace.LastSaveError ?? EpicWorkspace.LastSaveError ?? ""
+            : Localization.AppLocalizer.Instance.Get("Close.SaveTimedOut");
+
+        return await _confirmation.ConfirmAsync(
+            Localization.AppLocalizer.Instance.Get("Close.Unsaved.Title"),
+            Localization.AppLocalizer.Instance.Format("Close.Unsaved.Body", reason),
+            confirmText: Localization.AppLocalizer.Instance.Get("Close.Unsaved.Confirm"),
+            isDestructive: true);
     }
 
     [RelayCommand]

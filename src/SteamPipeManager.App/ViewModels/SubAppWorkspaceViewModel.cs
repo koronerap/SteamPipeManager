@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.App.Localization;
 using SteamPipeManager.App.Services;
 using SteamPipeManager.Core.Models;
+using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Vdf;
 using SteamPipeManager.Core.Workspace;
@@ -95,18 +96,43 @@ public sealed partial class SubAppWorkspaceViewModel(
 
     private bool _refreshing;
 
-    private CancellationTokenSource? _autoSave;
+    private DebouncedSaver? _saver;
 
     /// <summary>
-    /// Otomatik kaydetme gecikmesi. Her tuş vuruşunda diske yazmamak için kısa bir
-    /// bekleme var; yazmadan önce sayfadan çıkılırsa <see cref="FlushAsync"/> devreye girer.
+    /// Otomatik kayıt. Her tuş vuruşunda diske yazmamak için kısa bir bekleme var;
+    /// sayfadan çıkarken, hedef değiştirirken ve kapanışta <see cref="FlushAsync"/>
+    /// bekleyeni hemen yazıyor.
     /// </summary>
-    public TimeSpan AutoSaveDelay { get; set; } = TimeSpan.FromMilliseconds(400);
+    private DebouncedSaver Saver => _saver ??= CreateSaver();
+
+    public TimeSpan AutoSaveDelay
+    {
+        get => Saver.Delay;
+        set => Saver.Delay = value;
+    }
+
+    /// <summary>Diske yazılmamış düzenleme var mı; kapanışta sorulur.</summary>
+    public bool HasUnsavedChanges => Saver.HasUnsavedChanges;
+
+    /// <summary>Son kaydın hatası; kapanışta kullanıcıya gösterilir.</summary>
+    public string? LastSaveError => Saver.LastError?.Message;
+
+    private DebouncedSaver CreateSaver()
+    {
+        var saver = new DebouncedSaver(() => repository.SaveAsync(), TimeSpan.FromMilliseconds(400));
+
+        // Hata sessizce yutulmasın: "otomatik kaydedildi" yazarken kaydedilmemesi,
+        // kullanıcının değişikliğini ancak yeniden açınca kaybettiğini fark etmesi demek.
+        saver.Completed += error => StatusMessage = error is null
+            ? null
+            : AppLocalizer.Instance.Format("Common.SaveFailed", error.Message);
+
+        return saver;
+    }
 
     /// <summary>
-    /// Arayüzdeki her düzenleme buradan geçer: doğrulama ve script önizlemesi anında
-    /// güncellenir, diske yazma ise kısa bir gecikmeyle yapılır. Kaydet butonları
-    /// bunun yerine kaldırıldı.
+    /// Arayüzdeki her düzenleme buradan geçer: doğrulama ve önizleme anında
+    /// güncellenir, diske yazma kısa bir gecikmeyle yapılır.
     /// </summary>
     public void ScheduleSave()
     {
@@ -114,58 +140,14 @@ public sealed partial class SubAppWorkspaceViewModel(
         UpdatePreview();
         SelectedCard?.NotifyModelChanged();
 
-        _autoSave?.Cancel();
-        _autoSave?.Dispose();
-
-        var pending = new CancellationTokenSource();
-        _autoSave = pending;
-
-        _ = SaveAfterDelayAsync(pending.Token);
-    }
-
-    private async Task SaveAfterDelayAsync(CancellationToken ct)
-    {
-        try
-        {
-            await Task.Delay(AutoSaveDelay, ct);
-            await repository.SaveAsync(ct);
-            StatusMessage = null;
-        }
-        catch (OperationCanceledException)
-        {
-            // Ardından gelen düzenleme yazmayı devraldı.
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = ex.Message;
-        }
+        Saver.Schedule();
     }
 
     /// <summary>
-    /// Bekleyen otomatik kaydı hemen diske yazar. Hedef değiştirilirken, sayfadan
-    /// çıkılırken ve uygulama kapanırken çağrılır; aksi hâlde son 400 ms'lik
-    /// düzenleme kaybolabilirdi.
+    /// Bekleyen otomatik kaydı hemen diske yazar; yazılacak bir şey yoksa dokunmaz.
+    /// Hedef değiştirilirken, sayfadan çıkılırken ve uygulama kapanırken çağrılır.
     /// </summary>
-    public async Task FlushAsync()
-    {
-        if (_autoSave is not { } pending)
-        {
-            return;
-        }
-
-        await pending.CancelAsync();
-        pending.Dispose();
-        _autoSave = null;
-
-        try
-        {
-            await repository.SaveAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = ex.Message;
-        }
-    }
+    public Task FlushAsync() => Saver.FlushAsync();
 
     public void Refresh()
     {

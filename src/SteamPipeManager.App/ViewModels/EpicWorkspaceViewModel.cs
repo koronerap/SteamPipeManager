@@ -7,6 +7,7 @@ using SteamPipeManager.App.Localization;
 using SteamPipeManager.App.Services;
 using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Models;
+using SteamPipeManager.Core.Storage;
 
 namespace SteamPipeManager.App.ViewModels;
 
@@ -105,9 +106,39 @@ public sealed partial class EpicWorkspaceViewModel(
         [.. Enum.GetValues<SubAppKind>()];
 
     private bool _refreshing;
-    private CancellationTokenSource? _autoSave;
+    private DebouncedSaver? _saver;
 
-    public TimeSpan AutoSaveDelay { get; set; } = TimeSpan.FromMilliseconds(400);
+    /// <summary>
+    /// Otomatik kayıt. Her tuş vuruşunda diske yazmamak için kısa bir bekleme var;
+    /// sayfadan çıkarken, hedef değiştirirken ve kapanışta <see cref="FlushAsync"/>
+    /// bekleyeni hemen yazıyor.
+    /// </summary>
+    private DebouncedSaver Saver => _saver ??= CreateSaver();
+
+    public TimeSpan AutoSaveDelay
+    {
+        get => Saver.Delay;
+        set => Saver.Delay = value;
+    }
+
+    /// <summary>Diske yazılmamış düzenleme var mı; kapanışta sorulur.</summary>
+    public bool HasUnsavedChanges => Saver.HasUnsavedChanges;
+
+    /// <summary>Son kaydın hatası; kapanışta kullanıcıya gösterilir.</summary>
+    public string? LastSaveError => Saver.LastError?.Message;
+
+    private DebouncedSaver CreateSaver()
+    {
+        var saver = new DebouncedSaver(() => repository.SaveAsync(), TimeSpan.FromMilliseconds(400));
+
+        // Hata sessizce yutulmasın: "otomatik kaydedildi" yazarken kaydedilmemesi,
+        // kullanıcının değişikliğini ancak yeniden açınca kaybettiğini fark etmesi demek.
+        saver.Completed += error => StatusMessage = error is null
+            ? null
+            : AppLocalizer.Instance.Format("Common.SaveFailed", error.Message);
+
+        return saver;
+    }
 
     public void Refresh()
     {
@@ -270,59 +301,24 @@ public sealed partial class EpicWorkspaceViewModel(
 
     // --- Kaydetme ---
 
+    /// <summary>
+    /// Arayüzdeki her düzenleme buradan geçer: doğrulama ve önizleme anında
+    /// güncellenir, diske yazma kısa bir gecikmeyle yapılır.
+    /// </summary>
     public void ScheduleSave()
     {
         Validate();
         UpdatePreview();
         SelectedCard?.NotifyModelChanged();
 
-        _autoSave?.Cancel();
-        _autoSave?.Dispose();
-
-        var pending = new CancellationTokenSource();
-        _autoSave = pending;
-
-        _ = SaveAfterDelayAsync(pending.Token);
+        Saver.Schedule();
     }
 
-    private async Task SaveAfterDelayAsync(CancellationToken ct)
-    {
-        try
-        {
-            await Task.Delay(AutoSaveDelay, ct);
-            await repository.SaveAsync(ct);
-            StatusMessage = null;
-        }
-        catch (OperationCanceledException)
-        {
-            // Ardından gelen düzenleme yazmayı devraldı.
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = ex.Message;
-        }
-    }
-
-    public async Task FlushAsync()
-    {
-        if (_autoSave is not { } pending)
-        {
-            return;
-        }
-
-        await pending.CancelAsync();
-        pending.Dispose();
-        _autoSave = null;
-
-        try
-        {
-            await repository.SaveAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = ex.Message;
-        }
-    }
+    /// <summary>
+    /// Bekleyen otomatik kaydı hemen diske yazar; yazılacak bir şey yoksa dokunmaz.
+    /// Hedef değiştirilirken, sayfadan çıkılırken ve uygulama kapanırken çağrılır.
+    /// </summary>
+    public Task FlushAsync() => Saver.FlushAsync();
 
     // --- Komutlar ---
 
