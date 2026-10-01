@@ -41,9 +41,12 @@ internal sealed class FakeSteamCmd : IDisposable
 
         File.WriteAllText(Path.Combine(dir, "scenario.txt"), scenario);
 
-        // Kurulum "steamcmd.exe" adını beklediği için kopyayı o adla da bırakıyoruz.
-        var fakeExe = Path.Combine(dir, "FakeSteamCmd.exe");
-        var steamCmdExe = Path.Combine(dir, "steamcmd.exe");
+        // Kurulum gerçek aracın adını bekliyor (Windows'ta steamcmd.exe, Linux/macOS'ta
+        // steamcmd.sh); sahte aracın kopyası o adla bırakılıyor. Uygulama ana bilgisayarı
+        // (apphost) hangi dll'i çalıştıracağını kendi adından değil içine gömülü addan
+        // bildiği için kopya da çalışıyor; Unix'te kopyalama çalıştırma iznini koruyor.
+        var fakeExe = Path.Combine(dir, OperatingSystem.IsWindows() ? "FakeSteamCmd.exe" : "FakeSteamCmd");
+        var steamCmdExe = Path.Combine(dir, OperatingSystem.IsWindows() ? "steamcmd.exe" : "steamcmd.sh");
 
         if (File.Exists(fakeExe))
         {

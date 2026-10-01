@@ -1,3 +1,4 @@
+using SteamPipeManager.Core.Platform;
 using SteamPipeManager.Core.Models;
 
 using SteamPipeManager.Core.Localization;
@@ -171,14 +172,16 @@ public static class ContentBuilderImporter
         string scriptsDir,
         List<string> warnings)
     {
-        // Referans mutlak ya da scripts/ klasörüne göreli olabilir.
-        var candidate = Path.IsPathRooted(scriptReference)
-            ? scriptReference
-            : Path.Combine(scriptsDir, scriptReference);
+        // Referans mutlak ya da scripts/ klasörüne göreli olabilir. Windows'ta yazılmış
+        // bir script Linux/macOS'ta okunuyorsa ayırıcılar çevriliyor.
+        var reference = PortablePath.ToLocal(scriptReference);
+        var candidate = Path.IsPathRooted(reference)
+            ? reference
+            : Path.Combine(scriptsDir, reference);
 
         if (!File.Exists(candidate))
         {
-            var byName = Path.Combine(scriptsDir, Path.GetFileName(scriptReference));
+            var byName = Path.Combine(scriptsDir, PortablePath.LeafName(scriptReference));
 
             if (File.Exists(byName))
             {
@@ -250,7 +253,7 @@ public static class ContentBuilderImporter
             return "";
         }
 
-        var name = Path.GetFileName(contentRoot.TrimEnd('\\', '/'));
+        var name = PortablePath.LeafName(contentRoot);
 
         return name switch
         {
@@ -278,7 +281,7 @@ public static class ContentBuilderImporter
 
         if (contentRoot is not null)
         {
-            var leaf = Path.GetFileName(contentRoot.TrimEnd('\\', '/'));
+            var leaf = PortablePath.LeafName(contentRoot);
 
             if (StripPlatformSuffix(leaf) is { Length: > 0 } named)
             {

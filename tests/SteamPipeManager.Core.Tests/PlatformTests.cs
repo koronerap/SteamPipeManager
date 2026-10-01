@@ -397,27 +397,14 @@ public sealed class MissingLiveLogTests
     [Fact]
     public async Task The_result_is_read_from_stdout_when_the_live_log_never_appears()
     {
-        using var fake = FakeSteamCmd.Create("success");
+        // Sahte araç bu senaryoda hiç log yazmıyor, yalnızca stdout.
+        using var fake = FakeSteamCmd.Create("success+nolog");
 
-        // Linux düzeni: log'u ev dizininde bekliyor; sahte araç ise kendi klasörüne yazıyor.
-        var home = Path.Combine(Path.GetTempPath(), "spm-nolog-" + Guid.NewGuid().ToString("N"));
-        var installation = new SteamCmdInstallation(fake.Installation.ExecutablePath, HostPlatform.LinuxX64, home);
+        var runner = new SteamCmdRunner(fake.Installation) { StallTimeout = TimeSpan.FromSeconds(1) };
+        var result = await runner.RunAsync("+quit", ct: Timeout());
 
-        try
-        {
-            var runner = new SteamCmdRunner(installation) { StallTimeout = TimeSpan.FromSeconds(1) };
-            var result = await runner.RunAsync("+quit", ct: Timeout());
-
-            Assert.False(result.TimedOut);
-            Assert.NotNull(result.SuccessEvent);
-            Assert.Equal(4242u, result.SuccessEvent!.BuildId);
-        }
-        finally
-        {
-            if (Directory.Exists(home))
-            {
-                Directory.Delete(home, recursive: true);
-            }
-        }
+        Assert.False(result.TimedOut);
+        Assert.NotNull(result.SuccessEvent);
+        Assert.Equal(4242u, result.SuccessEvent!.BuildId);
     }
 }

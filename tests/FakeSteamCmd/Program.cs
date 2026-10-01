@@ -14,7 +14,19 @@ var baseDir = AppContext.BaseDirectory;
 var scenarioFile = Path.Combine(baseDir, "scenario.txt");
 var scenario = File.Exists(scenarioFile) ? File.ReadAllText(scenarioFile).Trim() : "success";
 
-var logsDir = Path.Combine(baseDir, "logs");
+// Senaryo adının sonundaki "+nolog": log hiç yazılmaz, yalnızca stdout. Canlı log'u
+// bulamayan çalıştırıcının sonucu stdout'tan okuduğunu sınamak için.
+var writeLog = !scenario.EndsWith("+nolog", StringComparison.Ordinal);
+scenario = scenario.Replace("+nolog", "", StringComparison.Ordinal);
+
+// Log yeri gerçek steamcmd'ninkiyle aynı: Windows'ta kurulum klasörü, Linux'ta
+// $HOME/Steam, macOS'ta $HOME/Library/Application Support/Steam.
+var home = Environment.GetEnvironmentVariable("HOME");
+var logsDir = OperatingSystem.IsWindows() || string.IsNullOrEmpty(home)
+    ? Path.Combine(baseDir, "logs")
+    : OperatingSystem.IsMacOS()
+        ? Path.Combine(home, "Library", "Application Support", "Steam", "logs")
+        : Path.Combine(home, "Steam", "logs");
 Directory.CreateDirectory(logsDir);
 var logPath = Path.Combine(logsDir, "console_log.txt");
 
@@ -25,9 +37,10 @@ void Emit(string line)
     var stamped = $"[{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}] {line}";
 
     // console_log.txt anında boşaltılır — gerçek steamcmd de böyle yapıyor.
-    using (var stream = new FileStream(logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
-    using (var writer = new StreamWriter(stream))
+    if (writeLog)
     {
+        using var stream = new FileStream(logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+        using var writer = new StreamWriter(stream);
         writer.WriteLine(stamped);
     }
 

@@ -253,12 +253,26 @@ public sealed class LinuxSecretServiceBackend(ICommandRunner? runner = null) : I
             return false;
         }
 
-        // Var olmayan bir kaydı aramak: servis yanıt veriyorsa çıkış kodu 1 (bulunamadı),
-        // servis yoksa araç hata verip farklı bir kodla ya da gecikmeyle çıkıyor.
-        var result = (runner ?? ProcessCommandRunner.Instance)
-            .Run("secret-tool", ["lookup", "application", Application, "probe", Guid.NewGuid().ToString("N")]);
+        // Yalnızca aracın varlığı yetmiyor: arkasında bir servis (GNOME Keyring, KWallet)
+        // çalışmıyorsa secret-tool her işlemde hata veriyor, ve "bulunamadı" ile "servis
+        // yok" aynı çıkış koduyla dönüyor. Bu yüzden bir deneme kaydı yazılıp geri
+        // okunuyor; ikisi de tutarsa servis gerçekten kullanılabilir.
+        runner ??= ProcessCommandRunner.Instance;
+        var probe = Guid.NewGuid().ToString("N");
+        string[] attributes = ["application", Application, "probe", probe];
 
-        return result.ExitCode is 0 or 1;
+        var stored = runner.Run("secret-tool", ["store", "--label=Steam Pipe Manager probe", .. attributes], probe);
+
+        try
+        {
+            return stored.ExitCode == 0 &&
+                   runner.Run("secret-tool", ["lookup", .. attributes]) is { ExitCode: 0 } found &&
+                   found.Output.Trim() == probe;
+        }
+        finally
+        {
+            runner.Run("secret-tool", ["clear", .. attributes]);
+        }
     }
 }
 

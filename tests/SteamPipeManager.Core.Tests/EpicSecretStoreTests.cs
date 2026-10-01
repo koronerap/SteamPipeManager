@@ -27,7 +27,7 @@ public sealed class EpicSecretStoreTests : IDisposable
         }
     }
 
-    [Fact]
+    [WindowsFact("DPAPI")]
     public void A_secret_round_trips()
     {
         var store = new EpicSecretStore(FilePath);
@@ -40,7 +40,7 @@ public sealed class EpicSecretStoreTests : IDisposable
     }
 
     /// <summary>Asıl mesele: düz metin diskte durmamalı.</summary>
-    [Fact]
+    [WindowsFact("DPAPI")]
     public void The_secret_is_not_stored_in_plain_text()
     {
         var store = new EpicSecretStore(FilePath);
@@ -51,7 +51,7 @@ public sealed class EpicSecretStoreTests : IDisposable
         Assert.DoesNotContain("super-secret-token", onDisk, StringComparison.Ordinal);
     }
 
-    [Fact]
+    [WindowsFact("DPAPI")]
     public void Profiles_do_not_see_each_others_secrets()
     {
         var store = new EpicSecretStore(FilePath);
@@ -65,7 +65,7 @@ public sealed class EpicSecretStoreTests : IDisposable
         Assert.Equal("second-secret", store.Read(second));
     }
 
-    [Fact]
+    [WindowsFact("DPAPI")]
     public void An_unknown_profile_has_no_secret()
     {
         var store = new EpicSecretStore(FilePath);
@@ -74,7 +74,7 @@ public sealed class EpicSecretStoreTests : IDisposable
         Assert.Null(store.Read(Guid.NewGuid()));
     }
 
-    [Fact]
+    [WindowsFact("DPAPI")]
     public void Writing_an_empty_value_removes_the_secret()
     {
         var store = new EpicSecretStore(FilePath);
@@ -86,7 +86,7 @@ public sealed class EpicSecretStoreTests : IDisposable
         Assert.False(store.Has(profile));
     }
 
-    [Fact]
+    [WindowsFact("DPAPI")]
     public void Removing_a_profile_takes_its_secret_with_it()
     {
         var store = new EpicSecretStore(FilePath);
@@ -102,7 +102,7 @@ public sealed class EpicSecretStoreTests : IDisposable
     /// Bozuk bir depo secret'ın kaybolması demek — kullanıcı yeniden girer. Uygulamanın
     /// açılışta patlamaması daha önemli.
     /// </summary>
-    [Fact]
+    [WindowsFact("DPAPI")]
     public void A_corrupt_store_is_treated_as_empty()
     {
         Directory.CreateDirectory(_dir);
@@ -118,7 +118,7 @@ public sealed class EpicSecretStoreTests : IDisposable
     /// Başka bir makineden kopyalanmış bir kayıt çözülemez; yok sayılıp kullanıcıdan
     /// yeniden istenmeli, patlamamalı.
     /// </summary>
-    [Fact]
+    [WindowsFact("DPAPI")]
     public void An_undecryptable_entry_is_ignored()
     {
         var profile = Guid.NewGuid();

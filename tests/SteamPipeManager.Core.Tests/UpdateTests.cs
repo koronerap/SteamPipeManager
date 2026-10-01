@@ -477,7 +477,7 @@ public sealed class UpdateInstallerTests : IDisposable
             Directory.GetFiles(AppDir).Select(Path.GetFileName).Order());
     }
 
-    [Fact]
+    [WindowsFact("açık dosya taşınamıyor")]
     public void A_file_that_cannot_be_moved_rolls_everything_back()
     {
         Existing("A.dll", "old a");
@@ -537,7 +537,7 @@ public sealed class UpdateInstallerTests : IDisposable
         Assert.Single(Directory.GetFiles(AppDir));
     }
 
-    [Fact]
+    [WindowsFact("açık dosya silinemiyor")]
     public void Leftovers_still_in_use_are_left_for_the_next_start()
     {
         Existing("SteamPipeManager.exe" + UpdateInstaller.OldSuffix, "old");

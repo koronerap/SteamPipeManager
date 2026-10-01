@@ -103,7 +103,10 @@ public static class UpdateInstaller
 
             foreach (var entry in archive.Entries)
             {
-                var destination = Path.GetFullPath(Path.Combine(root, entry.FullName));
+                // Windows PowerShell 5.1'in zip'leri ters eğik çizgi kullanıyor; Linux ve
+                // macOS'ta o karakter dosya adının parçası sayılırdı.
+                var entryName = OperatingSystem.IsWindows() ? entry.FullName : entry.FullName.Replace('\\', '/');
+                var destination = Path.GetFullPath(Path.Combine(root, entryName));
 
                 // Zip içindeki "..\..\" gibi adlar paketi hazırlık klasörünün dışına
                 // yazdırmasın.
@@ -112,7 +115,7 @@ public static class UpdateInstaller
                     throw new UpdateException(UpdateFailure.PackageInvalid, $"Entry escapes the package: {entry.FullName}");
                 }
 
-                if (entry.FullName.EndsWith('/') || entry.FullName.EndsWith('\\'))
+                if (entryName.EndsWith('/') || entryName.EndsWith('\\'))
                 {
                     Directory.CreateDirectory(destination);
                     continue;

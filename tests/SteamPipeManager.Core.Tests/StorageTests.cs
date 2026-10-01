@@ -178,9 +178,9 @@ public sealed class StorageTests : IDisposable
         var appId = Guid.NewGuid();
         var subApp = new SubApp { SteamAppId = 1200000 };
 
-        Assert.EndsWith(@"scripts\app_1200000.vdf", layout.AppScriptPath(profileId, appId, subApp));
+        Assert.EndsWith(Path.Combine("scripts", "app_1200000.vdf"), layout.AppScriptPath(profileId, appId, subApp));
         Assert.EndsWith(
-            @"scripts\depot_1200002.vdf",
+            Path.Combine("scripts", "depot_1200002.vdf"),
             layout.DepotScriptPath(profileId, appId, subApp.Id, 1200002));
         Assert.EndsWith("output", layout.OutputDirectory(profileId, appId, subApp.Id));
     }

@@ -80,7 +80,7 @@ public sealed class AccountIsolationTests : IDisposable
         Assert.False(File.Exists(installation.ConsoleLogPath));
     }
 
-    [Fact]
+    [WindowsFact("açık dosya silinemiyor")]
     public void Reset_skips_the_old_content_when_the_log_is_locked()
     {
         var installation = new SteamCmdInstallation(_dir);
