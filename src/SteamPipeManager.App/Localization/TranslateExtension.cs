@@ -2,6 +2,8 @@ using System.Windows.Data;
 using System.Windows.Markup;
 using SteamPipeManager.Core.Localization;
 
+using SteamPipeManager.Presentation.Localization;
+
 namespace SteamPipeManager.App.Localization;
 
 /// <summary>
@@ -31,13 +33,4 @@ public sealed class TExtension : MarkupExtension
 
         return binding.ProvideValue(serviceProvider);
     }
-}
-
-/// <summary>
-/// XAML'in erişebilmesi için tekil örnek. Çekirdek katmanla aynı örnektir, böylece
-/// oradaki mesajlar da aynı dille çevrilir.
-/// </summary>
-public static class AppLocalizer
-{
-    public static Localizer Instance => Localizer.Current;
 }

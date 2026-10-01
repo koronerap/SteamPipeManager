@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Arayüzden bağımsız katman: ViewModel'ler ve onların kullandığı hizmetler.
+    Windows'taki WPF uygulaması ve Linux/macOS'taki Avalonia uygulaması aynı mantığı
+    buradan alıyor; yalnızca görünümler ve birkaç platform hizmeti (diyaloglar,
+    onay penceresi, uygulamayı kapatma) her arayüzde ayrı.
+
+    Bu yüzden burada hiçbir arayüz çatısına referans yok.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SteamPipeManager.Core\SteamPipeManager.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SteamPipeManager.Core.Tests" />
+  </ItemGroup>
+
+</Project>

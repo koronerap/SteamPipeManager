@@ -21,6 +21,8 @@
             <conv:SeverityToBrush x:Key="SeverityBrush" />
             <conv:PathToImage x:Key="PathToImage" />
             <conv:OutcomeToText x:Key="OutcomeText" />
+            <conv:ToneToBrush x:Key="ToneBrush" />
+            <conv:ProviderToBrush x:Key="ProviderBrush" />
 
             <Thickness x:Key="CardPadding">16</Thickness>
 

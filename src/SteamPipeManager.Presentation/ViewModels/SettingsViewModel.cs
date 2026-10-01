@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Localization;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Localization;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Localization;
 using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Models;
@@ -10,7 +10,7 @@ using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.Workspace;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 /// <summary>
 /// Makine düzeyindeki ayarlar: SteamCMD kurulumu, tema ve zaman aşımı süreleri.
@@ -142,13 +142,13 @@ public sealed partial class SettingsViewModel(
     }
 
     [RelayCommand]
-    private void BrowseSteamCmd()
+    private async Task BrowseSteamCmdAsync()
     {
         var initial = SteamCmdPath is { Length: > 0 }
             ? System.IO.Path.GetDirectoryName(SteamCmdPath)
             : null;
 
-        if (dialogs.PickExecutable(AppLocalizer.Instance.Get("Settings.SteamCmd.Pick.Tip"), initial) is { } picked)
+        if (await dialogs.PickExecutableAsync(AppLocalizer.Instance.Get("Settings.SteamCmd.Pick.Tip"), initial) is { } picked)
         {
             SteamCmdPath = picked;
         }
@@ -205,13 +205,13 @@ public sealed partial class SettingsViewModel(
     /// klasörü de gösterebilir; ikisi de kabul ediliyor.
     /// </summary>
     [RelayCommand]
-    private void BrowseBuildPatchTool()
+    private async Task BrowseBuildPatchToolAsync()
     {
         var initial = BuildPatchToolPath is { Length: > 0 }
             ? System.IO.Path.GetDirectoryName(BuildPatchToolPath)
             : null;
 
-        if (dialogs.PickExecutable(AppLocalizer.Instance.Get("Epic.Tool.Pick.Tip"), initial) is { } picked)
+        if (await dialogs.PickExecutableAsync(AppLocalizer.Instance.Get("Epic.Tool.Pick.Tip"), initial) is { } picked)
         {
             BuildPatchToolPath = picked;
         }

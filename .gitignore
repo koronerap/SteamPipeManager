@@ -12,6 +12,7 @@ dist/
 # Local planning notes and unannounced-work notes, not part of the public repo
 PLAN.md
 PLAN-EPIC.md
+PLAN-XPLAT.md
 docs/E0-BPT-FINDINGS.md
 
 # Epic'in BuildPatchTool'u. Tescilli ve dağıtım hakkımız yok; yalnızca yerelde

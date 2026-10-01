@@ -1,15 +1,15 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Localization;
+using SteamPipeManager.Presentation.Localization;
 using SteamPipeManager.Core.Publishing;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Localization;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 /// <summary>
 /// İlk çalıştırma sihirbazı: dili doğrular ve ürünün kullandığı yayın aracını hazırlar —
@@ -158,7 +158,7 @@ public sealed partial class SetupViewModel(
     [RelayCommand]
     private async Task PickExistingAsync()
     {
-        if (dialogs.PickExecutable(AppLocalizer.Instance.Get("Settings.SteamCmd.Pick.Tip")) is not { } picked)
+        if (await dialogs.PickExecutableAsync(AppLocalizer.Instance.Get("Settings.SteamCmd.Pick.Tip")) is not { } picked)
         {
             return;
         }
@@ -182,7 +182,7 @@ public sealed partial class SetupViewModel(
     [RelayCommand]
     private async Task PickBuildPatchToolAsync()
     {
-        if (dialogs.PickExecutable(AppLocalizer.Instance.Get("Epic.Tool.Pick.Tip")) is not { } picked)
+        if (await dialogs.PickExecutableAsync(AppLocalizer.Instance.Get("Epic.Tool.Pick.Tip")) is not { } picked)
         {
             return;
         }

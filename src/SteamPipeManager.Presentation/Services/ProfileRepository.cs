@@ -1,7 +1,7 @@
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.Storage;
 
-namespace SteamPipeManager.App.Services;
+namespace SteamPipeManager.Presentation.Services;
 
 /// <summary>
 /// Profil ağacının uygulama ömrü boyunca tek kopyası. ViewModel'ler doğrudan model

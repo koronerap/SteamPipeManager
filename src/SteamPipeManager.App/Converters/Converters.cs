@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Media;
 using SteamPipeManager.Core.Models;
 
 namespace SteamPipeManager.App.Converters;
@@ -144,7 +145,7 @@ public sealed class OutcomeToText : IValueConverter
             _ => "Outcome.Running",
         };
 
-        return Localization.AppLocalizer.Instance.Get(key);
+        return SteamPipeManager.Presentation.Localization.AppLocalizer.Instance.Get(key);
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
@@ -161,4 +162,43 @@ public sealed class EnumToBool : IValueConverter
         value is true && parameter is not null
             ? Enum.Parse(targetType, parameter.ToString()!)
             : Binding.DoNothing;
+}
+
+/// <summary>
+/// ViewModel'in arayüzden bağımsız durum tonunu WPF fırçasına çevirir. Renkler
+/// taşınmadan önce ViewModel'lerde duran değerlerin aynısı.
+/// </summary>
+public sealed class ToneToBrush : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) => value switch
+    {
+        SteamPipeManager.Presentation.ViewModels.StatusTone.Success => Brushes.MediumSeaGreen,
+        SteamPipeManager.Presentation.ViewModels.StatusTone.Warning => Brushes.Goldenrod,
+        SteamPipeManager.Presentation.ViewModels.StatusTone.Danger => Brushes.IndianRed,
+        SteamPipeManager.Presentation.ViewModels.StatusTone.Info => Brushes.CornflowerBlue,
+        SteamPipeManager.Presentation.ViewModels.StatusTone.Neutral => Brushes.Gainsboro,
+        _ => Brushes.Gray,
+    };
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>Hub'daki mağaza etiketi: Steam lacivert, Epic koyu gri.</summary>
+public sealed class ProviderToBrush : IValueConverter
+{
+    private static readonly Brush Steam = Freeze(new SolidColorBrush(Color.FromArgb(0x55, 0x1B, 0x2A, 0x47)));
+    private static readonly Brush Epic = Freeze(new SolidColorBrush(Color.FromArgb(0x55, 0x2B, 0x2B, 0x2B)));
+
+    private static Brush Freeze(Brush brush)
+    {
+        brush.Freeze();
+        return brush;
+    }
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is SteamPipeManager.Core.Models.PublishProviderId.Epic ? Epic : Steam;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
 }

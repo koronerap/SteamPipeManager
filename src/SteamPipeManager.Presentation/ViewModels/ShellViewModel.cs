@@ -1,11 +1,10 @@
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.Publishing;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 public enum ShellPage
 {
@@ -160,7 +159,7 @@ public sealed partial class ShellViewModel : ObservableObject
     /// kullanıcı içeri girip ayar yapabildiği için durum profil ekranından çıkınca da
     /// takip edilebilmeli.
     /// </summary>
-    public Brush ActiveSessionBrush => ActiveCard?.SessionBrush ?? Brushes.Gray;
+    public StatusTone ActiveSessionTone => ActiveCard?.SessionTone ?? StatusTone.Muted;
 
     /// <summary>Profil rozetinin tooltip'i: hesap adı ve oturum durumu birlikte.</summary>
     public string ActiveProfileTooltip => (Navigation.Profile?.DisplayName, ActiveCard) switch
@@ -198,7 +197,7 @@ public sealed partial class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(ActiveAvatarPath));
         OnPropertyChanged(nameof(HasActiveAvatar));
         OnPropertyChanged(nameof(ActiveInitial));
-        OnPropertyChanged(nameof(ActiveSessionBrush));
+        OnPropertyChanged(nameof(ActiveSessionTone));
         OnPropertyChanged(nameof(ActiveProfileTooltip));
     }
 

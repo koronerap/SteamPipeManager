@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
-using SteamPipeManager.App.ViewModels;
+using SteamPipeManager.Presentation.ViewModels;
 using Wpf.Ui.Controls;
 
 namespace SteamPipeManager.App;

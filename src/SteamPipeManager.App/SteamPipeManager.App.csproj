@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SteamPipeManager.Core\SteamPipeManager.Core.csproj" />
+    <ProjectReference Include="..\SteamPipeManager.Presentation\SteamPipeManager.Presentation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

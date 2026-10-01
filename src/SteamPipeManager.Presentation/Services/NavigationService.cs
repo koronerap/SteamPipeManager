@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using SteamPipeManager.Core.Models;
 
-namespace SteamPipeManager.App.Services;
+namespace SteamPipeManager.Presentation.Services;
 
 /// <summary>
 /// Uygulamanın gezinme durumu: profil → oyun → build hedefi.

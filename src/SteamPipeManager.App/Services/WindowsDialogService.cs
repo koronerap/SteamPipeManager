@@ -1,25 +1,23 @@
 // WPF projesinin örtük using'leri System.IO'yu kapsamıyor.
 using System.IO;
 using Microsoft.Win32;
+using SteamPipeManager.Presentation.Services;
 
 namespace SteamPipeManager.App.Services;
 
-/// <summary>
-/// Klasör/dosya seçme diyalogları. Arayüzden ayrıldı ki ViewModel'ler test edilebilsin.
-/// </summary>
-public interface IDialogService
-{
-    string? PickFolder(string title, string? initialDirectory = null);
-
-    string? PickExecutable(string title, string? initialDirectory = null);
-
-    /// <summary>Kaydedilecek dosyanın yerini sorar; iptal edilirse null.</summary>
-    string? PickSaveFile(string title, string suggestedFileName, string filter);
-}
-
+/// <summary>WPF/Windows diyalogları; sonucu hemen döndürüyor.</summary>
 public sealed class WindowsDialogService : IDialogService
 {
-    public string? PickFolder(string title, string? initialDirectory = null)
+    public Task<string?> PickFolderAsync(string title, string? initialDirectory = null) =>
+        Task.FromResult(PickFolder(title, initialDirectory));
+
+    public Task<string?> PickExecutableAsync(string title, string? initialDirectory = null) =>
+        Task.FromResult(PickExecutable(title, initialDirectory));
+
+    public Task<string?> PickSaveFileAsync(string title, string suggestedFileName, string extension) =>
+        Task.FromResult(PickSaveFile(title, suggestedFileName, $"*.{extension}|*.{extension}"));
+
+    private static string? PickFolder(string title, string? initialDirectory = null)
     {
         var dialog = new OpenFolderDialog
         {
@@ -35,7 +33,7 @@ public sealed class WindowsDialogService : IDialogService
         return dialog.ShowDialog() == true ? dialog.FolderName : null;
     }
 
-    public string? PickSaveFile(string title, string suggestedFileName, string filter)
+    private static string? PickSaveFile(string title, string suggestedFileName, string filter)
     {
         var dialog = new SaveFileDialog
         {
@@ -48,7 +46,7 @@ public sealed class WindowsDialogService : IDialogService
         return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
 
-    public string? PickExecutable(string title, string? initialDirectory = null)
+    private static string? PickExecutable(string title, string? initialDirectory = null)
     {
         var dialog = new OpenFileDialog
         {

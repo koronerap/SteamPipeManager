@@ -1,17 +1,16 @@
 using System.IO;
 using System.Collections.ObjectModel;
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Localization;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Localization;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.Workspace;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 /// <summary>Log panelindeki tek satır.</summary>
 public sealed class EpicLogLine(BptEvent evt)
@@ -20,14 +19,14 @@ public sealed class EpicLogLine(BptEvent evt)
 
     public string Time => evt.Timestamp?.ToString("HH:mm:ss") ?? "";
 
-    public Brush Color => evt.Kind switch
+    public StatusTone Tone => evt.Kind switch
     {
-        BptEventKind.Succeeded or BptEventKind.DryRunPassed => Brushes.MediumSeaGreen,
+        BptEventKind.Succeeded or BptEventKind.DryRunPassed => StatusTone.Success,
         BptEventKind.AuthenticationFailed or BptEventKind.ValidationFailed
-            or BptEventKind.Failed or BptEventKind.DryRunFailed => Brushes.IndianRed,
+            or BptEventKind.Failed or BptEventKind.DryRunFailed => StatusTone.Danger,
         BptEventKind.Started or BptEventKind.ScanProgress
-            or BptEventKind.UploadProgress => Brushes.CornflowerBlue,
-        _ => Brushes.Gray,
+            or BptEventKind.UploadProgress => StatusTone.Info,
+        _ => StatusTone.Muted,
     };
 }
 
@@ -161,10 +160,10 @@ public sealed partial class EpicBuildPanelViewModel(
         var version = (record ?? History.FirstOrDefault())?.EpicBuildVersion ?? "build";
         var suggested = $"bpt-{EpicBuildVersion.Normalize(version)}.log";
 
-        if (dialogs.PickSaveFile(
+        if (await dialogs.PickSaveFileAsync(
                 AppLocalizer.Instance.Get("Epic.ExportLog"),
                 suggested,
-                "Log (*.log)|*.log|Metin (*.txt)|*.txt") is not { } target)
+                "log") is not { } target)
         {
             return;
         }

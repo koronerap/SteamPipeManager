@@ -1,15 +1,14 @@
 using System.Collections.ObjectModel;
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Localization;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Localization;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 /// <summary>
 /// Profil kartı: hesabın özeti ve SteamCMD oturum durumu.
@@ -32,9 +31,6 @@ public sealed partial class ProfileCard(UserProfile profile) : ObservableObject
     /// <summary>Kartın üzerindeki küçük mağaza etiketi. Yalnızca Hub'da gösteriliyor.</summary>
     public string ProviderName => IsEpic ? "Epic" : "Steam";
 
-    public Brush ProviderBrush => IsEpic
-        ? new SolidColorBrush(Color.FromArgb(0x55, 0x2B, 0x2B, 0x2B))
-        : new SolidColorBrush(Color.FromArgb(0x55, 0x1B, 0x2A, 0x47));
 
     /// <summary>
     /// Kartta hesabın altında gösterilen satır. Steam'de kullanıcı adı, Epic'te
@@ -69,7 +65,7 @@ public sealed partial class ProfileCard(UserProfile profile) : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SessionText))]
-    [NotifyPropertyChangedFor(nameof(SessionBrush))]
+    [NotifyPropertyChangedFor(nameof(SessionTone))]
     [NotifyPropertyChangedFor(nameof(NeedsLogin))]
     private SessionState _session = SessionState.Unknown;
 
@@ -95,12 +91,12 @@ public sealed partial class ProfileCard(UserProfile profile) : ObservableObject
         _ => AppLocalizer.Instance.Get("Session.Unknown"),
     };
 
-    public Brush SessionBrush => Session switch
+    public StatusTone SessionTone => Session switch
     {
-        SessionState.Active => Brushes.MediumSeaGreen,
-        SessionState.LoginRequired => Brushes.Goldenrod,
-        SessionState.CheckFailed => Brushes.IndianRed,
-        _ => Brushes.Gray,
+        SessionState.Active => StatusTone.Success,
+        SessionState.LoginRequired => StatusTone.Warning,
+        SessionState.CheckFailed => StatusTone.Danger,
+        _ => StatusTone.Muted,
     };
 }
 

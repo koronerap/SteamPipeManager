@@ -74,7 +74,7 @@
                             HorizontalAlignment="Right" VerticalAlignment="Bottom"
                             Background="{DynamicResource ApplicationBackgroundBrush}">
                         <Border Width="8" Height="8" CornerRadius="4"
-                                Background="{Binding ActiveSessionBrush}" />
+                                Background="{Binding ActiveSessionTone, Converter={StaticResource ToneBrush}}" />
                     </Border>
                 </Grid>
             </ui:Button>

@@ -3,15 +3,15 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Localization;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Localization;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Vdf;
 using SteamPipeManager.Core.Workspace;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 /// <summary>
 /// Sol listedeki tek build hedefi. Her yan uygulamanın Steam'de kendi AppID'si ve
@@ -443,23 +443,23 @@ public sealed partial class SubAppWorkspaceViewModel(
     }
 
     [RelayCommand]
-    private void BrowseDepotContent(DepotConfig depot)
+    private async Task BrowseDepotContentAsync(DepotConfig depot)
     {
-        if (dialogs.PickFolder(AppLocalizer.Instance.Get("Depot.ContentRoot"), depot.ContentRoot) is { } picked)
+        if (await dialogs.PickFolderAsync(AppLocalizer.Instance.Get("Depot.ContentRoot"), depot.ContentRoot) is { } picked)
         {
             depot.ContentRoot = picked;
         }
     }
 
     [RelayCommand]
-    private void BrowseSubAppContent()
+    private async Task BrowseSubAppContentAsync()
     {
         if (Selected is null)
         {
             return;
         }
 
-        if (dialogs.PickFolder(AppLocalizer.Instance.Get("General.SharedContent"), Selected.ContentRoot) is { } picked)
+        if (await dialogs.PickFolderAsync(AppLocalizer.Instance.Get("General.SharedContent"), Selected.ContentRoot) is { } picked)
         {
             Selected.ContentRoot = picked;
         }

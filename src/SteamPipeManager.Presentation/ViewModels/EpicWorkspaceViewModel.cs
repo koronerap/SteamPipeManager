@@ -3,13 +3,13 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Localization;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Localization;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.Storage;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 /// <summary>Sol listedeki tek Epic hedefi.</summary>
 public sealed partial class EpicArtifactCard(EpicArtifact artifact) : ObservableObject
@@ -403,28 +403,28 @@ public sealed partial class EpicWorkspaceViewModel(
     }
 
     [RelayCommand]
-    private void BrowseBuildRoot()
+    private async Task BrowseBuildRootAsync()
     {
         if (Selected is not { } artifact)
         {
             return;
         }
 
-        if (dialogs.PickFolder(AppLocalizer.Instance.Get("Epic.BuildRoot"), artifact.BuildRoot) is { } picked)
+        if (await dialogs.PickFolderAsync(AppLocalizer.Instance.Get("Epic.BuildRoot"), artifact.BuildRoot) is { } picked)
         {
             artifact.BuildRoot = picked;
         }
     }
 
     [RelayCommand]
-    private void BrowseCloudDir()
+    private async Task BrowseCloudDirAsync()
     {
         if (Selected is not { } artifact)
         {
             return;
         }
 
-        if (dialogs.PickFolder(AppLocalizer.Instance.Get("Epic.CloudDir"), artifact.CloudDir) is { } picked)
+        if (await dialogs.PickFolderAsync(AppLocalizer.Instance.Get("Epic.CloudDir"), artifact.CloudDir) is { } picked)
         {
             artifact.CloudDir = picked;
         }

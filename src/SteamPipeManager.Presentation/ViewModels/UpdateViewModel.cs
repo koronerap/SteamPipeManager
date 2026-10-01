@@ -2,17 +2,16 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Localization;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Localization;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.Updates;
 using SteamPipeManager.Core.Workspace;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 public enum UpdateStage
 {
@@ -51,6 +50,7 @@ public sealed partial class UpdateViewModel : ObservableObject
     private readonly GitHubReleaseClient _client;
     private readonly UpdateChecker _checker;
     private readonly UpdateDownloader _downloader;
+    private readonly IAppLifetime _lifetime;
 
     private UpdateCheckResult? _result;
     private AppVersion? _updatedFrom;
@@ -64,8 +64,10 @@ public sealed partial class UpdateViewModel : ObservableObject
         BuildCoordinator coordinator,
         EpicBuildPanelViewModel epicBuild,
         SubAppWorkspaceViewModel workspace,
-        EpicWorkspaceViewModel epicWorkspace)
+        EpicWorkspaceViewModel epicWorkspace,
+        IAppLifetime lifetime)
     {
+        _lifetime = lifetime;
         _settings = settings;
         _layout = layout;
         _product = product;
@@ -357,7 +359,7 @@ public sealed partial class UpdateViewModel : ObservableObject
                 throw new UpdateException(UpdateFailure.RestartFailed, ex.Message, ex);
             }
 
-            Application.Current.Shutdown();
+            _lifetime.Shutdown();
         }
         catch (Exception ex)
         {

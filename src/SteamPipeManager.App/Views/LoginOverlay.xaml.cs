@@ -1,6 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
-using SteamPipeManager.App.ViewModels;
+using SteamPipeManager.Presentation.ViewModels;
 
 namespace SteamPipeManager.App.Views;
 

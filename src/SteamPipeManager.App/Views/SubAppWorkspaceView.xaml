@@ -434,7 +434,7 @@ ToolTip="{loc:T Build.Preview.Tip}"
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="{Binding Time}" Opacity="0.4" Margin="0,0,10,0"
                                                        FontFamily="Cascadia Mono, Consolas, monospace" FontSize="11" />
-                                            <TextBlock Text="{Binding Text}" Foreground="{Binding Color}"
+                                            <TextBlock Text="{Binding Text}" Foreground="{Binding Tone, Converter={StaticResource ToneBrush}}"
                                                        FontFamily="Cascadia Mono, Consolas, monospace" FontSize="11"
                                                        TextWrapping="Wrap" />
                                         </StackPanel>

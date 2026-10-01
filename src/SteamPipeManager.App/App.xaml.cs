@@ -4,8 +4,10 @@ using System.IO;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using SteamPipeManager.App.Localization;
+using SteamPipeManager.Presentation.Localization;
 using SteamPipeManager.App.Services;
-using SteamPipeManager.App.ViewModels;
+using SteamPipeManager.Presentation.Services;
+using SteamPipeManager.Presentation.ViewModels;
 using SteamPipeManager.Core.Localization;
 using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Publishing;
@@ -164,6 +166,7 @@ public partial class App : Application
         services.AddSingleton(_ => new EpicSecretStore(layout.EpicSecretsFile));
         services.AddSingleton<IConfirmationService, MessageBoxConfirmationService>();
         services.AddSingleton<IDialogService, WindowsDialogService>();
+        services.AddSingleton<IAppLifetime, WpfAppLifetime>();
         services.AddSingleton(_ => new BuildHistoryStore(layout));
 
         services.AddSingleton<BuildCoordinator>();

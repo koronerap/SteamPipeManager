@@ -92,7 +92,7 @@
                                                      her profil zaten aynı mağazaya ait. -->
                                                 <Border CornerRadius="4" Padding="6,1" Margin="8,2,0,0"
                                                         VerticalAlignment="Center"
-                                                        Background="{Binding ProviderBrush}"
+                                                        Background="{Binding Provider, Converter={StaticResource ProviderBrush}}"
                                                         Visibility="{Binding DataContext.ShowProviderChoice,
                                                                      RelativeSource={RelativeSource AncestorType=ItemsControl},
                                                                      Converter={StaticResource BoolToVis}}">
@@ -119,7 +119,7 @@
                                             </Grid.ColumnDefinitions>
 
                                             <Ellipse Grid.Column="0" Width="9" Height="9"
-                                                     Fill="{Binding SessionBrush}"
+                                                     Fill="{Binding SessionTone, Converter={StaticResource ToneBrush}}"
                                                      VerticalAlignment="Center" Margin="0,0,10,0" />
 
                                             <TextBlock Grid.Column="1" Text="{Binding SessionText}"

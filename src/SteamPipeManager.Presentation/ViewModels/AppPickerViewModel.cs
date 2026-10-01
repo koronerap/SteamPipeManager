@@ -3,13 +3,13 @@ using System.Collections.ObjectModel;
 using IOPath = System.IO.Path;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Localization;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Localization;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Vdf;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 public sealed partial class AppCard(SteamApp app) : ObservableObject
 {
@@ -234,9 +234,9 @@ public sealed partial class AppPickerViewModel(
     }
 
     [RelayCommand]
-    private void BrowseImportPath()
+    private async Task BrowseImportPathAsync()
     {
-        if (dialogs.PickFolder(AppLocalizer.Instance.Get("Import.Title"), ImportPath) is { } picked)
+        if (await dialogs.PickFolderAsync(AppLocalizer.Instance.Get("Import.Title"), ImportPath) is { } picked)
         {
             ImportPath = picked;
             ScanImportPath();

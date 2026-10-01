@@ -1,13 +1,13 @@
 using System.IO;
 using SteamPipeManager.Core.Epic;
-using SteamPipeManager.App.Localization;
+using SteamPipeManager.Presentation.Localization;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.Workspace;
 
-namespace SteamPipeManager.App.Services;
+namespace SteamPipeManager.Presentation.Services;
 
 /// <summary>
 /// SteamCMD kurulumunu bulur/indirir ve build ile oturum işlemlerini tek kapıdan sunar.

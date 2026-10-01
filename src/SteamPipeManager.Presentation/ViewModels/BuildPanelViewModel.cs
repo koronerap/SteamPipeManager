@@ -1,17 +1,16 @@
 using System.Collections.ObjectModel;
 // WPF'in örtük using'leri System.IO'yu getirmiyor; takma adla açıkça belirtiliyor.
 using IOFile = System.IO.File;
-using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using SteamPipeManager.App.Localization;
-using SteamPipeManager.App.Services;
+using SteamPipeManager.Presentation.Localization;
+using SteamPipeManager.Presentation.Services;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 
-namespace SteamPipeManager.App.ViewModels;
+namespace SteamPipeManager.Presentation.ViewModels;
 
 /// <summary>Build'in hangi aşamada olduğunu özetler; ham log yerine bu gösterilir.</summary>
 /// <summary>Build özetindeki tek satır (etiket + değer).</summary>
@@ -24,15 +23,15 @@ public sealed class LogLine(SteamCmdEvent evt)
 
     public string Time => evt.Timestamp?.ToString("HH:mm:ss") ?? "";
 
-    public Brush Color => evt.Kind switch
+    public StatusTone Tone => evt.Kind switch
     {
-        SteamCmdEventKind.BuildSucceeded => Brushes.MediumSeaGreen,
-        SteamCmdEventKind.LoginSucceeded => Brushes.MediumSeaGreen,
-        SteamCmdEventKind.Error or SteamCmdEventKind.LoginFailed => Brushes.IndianRed,
-        SteamCmdEventKind.NeedsInteraction => Brushes.Goldenrod,
+        SteamCmdEventKind.BuildSucceeded => StatusTone.Success,
+        SteamCmdEventKind.LoginSucceeded => StatusTone.Success,
+        SteamCmdEventKind.Error or SteamCmdEventKind.LoginFailed => StatusTone.Danger,
+        SteamCmdEventKind.NeedsInteraction => StatusTone.Warning,
         SteamCmdEventKind.UploadingContent or SteamCmdEventKind.ScanningContent
-            or SteamCmdEventKind.BuildStarted => Brushes.CornflowerBlue,
-        _ => Brushes.Gainsboro,
+            or SteamCmdEventKind.BuildStarted => StatusTone.Info,
+        _ => StatusTone.Neutral,
     };
 }
 
