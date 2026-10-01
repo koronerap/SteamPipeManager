@@ -10,16 +10,29 @@ the scripts for you, and never asks you to edit a `.vdf` by hand.
 
 The same app also comes in two other editions, built from the same code:
 
-| Download | For |
+| Edition | For |
 |---|---|
-| `SteamPipeManager-win-x64.zip` | Steam only |
-| `EpicBuildManager-win-x64.zip` | Epic Games Store only, through Epic's BuildPatchTool |
-| `PipeManagerHub-win-x64.zip` | Both, side by side, with each profile labelled Steam or Epic |
+| Steam Pipe Manager | Steam only |
+| Epic Build Manager | Epic Games Store only, through Epic's BuildPatchTool |
+| Pipe Manager Hub | Both, side by side, with each profile labelled Steam or Epic |
+
+Each edition is published for every platform:
+
+| Platform | Download | Notes |
+|---|---|---|
+| Windows 10/11 | `<Edition>-win-x64.zip` | |
+| Linux (x64) | `<Edition>-linux-x64.tar.gz` | **Preview** — see [Linux and macOS](#linux-and-macos) |
+| macOS, Apple Silicon | `<Edition>-osx-arm64.tar.gz` | **Preview** |
+| macOS, Intel | `<Edition>-osx-x64.tar.gz` | **Preview** |
+
+`<Edition>` is `SteamPipeManager`, `EpicBuildManager` or `PipeManagerHub`.
 
 Epic support is new. It has been used against a real Epic Games Store account, and it stays
 marked **experimental** in the app until more people have published with it.
 
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-blue)
+![Linux](https://img.shields.io/badge/Linux-preview-orange)
+![macOS](https://img.shields.io/badge/macOS-preview-orange)
 ![.NET](https://img.shields.io/badge/.NET-9-512BD4)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -44,9 +57,9 @@ marked **experimental** in the app until more people have published with it.
 
 ## Getting started
 
-1. Download the zip for the edition you need from [Releases](../../releases), unpack it
-   anywhere and run the exe inside. No installation and no .NET runtime required — the
-   folder holds the exe and the five native libraries WPF needs beside it.
+1. Download the package for your edition and platform from [Releases](../../releases),
+   unpack it anywhere and run the app inside. No installation and no .NET runtime
+   required. On Linux and macOS read [the notes below](#linux-and-macos) first.
 2. On first run, pick a language and let the app download SteamCMD (or point it at one
    you already have).
 3. Create a profile for your Steam account and sign in once from its card.
@@ -73,6 +86,43 @@ the current version is kept. The check can be turned off in Settings.
 
 > Preview is worth using the first time: it runs the whole pipeline and reports exactly
 > what would be uploaded, without uploading anything.
+
+## Linux and macOS
+
+The Linux and macOS versions are new. They share all of their logic with the Windows app
+and the Windows test suite, and their interface has been exercised on Windows, but they
+have not yet been run by many people on Linux or macOS. Please report what you find.
+
+**Linux**
+
+```bash
+tar -xzf SteamPipeManager-linux-x64.tar.gz
+./SteamPipeManager/SteamPipeManager
+```
+
+- SteamCMD is a 32-bit program. On Debian and Ubuntu install `lib32gcc-s1`; on Fedora
+  `glibc.i686` and `libstdc++.i686`.
+- Epic client secrets go to your desktop's secret store (GNOME Keyring or KWallet) through
+  `secret-tool` (package `libsecret-tools` on Debian/Ubuntu). Without it they are kept in a
+  file only your user can read, and the app says so.
+- "Sign in from a console" opens your terminal emulator (it tries `x-terminal-emulator`,
+  GNOME Terminal, Konsole, Xfce Terminal, kitty, Alacritty and xterm).
+
+**macOS** (12 or later)
+
+1. Download `osx-arm64` for Apple Silicon or `osx-x64` for Intel Macs, unpack it and move
+   the `.app` to Applications.
+2. The app is not notarized by Apple, so the first launch is blocked. Control-click the app
+   and choose **Open**; on macOS 15 and later, open **System Settings → Privacy & Security**
+   and click **Open Anyway**. Alternatively:
+
+   ```bash
+   xattr -dr com.apple.quarantine "/Applications/Steam Pipe Manager.app"
+   ```
+
+- Epic client secrets are stored in your login Keychain.
+- SteamCMD runs with its own home folder inside the app's data folder, so its log and
+  sign-in cache stay separate from the Steam client's.
 
 ## Safety
 
@@ -104,13 +154,18 @@ Logs you export for a bug report have account IDs and user paths masked.
 
 ## Data location
 
-`%AppData%\SteamPipeManager\`
+| Platform | Folder |
+|---|---|
+| Windows | `%AppData%\SteamPipeManager\` |
+| Linux | `~/.local/share/SteamPipeManager/` (or `$XDG_DATA_HOME`) |
+| macOS | `~/Library/Application Support/SteamPipeManager/` |
 
 | File / folder | Contents |
 |---|---|
 | `profiles.json` | Profiles, games, build targets, depots |
 | `settings.json` | SteamCMD and BuildPatchTool paths, language, timeouts, update check |
-| `epic-secrets.json` | Epic client secrets, DPAPI-encrypted for your Windows user |
+| `epic-secrets.json` | Windows: Epic client secrets, DPAPI-encrypted for your Windows user. Linux without a secret store: the secrets, readable only by you |
+| `steamcmd-home/` | Linux and macOS: SteamCMD's own home folder (its logs and sign-in cache) |
 | `history.json` | Build history (most recent 500 entries) |
 | `lang\*.json` | Language files — drop your own here |
 | `workspaces\` | Generated `.vdf` scripts and build output |
@@ -137,7 +192,8 @@ Requires the .NET 9 SDK.
 ```bash
 dotnet build                                    # build
 dotnet test tests/SteamPipeManager.Core.Tests   # run the tests
-.\publish.ps1                                   # zip all three products (asks whether to skip tests)
+dotnet run --project src/SteamPipeManager.Desktop   # the Linux/macOS front end; runs on Windows too
+.\publish.ps1                                   # package everything (asks whether to skip tests)
 ```
 
 ### Publishing a release
@@ -146,17 +202,25 @@ dotnet test tests/SteamPipeManager.Core.Tests   # run the tests
 .\publish.ps1
 ```
 
-This writes one zip per product and a `SHA256SUMS.txt` to `publish/`. Upload **all** of them
-to the GitHub release, tagged `vX.Y.Z` to match `<Version>` in the app project. The in-app
-updater looks for `<Product>-win-x64.zip` and refuses to install it unless `SHA256SUMS.txt`
-lists a matching checksum, so a release without that file is only offered as a manual
-download.
+This writes one package per edition and platform, plus `SHA256SUMS.txt`, to `publish/`.
+`-Platform Windows|Linux|MacOS` and `-Product` narrow it down. Upload **all** of them to the
+GitHub release, tagged `vX.Y.Z` to match `<Version>` in `src/Product.props`. The in-app
+updater looks for its own edition and platform (for example `PipeManagerHub-osx-arm64.tar.gz`)
+and refuses to install it unless `SHA256SUMS.txt` lists a matching checksum.
+
+The Linux and macOS packages are written by `tools/Packager`, which keeps the execute bits
+that a zip would lose and builds the macOS `.app`. If
+[rcodesign](https://github.com/indygreg/apple-platform-rs) is on the `PATH` (or in the
+`RCODESIGN` environment variable) the `.app` is ad-hoc signed as a whole; without it the
+script warns that the macOS packages are unsigned.
 
 The solution is split so the interesting parts are testable without a UI or a Steam account:
 
 - `SteamPipeManager.Core` — VDF parser and writer, the importer, validation, the SteamCMD
-  process layer. No WPF dependency.
-- `SteamPipeManager.App` — WPF/MVVM front end.
+  and BuildPatchTool process layers, the updater. No UI dependency.
+- `SteamPipeManager.Presentation` — view models and their services, shared by both front ends.
+- `SteamPipeManager.App` — WPF front end (Windows).
+- `SteamPipeManager.Desktop` — Avalonia front end (Linux and macOS; also runs on Windows).
 - `tests/FakeSteamCmd` — a stand-in for `steamcmd.exe` that reproduces its measured
   behaviour, so the build engine can be tested end to end without signing in to Steam.
 - `tests/fixtures/` — not in the repository. Reference ContentBuilder scripts and real

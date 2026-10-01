@@ -21,11 +21,14 @@
 
   <PropertyGroup>
     <!--
-      Kendi kendine yeten dağıtım: kullanıcıda .NET kurulumu gerekmiyor. Tek dosya
-      bilerek kullanılmıyor (Windows'taki gibi sıkıştırılmış paketler güvenlik
-      yazılımlarına takılıyor); macOS'ta zaten bir .app paketinin içinde duruyor.
+      Kendi kendine yeten dağıtım: kullanıcıda .NET kurulumu gerekmiyor. Windows'taki
+      gibi yönetilen derlemeler tek dosyada ama sıkıştırılmadan; yerel kütüphaneler
+      (Skia, HarfBuzz, Avalonia'nın macOS katmanı) yanında duruyor.
     -->
     <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <DebugType>embedded</DebugType>
     <!-- Kullanıcının çalıştıracağı dosya ürünün adını taşıyor. -->

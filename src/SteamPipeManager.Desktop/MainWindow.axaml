@@ -6,6 +6,7 @@
         xmlns:ic="using:FluentIcons.Avalonia"
         x:Class="SteamPipeManager.Desktop.MainWindow"
         Title="{Binding ProductName}"
+        Icon="/Assets/app.ico"
         Width="1280" Height="820"
         MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
