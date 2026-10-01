@@ -328,7 +328,7 @@
                                                     <Run Text=" - " />
                                                     <Run Text="{Binding DurationText, Mode=OneWay}" />
                                                 </TextBlock>
-                                                <TextBlock Text="{Binding Outcome, Converter={StaticResource OutcomeText}}"
+                                                <TextBlock Text="{Binding Converter={StaticResource OutcomeText}}"
                                                            Opacity="0.8" FontSize="12" Margin="0,4,0,0" />
                                                 <TextBlock Text="{Binding FailureReason}" Opacity="0.8" FontSize="12"
                                                            TextWrapping="Wrap" Margin="0,6,0,0"

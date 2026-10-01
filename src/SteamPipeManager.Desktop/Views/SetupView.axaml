@@ -1,0 +1,104 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:SteamPipeManager.Desktop.Localization"
+             xmlns:c="using:SteamPipeManager.Desktop.Controls"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="SteamPipeManager.Desktop.Views.SetupView">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="620" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20">
+
+            <TextBlock Text="{Binding WelcomeText}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:T Setup.Intro}" TextWrapping="Wrap" Opacity="0.75"
+                       TextAlignment="Center" Margin="0,10,0,0" LineHeight="21" />
+
+            <Border Classes="card" Margin="0,24,0,0">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.Language}" FontWeight="SemiBold" Margin="0,0,0,10" />
+                    <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}"
+                              HorizontalAlignment="Left" MinWidth="220">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+            </Border>
+
+            <!-- SteamCMD: yalnızca Steam'i destekleyen ürünlerde -->
+            <Border Classes="card" Margin="0,16,0,0" IsVisible="{Binding SupportsSteam}">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.SteamCmd}" FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <TextBlock Text="{loc:T Setup.SteamCmd.Body}" TextWrapping="Wrap" Opacity="0.75" FontSize="12"
+                               Margin="0,0,0,14" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding NeedsSteamCmd}">
+                        <Button Classes="accent" IsEnabled="{Binding IsIdle}" Command="{Binding DownloadCommand}">
+                            <c:IconLabel Symbol="ArrowDownload" Text="{loc:T Settings.SteamCmd.Download}" />
+                        </Button>
+                        <Button IsEnabled="{Binding IsIdle}" Command="{Binding PickExistingCommand}">
+                            <c:IconLabel Symbol="FolderOpen" Text="{loc:T Setup.UseExisting}" />
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" IsVisible="{Binding SteamCmdReady}">
+                        <Ellipse Width="9" Height="9" Fill="MediumSeaGreen" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Classes="mono" Text="{Binding SteamCmdPath}" TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <ProgressBar Height="3" IsIndeterminate="True" Margin="0,14,0,0" IsVisible="{Binding IsBusy}" />
+
+                    <TextBlock Text="{Binding StatusMessage}" Opacity="0.75" FontSize="12" Margin="0,10,0,0" TextWrapping="Wrap"
+                               IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Classes="error" Text="{Binding ErrorMessage}" FontSize="12"
+                               IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- BuildPatchTool: yalnızca Epic'i destekleyen ürünlerde. İndirme düğmesi yok;
+                 araç Epic Dev Portal'ın arkasında, kullanıcının göstermesi gerekiyor. -->
+            <Border Classes="card" Margin="0,16,0,0" IsVisible="{Binding SupportsEpic}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,6">
+                        <TextBlock Text="{loc:T Epic.Tool}" FontWeight="SemiBold" />
+                        <Border Background="#33B8860B" CornerRadius="4" Padding="7,2" VerticalAlignment="Center">
+                            <TextBlock Text="{loc:T Epic.ExperimentalBadge}" FontSize="10" FontWeight="SemiBold" />
+                        </Border>
+                    </StackPanel>
+
+                    <TextBlock Text="{loc:T Epic.Tool.Body}" TextWrapping="Wrap" Opacity="0.75" FontSize="12" Margin="0,0,0,14" />
+
+                    <Button Classes="accent" HorizontalAlignment="Left"
+                            ToolTip.Tip="{loc:T Epic.Tool.Pick.Tip}"
+                            IsEnabled="{Binding IsIdle}"
+                            Command="{Binding PickBuildPatchToolCommand}"
+                            IsVisible="{Binding NeedsBuildPatchTool}">
+                        <c:IconLabel Symbol="FolderOpen" Text="{loc:T Setup.Epic.Pick}" />
+                    </Button>
+
+                    <StackPanel Orientation="Horizontal" IsVisible="{Binding BuildPatchToolReady}">
+                        <Ellipse Width="9" Height="9" Fill="MediumSeaGreen" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Classes="mono" Text="{Binding BuildPatchToolPath}" TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding BuildPatchToolStatus}" Opacity="0.75" FontSize="12" Margin="0,10,0,0" TextWrapping="Wrap"
+                               IsVisible="{Binding BuildPatchToolStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Classes="error" Text="{Binding BuildPatchToolError}" FontSize="12"
+                               IsVisible="{Binding BuildPatchToolError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,24,0,0">
+                <Button Classes="accent" Padding="24,9" IsEnabled="{Binding IsIdle}" Command="{Binding FinishCommand}">
+                    <c:IconLabel Symbol="Checkmark" Text="{loc:T Setup.Start}" />
+                </Button>
+                <Button Classes="subtle" Padding="16,9" Content="{loc:T Setup.Later}"
+                        IsEnabled="{Binding IsIdle}" IsVisible="{Binding ShowLater}"
+                        Command="{Binding SkipCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -20,36 +20,8 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <!--
-    Üç ürün, tek koddan. Yayımlarken seçiliyor:
-      dotnet publish -p:SpmProduct=PipeManagerHub
-    Geçerli değerler: SteamPipeManager (varsayılan), EpicBuildManager, PipeManagerHub.
-  -->
-  <PropertyGroup>
-    <SpmProduct Condition="'$(SpmProduct)' == ''">SteamPipeManager</SpmProduct>
-
-    <SpmProductName Condition="'$(SpmProduct)' == 'SteamPipeManager'">Steam Pipe Manager</SpmProductName>
-    <SpmProductName Condition="'$(SpmProduct)' == 'EpicBuildManager'">Epic Build Manager</SpmProductName>
-    <SpmProductName Condition="'$(SpmProduct)' == 'PipeManagerHub'">Pipe Manager Hub</SpmProductName>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <!-- Koşullu derleme yerine meta veri: tek kod yolu, hepsi her üründe derleniyor. -->
-    <AssemblyMetadata Include="SpmProduct" Value="$(SpmProduct)" />
-  </ItemGroup>
-
-  <PropertyGroup>
-    <AssemblyTitle>$(SpmProductName)</AssemblyTitle>
-    <Product>$(SpmProductName)</Product>
-    <Description>Steam ve Epic Games Store build'lerini birden çok hesap, oyun ve yan uygulama için tek yerden yönetir.</Description>
-    <!--
-      Tek sürüm kaynağı. Dosya ve derleme sürümleri buradan türetiliyor; güncelleyici
-      çalışan sürümü buradan okuyup GitHub'daki etiketle karşılaştırıyor. Elle yazılan
-      ayrı FileVersion/AssemblyVersion unutulup eski kalırsa güncelleme döngüye girerdi.
-    -->
-    <Version>1.1.0</Version>
-    <Copyright>© 2026</Copyright>
-  </PropertyGroup>
+  <!-- Ürün kimliği ve sürüm Avalonia uygulamasıyla ortak. -->
+  <Import Project="..\Product.props" />
 
   <PropertyGroup>
     <!--
@@ -69,13 +41,5 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!--
-      Dil dosyaları exe'ye gömülür: tek dosya dağıtımda yanında klasör taşımak
-      gerekmesin. İlk çalıştırmada kullanıcının düzenleyebileceği dil klasörüne
-      açılır; oradaki sürüm önceliklidir ve üzerine yazılmaz.
-    -->
-    <EmbeddedResource Include="lang\*.json" />
-  </ItemGroup>
 
 </Project>

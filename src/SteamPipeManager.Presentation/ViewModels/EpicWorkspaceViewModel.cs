@@ -14,6 +14,9 @@ namespace SteamPipeManager.Presentation.ViewModels;
 /// <summary>Sol listedeki tek Epic hedefi.</summary>
 public sealed partial class EpicArtifactCard(EpicArtifact artifact) : ObservableObject
 {
+    /// <summary>Liste öğesinin erişilebilir adı (ekran okuyucu, otomasyon).</summary>
+    public override string ToString() => Title;
+
     public EpicArtifact Artifact { get; } = artifact;
 
     public string Title => Artifact.Title;

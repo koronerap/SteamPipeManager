@@ -26,4 +26,13 @@
     <InternalsVisibleTo Include="SteamPipeManager.Core.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      Dil dosyaları burada gömülü: iki arayüz de aynı metinleri kullanıyor. İlk
+      çalıştırmada kullanıcının düzenleyebileceği dil klasörüne açılıyor (bkz.
+      EmbeddedLanguages ve Localizer).
+    -->
+    <EmbeddedResource Include="lang\*.json" />
+  </ItemGroup>
+
 </Project>

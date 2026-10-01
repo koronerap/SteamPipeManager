@@ -17,6 +17,9 @@ namespace SteamPipeManager.Presentation.ViewModels;
 /// </summary>
 public sealed partial class ProfileCard(UserProfile profile) : ObservableObject
 {
+    /// <summary>Liste öğesinin erişilebilir adı (ekran okuyucu, otomasyon).</summary>
+    public override string ToString() => DisplayName;
+
     public UserProfile Profile { get; } = profile;
 
     public string DisplayName => Profile.DisplayName;

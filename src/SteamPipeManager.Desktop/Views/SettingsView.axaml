@@ -1,0 +1,156 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:SteamPipeManager.Desktop.Localization"
+             xmlns:c="using:SteamPipeManager.Desktop.Controls"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="SteamPipeManager.Desktop.Views.SettingsView">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="720" HorizontalAlignment="Left" Spacing="16">
+
+            <TextBlock Classes="section" Text="{loc:T Nav.Settings}" Margin="0" />
+
+            <Border Classes="card">
+                <StackPanel>
+                    <TextBlock Classes="title" Text="{loc:T Settings.Language}" />
+                    <TextBlock Classes="body" Text="{loc:T Settings.Language.Body}" />
+
+                    <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}"
+                              HorizontalAlignment="Left" MinWidth="220">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <TextBlock Classes="mono" Text="{Binding LanguageDirectory}" TextWrapping="Wrap" Opacity="0.6" Margin="0,12,0,0" />
+
+                    <Button Margin="0,10,0,0" Command="{Binding OpenLanguageFolderCommand}">
+                        <c:IconLabel Symbol="FolderOpen" Text="{loc:T Settings.Language.OpenFolder}" />
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- Güncellemeler -->
+            <Border Classes="card">
+                <StackPanel>
+                    <TextBlock Classes="title" Text="{loc:T Settings.Updates}" />
+                    <TextBlock Classes="body" Text="{loc:T Settings.Updates.Body}" />
+
+                    <TextBlock Text="{Binding Updates.InstalledVersionText}" FontWeight="SemiBold"
+                               AutomationProperties.AutomationId="InstalledVersion" />
+
+                    <CheckBox Margin="0,10,0,0" Content="{loc:T Settings.Updates.AutoCheck}" IsChecked="{Binding CheckForUpdates}" />
+
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button Margin="0,0,8,0" ToolTip.Tip="{loc:T Settings.Updates.CheckNow.Tip}"
+                                AutomationProperties.AutomationId="CheckForUpdatesButton"
+                                Command="{Binding Updates.CheckNowCommand}">
+                            <c:IconLabel Symbol="ArrowSync" Text="{loc:T Settings.Updates.CheckNow}" />
+                        </Button>
+                        <Button Classes="accent" ToolTip.Tip="{loc:T Update.Install.Tip}"
+                                Command="{Binding Updates.InstallCommand}" IsVisible="{Binding Updates.CanInstall}">
+                            <c:IconLabel Symbol="ArrowDownload" Text="{loc:T Update.Install}" />
+                        </Button>
+                    </WrapPanel>
+
+                    <TextBlock Text="{Binding Updates.StatusText}" TextWrapping="Wrap" Margin="0,10,0,0" Opacity="0.85"
+                               AutomationProperties.AutomationId="UpdateStatusText"
+                               IsVisible="{Binding Updates.StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- SteamCMD kartı yalnızca Steam'i destekleyen ürünlerde -->
+            <Border Classes="card" IsVisible="{Binding SupportsSteam}">
+                <StackPanel>
+                    <TextBlock Classes="title" Text="{loc:T Settings.SteamCmd}" />
+                    <TextBlock Classes="body" Text="{loc:T Settings.SteamCmd.Body}" />
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Text="{Binding SteamCmdPath}" Watermark="{loc:T Settings.SteamCmd.Placeholder}" />
+                        <Button Grid.Column="1" Margin="8,0,0,0" Padding="10,8"
+                                AutomationProperties.Name="{loc:T Settings.SteamCmd.Pick.Tip}"
+                                ToolTip.Tip="{loc:T Settings.SteamCmd.Pick.Tip}"
+                                Command="{Binding BrowseSteamCmdCommand}">
+                            <ic:SymbolIcon Symbol="FolderOpen" FontSize="16" />
+                        </Button>
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
+                        <Button ToolTip.Tip="{loc:T Settings.SteamCmd.Verify.Tip}" Command="{Binding VerifySteamCmdCommand}">
+                            <c:IconLabel Symbol="CheckmarkCircle" Text="{loc:T Settings.SteamCmd.Verify}" />
+                        </Button>
+                        <Button ToolTip.Tip="{loc:T Settings.SteamCmd.Download.Tip}" Command="{Binding DownloadSteamCmdCommand}"
+                                IsEnabled="{Binding !IsBusy}">
+                            <c:IconLabel Symbol="ArrowDownload" Text="{loc:T Settings.SteamCmd.Download}" />
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- BuildPatchTool: Epic tarafının aracı; indirme seçeneği yok -->
+            <Border Classes="card" IsVisible="{Binding SupportsEpic}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,4">
+                        <TextBlock Text="{loc:T Epic.Tool}" FontWeight="SemiBold" FontSize="16" />
+                        <Border Background="#33B8860B" CornerRadius="4" Padding="7,2" VerticalAlignment="Center">
+                            <TextBlock Text="{loc:T Epic.ExperimentalBadge}" FontSize="10" FontWeight="SemiBold" />
+                        </Border>
+                    </StackPanel>
+
+                    <TextBlock Classes="body" Text="{loc:T Epic.Tool.Body}" />
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Text="{Binding BuildPatchToolPath}" Watermark="{loc:T Epic.Tool.Placeholder}" />
+                        <Button Grid.Column="1" Margin="8,0,0,0" Padding="10,8"
+                                AutomationProperties.Name="{loc:T Epic.Tool.Pick.Tip}"
+                                ToolTip.Tip="{loc:T Epic.Tool.Pick.Tip}"
+                                Command="{Binding BrowseBuildPatchToolCommand}">
+                            <ic:SymbolIcon Symbol="FolderOpen" FontSize="16" />
+                        </Button>
+                    </Grid>
+
+                    <Button Margin="0,12,0,0" HorizontalAlignment="Left" ToolTip.Tip="{loc:T Epic.Tool.Verify.Tip}"
+                            Command="{Binding VerifyBuildPatchToolCommand}">
+                        <c:IconLabel Symbol="CheckmarkCircle" Text="{loc:T Settings.SteamCmd.Verify}" />
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel>
+                    <TextBlock Classes="title" Text="{loc:T Settings.Timeouts}" />
+                    <TextBlock Classes="body" Text="{loc:T Settings.Timeouts.Body}" />
+
+                    <TextBlock Classes="label" Text="{loc:T Settings.StallSeconds}" Margin="0,0,0,4" />
+                    <TextBox Text="{Binding StallWarningSeconds}" />
+                    <TextBlock Classes="hint" Text="{loc:T Settings.StallSeconds.Hint}" />
+
+                    <TextBlock Classes="label" Text="{loc:T Settings.SessionTimeout}" />
+                    <TextBox Text="{Binding SessionCheckTimeoutSeconds}" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+                <StackPanel>
+                    <TextBlock Classes="title" Text="{loc:T Settings.DataLocation}" Margin="0,0,0,8" />
+                    <TextBlock Classes="mono" Text="{Binding WorkspaceRoot}" TextWrapping="Wrap" Opacity="0.8" FontSize="12" />
+                    <TextBlock TextWrapping="Wrap" Opacity="0.6" FontSize="12" Margin="0,8,0,0" Text="{loc:T Settings.DataLocation.Body}" />
+                    <Button Margin="0,12,0,0" HorizontalAlignment="Left" ToolTip.Tip="{loc:T Settings.OpenFolder.Tip}"
+                            Command="{Binding OpenWorkspaceFolderCommand}">
+                        <c:IconLabel Symbol="FolderOpen" Text="{loc:T Settings.OpenFolder}" />
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Classes="accent" ToolTip.Tip="{loc:T Settings.Save.Tip}" Command="{Binding SaveCommand}">
+                    <c:IconLabel Symbol="Save" Text="{loc:T Common.Save}" />
+                </Button>
+                <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Opacity="0.85" TextWrapping="Wrap"
+                           IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

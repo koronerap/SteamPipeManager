@@ -20,7 +20,7 @@ public sealed class LanguageFileTests
 
         while (dir is not null)
         {
-            var candidate = Path.Combine(dir, "src", "SteamPipeManager.App", "lang");
+            var candidate = Path.Combine(dir, "src", "SteamPipeManager.Presentation", "lang");
 
             if (Directory.Exists(candidate))
             {

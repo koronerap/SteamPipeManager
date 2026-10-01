@@ -355,7 +355,7 @@ public sealed partial class BuildPanelViewModel(
         }
     }
 
-    /// <summary>Arşivlenen ham SteamCMD çıktısını Gezgin'de gösterir.</summary>
+    /// <summary>Arşivlenen ham SteamCMD çıktısını dosya yöneticisinde gösterir.</summary>
     [RelayCommand]
     private void OpenLogFolder(BuildRecord record)
     {
@@ -365,11 +365,6 @@ public sealed partial class BuildPanelViewModel(
             return;
         }
 
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-        {
-            FileName = "explorer.exe",
-            Arguments = $"/select,\"{path}\"",
-            UseShellExecute = true,
-        });
+        SteamPipeManager.Core.Platform.FileReveal.Show(path);
     }
 }

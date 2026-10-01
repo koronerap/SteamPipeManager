@@ -1,0 +1,379 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:SteamPipeManager.Desktop.Localization"
+             xmlns:c="using:SteamPipeManager.Desktop.Controls"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="SteamPipeManager.Desktop.Views.SubAppWorkspaceView">
+
+    <Grid ColumnDefinitions="240,*">
+
+        <!-- Sol: build hedefleri -->
+        <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" Margin="0,0,16,0">
+            <TextBlock Grid.Row="0" Classes="section" FontSize="15" Text="{loc:T Workspace.Targets}" />
+
+            <ListBox Grid.Row="1" ItemsSource="{Binding SubApps}" SelectedItem="{Binding SelectedCard}"
+                     Background="Transparent">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,5">
+                            <!-- Her yan uygulamanın kendi Steam kapsülü -->
+                            <Panel Grid.Column="0" Width="34" Height="51" VerticalAlignment="Center">
+                                <Border CornerRadius="3" Background="#2A3B5C" IsVisible="{Binding !HasCapsule}">
+                                    <TextBlock Text="{Binding Initial}" FontSize="15" Opacity="0.6"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <Border CornerRadius="3" ClipToBounds="True" IsVisible="{Binding HasCapsule}">
+                                    <Image Source="{Binding CapsulePath, Converter={StaticResource PathToBitmap}}" Stretch="UniformToFill" />
+                                </Border>
+                            </Panel>
+
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Subtitle}" Opacity="0.6" FontSize="11" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+
+                            <!-- Hızlı build: hedefi seçip Build sekmesine geçerek başlatır. -->
+                            <Button Grid.Column="2" Classes="subtle" Padding="6,4" VerticalAlignment="Center"
+                                    AutomationProperties.Name="{loc:T Apps.QuickBuild.Tip}"
+                                    ToolTip.Tip="{loc:T Apps.QuickBuild.Tip}"
+                                    Command="{Binding $parent[ListBox].DataContext.QuickBuildCommand}"
+                                    CommandParameter="{Binding}">
+                                <ic:SymbolIcon Symbol="CloudArrowUp" FontSize="16" />
+                            </Button>
+                            <Button Grid.Column="3" Classes="subtle" Padding="6,4" VerticalAlignment="Center"
+                                    AutomationProperties.Name="{loc:T Workspace.Delete.Tip}"
+                                    ToolTip.Tip="{loc:T Workspace.Delete.Tip}"
+                                    Command="{Binding $parent[ListBox].DataContext.DeleteSubAppCommand}"
+                                    CommandParameter="{Binding}">
+                                <ic:SymbolIcon Symbol="Delete" FontSize="16" />
+                            </Button>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <Button Grid.Row="2" Margin="0,8,0,0" HorizontalAlignment="Stretch"
+                    ToolTip.Tip="{loc:T Workspace.AddSubApp.Tip}" Command="{Binding AddSubAppCommand}">
+                <c:IconLabel Symbol="Add" Text="{loc:T Workspace.AddSubApp}" />
+            </Button>
+        </Grid>
+
+        <!-- Sağ: seçili hedefin ayarları -->
+        <Panel Grid.Column="1">
+            <TextBlock Text="{loc:T Workspace.SelectPrompt}" Opacity="0.6"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       IsVisible="{Binding !HasSelection}" />
+
+            <TabControl SelectedIndex="{Binding SelectedTabIndex}" IsVisible="{Binding HasSelection}">
+
+                <TabItem Header="{loc:T Tab.General}">
+                    <ScrollViewer Padding="16">
+                        <StackPanel MaxWidth="640" HorizontalAlignment="Left">
+                            <TextBlock Classes="label" Text="{loc:T General.Title}" Margin="0,0,0,4" />
+                            <TextBox Text="{Binding Selected.Title}" />
+
+                            <TextBlock Classes="label" Text="{loc:T General.Kind}" />
+                            <ComboBox ItemsSource="{Binding Kinds}" SelectedItem="{Binding Selected.Kind}" />
+
+                            <TextBlock Classes="label" Text="{loc:T General.AppId}" />
+                            <TextBox Text="{Binding Selected.SteamAppId}" />
+
+                            <TextBlock Classes="label" Text="{loc:T General.SharedContent}" Margin="0,16,0,4" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBox Text="{Binding Selected.ContentRoot}" Watermark="{loc:T General.SharedContent.Hint}" />
+                                <Button Grid.Column="1" Margin="8,0,0,0" Padding="10,8"
+                                        AutomationProperties.Name="{loc:T Common.PickFolder}"
+                                        ToolTip.Tip="{loc:T Common.PickFolder}"
+                                        Command="{Binding BrowseSubAppContentCommand}">
+                                    <ic:SymbolIcon Symbol="FolderOpen" FontSize="16" />
+                                </Button>
+                            </Grid>
+
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,20,0,0" Opacity="0.55">
+                                <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="15" VerticalAlignment="Center" />
+                                <TextBlock Text="{loc:T Common.AutoSaved}" FontSize="12" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding StatusMessage}" Opacity="0.7" Margin="0,8,0,0" TextWrapping="Wrap"
+                                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="{loc:T Tab.Depots}">
+                    <ScrollViewer Padding="16">
+                        <StackPanel>
+                            <ItemsControl ItemsSource="{Binding Selected.Depots}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="card" Padding="16" Margin="0,0,0,12">
+                                            <StackPanel>
+                                                <Grid ColumnDefinitions="*,*,Auto">
+                                                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                                        <TextBlock Classes="label" Text="{loc:T Depot.Id}" Margin="0,0,0,4" />
+                                                        <TextBox Text="{Binding DepotId}" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                                                        <TextBlock Classes="label" Text="{loc:T Depot.Label}" Margin="0,0,0,4" />
+                                                        <TextBox Text="{Binding Label}" Watermark="Linux" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="2" Classes="subtle" Padding="9,7" VerticalAlignment="Bottom"
+                                                            AutomationProperties.Name="{loc:T Depot.Remove.Tip}"
+                                                            ToolTip.Tip="{loc:T Depot.Remove.Tip}"
+                                                            Command="{Binding $parent[ItemsControl].DataContext.RemoveDepotCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <ic:SymbolIcon Symbol="Delete" FontSize="16" />
+                                                    </Button>
+                                                </Grid>
+
+                                                <TextBlock Classes="label" Text="{loc:T Depot.ContentRoot}" />
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBox Text="{Binding ContentRoot}" Watermark="~/Builds/Game/Linux" />
+                                                    <Button Grid.Column="1" Margin="8,0,0,0" Padding="10,8"
+                                                            AutomationProperties.Name="{loc:T Depot.PickContent.Tip}"
+                                                            ToolTip.Tip="{loc:T Depot.PickContent.Tip}"
+                                                            Command="{Binding $parent[ItemsControl].DataContext.BrowseDepotContentCommand}"
+                                                            CommandParameter="{Binding}">
+                                                        <ic:SymbolIcon Symbol="FolderOpen" FontSize="16" />
+                                                    </Button>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Button ToolTip.Tip="{loc:T Depot.Add.Tip}" Command="{Binding AddDepotCommand}">
+                                    <c:IconLabel Symbol="Add" Text="{loc:T Depot.Add}" />
+                                </Button>
+                                <StackPanel Orientation="Horizontal" Spacing="6" Opacity="0.55" VerticalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="15" VerticalAlignment="Center" />
+                                    <TextBlock Text="{loc:T Common.AutoSaved}" FontSize="12" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="{loc:T Tab.Build}">
+                    <ScrollViewer>
+                        <StackPanel Margin="20" DataContext="{Binding BuildPanel}">
+
+                            <!-- Eylemler; log düğmesi sağda -->
+                            <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <Button Classes="accent" Padding="22,10" FontWeight="SemiBold"
+                                            ToolTip.Tip="{loc:T Build.Start.Tip}"
+                                            Command="{Binding BuildCommand}" IsEnabled="{Binding CanBuild}">
+                                        <c:IconLabel Symbol="CloudArrowUp" Text="{loc:T Build.Start}" />
+                                    </Button>
+                                    <Button Padding="16,10" ToolTip.Tip="{loc:T Build.Preview.Tip}"
+                                            Command="{Binding PreviewCommand}" IsEnabled="{Binding CanBuild}">
+                                        <c:IconLabel Symbol="Eye" Text="{loc:T Build.Preview}" />
+                                    </Button>
+                                    <Button Classes="danger" Padding="12,10"
+                                            AutomationProperties.Name="{loc:T Build.Cancel.Tip}"
+                                            ToolTip.Tip="{loc:T Build.Cancel.Tip}"
+                                            Command="{Binding CancelCommand}" IsEnabled="{Binding CanCancel}">
+                                        <ic:SymbolIcon Symbol="Stop" FontSize="16" />
+                                    </Button>
+                                </StackPanel>
+
+                                <Button Grid.Column="1" Classes="subtle" VerticalAlignment="Center"
+                                        AutomationProperties.Name="{Binding LogToggleText}"
+                                        ToolTip.Tip="{Binding LogToggleText}"
+                                        Command="{Binding ToggleLogCommand}">
+                                    <ic:SymbolIcon Symbol="DocumentText" FontSize="16" />
+                                </Button>
+                            </Grid>
+
+                            <!-- Doğrulama sorunları: build'i engelleyen şeyler -->
+                            <Border Classes="card" Padding="16" Margin="0,0,0,16"
+                                    DataContext="{Binding $parent[UserControl].DataContext}"
+                                    IsVisible="{Binding Issues.Count, Converter={StaticResource HasItems}}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T Build.Issues}" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,10" />
+                                    <ItemsControl ItemsSource="{Binding Issues}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,6">
+                                                    <Ellipse Width="8" Height="8" VerticalAlignment="Top" Margin="0,5,10,0"
+                                                             Fill="{Binding Severity, Converter={StaticResource SeverityBrush}}" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Bu build hedefine özgü ayarlar: açıklama, branch, preview -->
+                            <Border Classes="card" Margin="0,0,0,16"
+                                    DataContext="{Binding $parent[UserControl].DataContext}"
+                                    IsVisible="{Binding !BuildPanel.IsBusy}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T Build.Settings}" FontWeight="SemiBold" FontSize="13" Opacity="0.7" Margin="0,0,0,10" />
+
+                                    <Grid ColumnDefinitions="*,16,*">
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Classes="label" Text="{loc:T Build.Description}" Margin="0,0,0,4" />
+                                            <TextBox Text="{Binding Selected.BuildDescriptionTemplate}" />
+                                            <TextBlock Classes="hint" Text="{}{app} {subapp} {kind} {appid} {branch} {user} {date} {time}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Classes="label" Text="{loc:T Build.Branch}" Margin="0,0,0,4" />
+                                            <TextBox Text="{Binding Selected.SetLiveBranch}" Watermark="{loc:T Build.Branch.Hint}" />
+                                            <TextBlock Classes="hint" Text="{loc:T Build.Branch.Note}" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Grid ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+                                        <CheckBox VerticalAlignment="Center" Content="{loc:T Build.PreviewToggle}"
+                                                  IsChecked="{Binding Selected.Preview}" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" Opacity="0.55" VerticalAlignment="Center">
+                                            <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="15" VerticalAlignment="Center" />
+                                            <TextBlock Text="{loc:T Common.AutoSaved}" FontSize="12" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Aşama ve ilerleme -->
+                            <Border Classes="card" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{Binding PhaseText}" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="{Binding ProgressText}" FontSize="17" Opacity="0.75" VerticalAlignment="Center" />
+                                    </Grid>
+
+                                    <ProgressBar Height="6" Minimum="0" Maximum="100" Margin="0,14,0,0"
+                                                 Value="{Binding ProgressPercent, FallbackValue=0, Mode=OneWay}"
+                                                 IsVisible="{Binding IsBusy}" />
+
+                                    <TextBlock Text="{Binding StatusMessage}" Margin="0,12,0,0" Opacity="0.7" FontSize="12" TextWrapping="Wrap"
+                                               IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                    <!-- Ne build edileceğinin özeti -->
+                                    <ItemsControl ItemsSource="{Binding TargetSummary}" Margin="0,14,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="110,*" Margin="0,0,0,6">
+                                                    <TextBlock Text="{Binding Label}" Opacity="0.55" FontSize="12" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12" TextWrapping="Wrap" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Canlıya alma geri alınamaz; önceden uyarılır -->
+                                    <Border Background="#33B8860B" CornerRadius="6" Padding="12,10" Margin="0,10,0,0"
+                                            IsVisible="{Binding GoesLive}">
+                                        <Grid ColumnDefinitions="Auto,*">
+                                            <Ellipse Width="9" Height="9" Fill="Goldenrod" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                            <TextBlock Grid.Column="1" Text="{Binding GoesLiveText}" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Sonuç -->
+                            <Border Classes="card" Padding="18" Margin="0,0,0,16"
+                                    IsVisible="{Binding LastBuildSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T Common.Result}" FontWeight="SemiBold" FontSize="11" Opacity="0.6" />
+                                    <TextBlock Text="{Binding LastBuildSummary}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Ham log: varsayılan gizli, hata olunca otomatik açılıyor -->
+                            <Border Background="#22000000" CornerRadius="6" Padding="10" MinHeight="200" MaxHeight="420"
+                                    IsVisible="{Binding IsLogVisible}">
+                                <ListBox ItemsSource="{Binding Log}" Background="Transparent">
+                                    <ListBox.Styles>
+                                        <Style Selector="ListBoxItem">
+                                            <Setter Property="Padding" Value="4,1" />
+                                            <Setter Property="MinHeight" Value="0" />
+                                        </Style>
+                                    </ListBox.Styles>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnDefinitions="Auto,*">
+                                                <TextBlock Classes="mono" Text="{Binding Time}" Opacity="0.4" Margin="0,0,10,0" />
+                                                <TextBlock Grid.Column="1" Classes="mono" Text="{Binding Text}" TextWrapping="Wrap"
+                                                           Foreground="{Binding Tone, Converter={StaticResource ToneBrush}}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Border>
+
+                            <TextBlock Opacity="0.45" FontSize="12" TextWrapping="Wrap" Text="{loc:T Build.LogHidden}"
+                                       IsVisible="{Binding !IsLogVisible}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="{loc:T Tab.History}">
+                    <Panel Margin="16" DataContext="{Binding BuildPanel}">
+                        <TextBlock Text="{loc:T History.Empty}" Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsVisible="{Binding History.Count, Converter={StaticResource HasNoItems}}" />
+
+                        <ScrollViewer IsVisible="{Binding History.Count, Converter={StaticResource HasItems}}">
+                            <ItemsControl ItemsSource="{Binding History}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="card" Padding="14" Margin="0,0,0,8">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <StackPanel>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding Converter={StaticResource OutcomeText}}" FontWeight="SemiBold" />
+                                                        <TextBlock Text=" · " Opacity="0.5" />
+                                                        <TextBlock Text="{Binding StartedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" Opacity="0.75" />
+                                                        <TextBlock Text=" · " Opacity="0.5" />
+                                                        <TextBlock Text="{Binding DurationText}" Opacity="0.75" />
+                                                    </StackPanel>
+
+                                                    <TextBlock Text="{Binding Description}" Opacity="0.8" Margin="0,4,0,0" TextWrapping="Wrap" />
+
+                                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Opacity="0.6">
+                                                        <TextBlock Text="{loc:T History.BuildId}" FontSize="11" />
+                                                        <TextBlock Text="{Binding SteamBuildId, TargetNullValue='—'}" FontSize="11" />
+                                                        <TextBlock Text="{loc:T History.Branch}" FontSize="11" />
+                                                        <TextBlock Text="{Binding SetLiveBranch, TargetNullValue='—'}" FontSize="11" />
+                                                    </StackPanel>
+
+                                                    <TextBlock Text="{Binding FailureReason}" Foreground="IndianRed" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                                                               IsVisible="{Binding FailureReason, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                </StackPanel>
+
+                                                <Button Grid.Column="1" Classes="subtle" Padding="9,7" VerticalAlignment="Center"
+                                                        AutomationProperties.Name="{loc:T History.OpenLog.Tip}"
+                                                        ToolTip.Tip="{loc:T History.OpenLog.Tip}"
+                                                        Command="{Binding $parent[ItemsControl].DataContext.OpenLogFolderCommand}"
+                                                        CommandParameter="{Binding}">
+                                                    <ic:SymbolIcon Symbol="DocumentSearch" FontSize="16" />
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Panel>
+                </TabItem>
+
+                <TabItem Header="{loc:T Tab.ScriptPreview}">
+                    <Grid RowDefinitions="Auto,*" Margin="16">
+                        <TextBlock Grid.Row="0" TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,12" Text="{loc:T Preview.Note}" />
+                        <Border Grid.Row="1" Background="#18000000" CornerRadius="6" Padding="12">
+                            <TextBox Text="{Binding ScriptPreview, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True"
+                                     BorderThickness="0" Background="Transparent"
+                                     FontFamily="Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace" FontSize="12" />
+                        </Border>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Panel>
+    </Grid>
+</UserControl>

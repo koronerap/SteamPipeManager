@@ -19,6 +19,9 @@ namespace SteamPipeManager.Presentation.ViewModels;
 /// </summary>
 public sealed partial class SubAppCard(SubApp subApp) : ObservableObject
 {
+    /// <summary>Liste öğesinin erişilebilir adı (ekran okuyucu, otomasyon).</summary>
+    public override string ToString() => Title;
+
     public SubApp SubApp { get; } = subApp;
 
     public string Title => SubApp.Title;
@@ -93,6 +96,9 @@ public sealed partial class SubAppWorkspaceViewModel(
     public bool CanBuild => Issues.Count == 0 && Selected is not null;
 
     public string AppTitle => Navigation.App?.Title ?? "";
+
+    /// <summary>Hedef türü seçicisinin seçenekleri (ana oyun, demo, playtest…).</summary>
+    public IReadOnlyList<SubAppKind> Kinds { get; } = [.. Enum.GetValues<SubAppKind>()];
 
     private bool _refreshing;
 

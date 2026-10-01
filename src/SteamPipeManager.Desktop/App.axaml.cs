@@ -1,73 +1,78 @@
 using System.Reflection;
-// WPF'in örtük using'leri System.IO'yu kapsamıyor.
-using System.IO;
-using System.Windows;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
-using SteamPipeManager.App.Localization;
-using SteamPipeManager.Presentation.Localization;
-using SteamPipeManager.App.Services;
-using SteamPipeManager.Presentation.Services;
-using SteamPipeManager.Presentation.ViewModels;
-using SteamPipeManager.Core.Localization;
 using SteamPipeManager.Core.Epic;
+using SteamPipeManager.Core.Localization;
 using SteamPipeManager.Core.Publishing;
 using SteamPipeManager.Core.SteamCmd;
 using SteamPipeManager.Core.Storage;
 using SteamPipeManager.Core.Workspace;
+using SteamPipeManager.Desktop.Services;
+using SteamPipeManager.Presentation.Localization;
+using SteamPipeManager.Presentation.Services;
+using SteamPipeManager.Presentation.ViewModels;
 
-namespace SteamPipeManager.App;
+namespace SteamPipeManager.Desktop;
 
-public partial class App : Application
+/// <summary>
+/// Açılış akışı WPF uygulamasınınkiyle aynı: dil, hizmetler, profiller, pencere,
+/// ardından güncelleme kontrolü. Mantığın tamamı paylaşılan katmanda.
+/// </summary>
+public sealed class App : Application
 {
     private ServiceProvider? _services;
 
-    protected override async void OnStartup(StartupEventArgs e)
+    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+
+    public override void OnFrameworkInitializationCompleted()
     {
-        base.OnStartup(e);
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            // Pencere hemen gösteriliyor; yükleme onun ardından. Avalonia'da açılış
+            // bekletilemiyor ve boş bir pencere, hiç pencere olmamasından iyi.
+            var layout = WorkspaceLayout.Default();
+            layout.EnsureCreated();
 
-        var layout = WorkspaceLayout.Default();
-        layout.EnsureCreated();
+            InitializeLanguage(layout);
 
-        await InitializeLanguageAsync(layout);
+            _services = BuildServices(layout, desktop);
 
-        _services = BuildServices(layout);
+            var window = _services.GetRequiredService<MainWindow>();
+            desktop.MainWindow = window;
+            desktop.Exit += (_, _) => _services?.Dispose();
 
-        var shell = _services.GetRequiredService<ShellViewModel>();
+            _ = StartAsync(window, layout, desktop.Args ?? []);
+        }
 
-        var setupCompleted = await IsSetupCompletedAsync(layout);
+        base.OnFrameworkInitializationCompleted();
+    }
+
+    private async Task StartAsync(MainWindow window, WorkspaceLayout layout, IReadOnlyList<string> args)
+    {
+        var shell = _services!.GetRequiredService<ShellViewModel>();
 
         try
         {
-            await shell.InitializeAsync(setupCompleted);
+            await shell.InitializeAsync(await IsSetupCompletedAsync(layout));
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                $"Kayıtlı profiller yüklenemedi:\n\n{ex.Message}",
-                "Steam Pipe Manager",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+            shell.StatusMessage = ex.Message;
         }
 
-        var window = _services.GetRequiredService<MainWindow>();
         window.DataContext = shell;
-        window.Show();
 
         // Pencere açıldıktan sonra: ağ beklemesi açılışı geciktirmesin.
-        _ = shell.Updates.StartAsync(e.Args);
-    }
-
-    protected override void OnExit(ExitEventArgs e)
-    {
-        _services?.Dispose();
-        base.OnExit(e);
+        _ = shell.Updates.StartAsync(args);
     }
 
     /// <summary>
     /// Dil dosyalarını hazırlar. İlk çalıştırmada (ayarda dil yoksa) sistem diline göre
     /// seçilir; eşleşme yoksa İngilizce kullanılır ve seçim ayarlara yazılır.
     /// </summary>
-    private static async Task InitializeLanguageAsync(WorkspaceLayout layout)
+    private static void InitializeLanguage(WorkspaceLayout layout)
     {
         AppLocalizer.Instance.Initialize(EmbeddedLanguages.Read(), layout.LanguageDirectory);
 
@@ -75,7 +80,7 @@ public partial class App : Application
 
         try
         {
-            var settings = await store.LoadAsync();
+            var settings = store.LoadAsync().GetAwaiter().GetResult();
 
             if (settings.Language is { Length: > 0 } saved)
             {
@@ -87,11 +92,10 @@ public partial class App : Application
             AppLocalizer.Instance.Use(detected);
 
             settings.Language = detected;
-            await store.SaveAsync(settings);
+            store.SaveAsync(settings).GetAwaiter().GetResult();
         }
         catch (Exception)
         {
-            // Ayarlar okunamazsa varsayılan dille devam edilir.
             AppLocalizer.Instance.Use(Localizer.FallbackCode);
         }
     }
@@ -109,7 +113,7 @@ public partial class App : Application
         }
     }
 
-    private static ServiceProvider BuildServices(WorkspaceLayout layout)
+    private static ServiceProvider BuildServices(WorkspaceLayout layout, IClassicDesktopStyleApplicationLifetime desktop)
     {
         var services = new ServiceCollection();
 
@@ -124,15 +128,17 @@ public partial class App : Application
 
         // Hangi ürün çalışıyor: derleme sırasında assembly meta verisine yazılıyor.
         services.AddSingleton(_ => ProductProfile.Parse(
-            System.Reflection.Assembly.GetExecutingAssembly()
-                .GetCustomAttributes<System.Reflection.AssemblyMetadataAttribute>()
+            Assembly.GetExecutingAssembly()
+                .GetCustomAttributes<AssemblyMetadataAttribute>()
                 .FirstOrDefault(a => a.Key == "SpmProduct")?.Value));
 
-        // Epic client secret'ları profil dosyasının dışında, DPAPI ile şifreli duruyor.
+        // Epic client secret'ları: macOS'ta Anahtar Zinciri, Linux'ta gizli bilgi servisi.
         services.AddSingleton(_ => new EpicSecretStore(layout.EpicSecretsFile));
-        services.AddSingleton<IConfirmationService, MessageBoxConfirmationService>();
-        services.AddSingleton<IDialogService, WindowsDialogService>();
-        services.AddSingleton<IAppLifetime, WpfAppLifetime>();
+
+        services.AddSingleton<MainWindow>();
+        services.AddSingleton<IConfirmationService>(p => new AvaloniaConfirmationService(() => p.GetRequiredService<MainWindow>()));
+        services.AddSingleton<IDialogService>(p => new AvaloniaDialogService(() => p.GetRequiredService<MainWindow>()));
+        services.AddSingleton<IAppLifetime>(_ => new AvaloniaAppLifetime(desktop));
         services.AddSingleton(_ => new BuildHistoryStore(layout));
 
         services.AddSingleton<BuildCoordinator>();
@@ -148,8 +154,6 @@ public partial class App : Application
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<SetupViewModel>();
         services.AddSingleton<ShellViewModel>();
-
-        services.AddSingleton<MainWindow>();
 
         return services.BuildServiceProvider();
     }

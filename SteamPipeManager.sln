@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BptProbe", "tools\BptProbe\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamPipeManager.Presentation", "src\SteamPipeManager.Presentation\SteamPipeManager.Presentation.csproj", "{60CB2BB1-EAB6-49A8-AD51-327B74CA13AA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamPipeManager.Desktop", "src\SteamPipeManager.Desktop\SteamPipeManager.Desktop.csproj", "{E47F2727-D57A-4AFB-9689-4DD53426142B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -117,6 +119,18 @@ Global
 		{60CB2BB1-EAB6-49A8-AD51-327B74CA13AA}.Release|x64.Build.0 = Release|Any CPU
 		{60CB2BB1-EAB6-49A8-AD51-327B74CA13AA}.Release|x86.ActiveCfg = Release|Any CPU
 		{60CB2BB1-EAB6-49A8-AD51-327B74CA13AA}.Release|x86.Build.0 = Release|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Debug|x64.Build.0 = Debug|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Debug|x86.Build.0 = Debug|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Release|x64.ActiveCfg = Release|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Release|x64.Build.0 = Release|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Release|x86.ActiveCfg = Release|Any CPU
+		{E47F2727-D57A-4AFB-9689-4DD53426142B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -129,5 +143,6 @@ Global
 		{FAE97029-F0E4-4FAA-B433-AE8078ABC084} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{C72235BC-2861-4352-A868-E9EBC941879F} = {07C2787E-EAC7-C090-1BA3-A61EC2A24D84}
 		{60CB2BB1-EAB6-49A8-AD51-327B74CA13AA} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{E47F2727-D57A-4AFB-9689-4DD53426142B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

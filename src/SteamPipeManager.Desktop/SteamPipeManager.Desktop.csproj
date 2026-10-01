@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Linux ve macOS uygulaması (Avalonia). Windows'ta da çalışıyor — geliştirme ve
+    otomatik sınama burada yapılabiliyor — ama Windows'ta dağıtılan sürüm hâlâ WPF.
+
+    Mantık SteamPipeManager.Presentation'dan geliyor; burada yalnızca görünümler ve
+    platform hizmetleri (dosya seçici, onay penceresi) var.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>..\SteamPipeManager.App\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <Import Project="..\Product.props" />
+
+  <PropertyGroup>
+    <!--
+      Kendi kendine yeten dağıtım: kullanıcıda .NET kurulumu gerekmiyor. Tek dosya
+      bilerek kullanılmıyor (Windows'taki gibi sıkıştırılmış paketler güvenlik
+      yazılımlarına takılıyor); macOS'ta zaten bir .app paketinin içinde duruyor.
+    -->
+    <SelfContained>true</SelfContained>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>embedded</DebugType>
+    <!-- Kullanıcının çalıştıracağı dosya ürünün adını taşıyor. -->
+    <AssemblyName>$(SpmProduct)</AssemblyName>
+    <RootNamespace>SteamPipeManager.Desktop</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SteamPipeManager.Presentation\SteamPipeManager.Presentation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <PackageReference Include="FluentIcons.Avalonia" Version="2.0.321" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+</Project>

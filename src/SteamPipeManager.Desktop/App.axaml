@@ -1,0 +1,99 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:SteamPipeManager.Desktop.Converters"
+             x:Class="SteamPipeManager.Desktop.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Resources>
+        <conv:ToneToBrush x:Key="ToneBrush" />
+        <conv:ProviderToBrush x:Key="ProviderBrush" />
+        <conv:PathToBitmap x:Key="PathToBitmap" />
+        <conv:SeverityToBrush x:Key="SeverityBrush" />
+        <conv:OutcomeToText x:Key="OutcomeText" />
+        <conv:CountToBool x:Key="HasItems" />
+        <conv:CountToBool x:Key="HasNoItems" Invert="True" />
+        <conv:LocalizeKey x:Key="Localize" />
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme />
+
+        <!-- WPF-UI kartlarının karşılığı -->
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="#0FFFFFFF" />
+            <Setter Property="BorderBrush" Value="#1AFFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20" />
+        </Style>
+
+        <Style Selector="Border.note">
+            <Setter Property="Background" Value="#1AFFFFFF" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
+
+        <Style Selector="TextBlock.section">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+
+        <Style Selector="TextBlock.title">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <Style Selector="TextBlock.label">
+            <Setter Property="Opacity" Value="0.7" />
+            <Setter Property="Margin" Value="0,12,0,4" />
+        </Style>
+
+        <Style Selector="TextBlock.body">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Opacity" Value="0.75" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+
+        <Style Selector="TextBlock.hint">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Opacity" Value="0.55" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+
+        <Style Selector="TextBlock.error">
+            <Setter Property="Foreground" Value="IndianRed" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,10,0,0" />
+        </Style>
+
+        <!-- Saydam düğme: WPF-UI'deki Appearance="Transparent" -->
+        <Style Selector="Button.subtle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <Style Selector="Button.danger">
+            <Setter Property="Background" Value="#C42B1C" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+
+        <Style Selector="Button">
+            <Setter Property="Padding" Value="14,7" />
+        </Style>
+
+        <!-- Fluent temasının sekme başlıkları bu arayüz için fazla büyük -->
+        <Style Selector="TabItem">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="Padding" Value="12,4" />
+        </Style>
+    </Application.Styles>
+</Application>

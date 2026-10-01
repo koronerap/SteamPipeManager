@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:SteamPipeManager.Desktop.Localization"
+             xmlns:c="using:SteamPipeManager.Desktop.Controls"
+             x:Class="SteamPipeManager.Desktop.Views.LoginOverlay"
+             IsVisible="{Binding IsOpen}">
+
+    <!-- Arkayı karartan katman: giriş sürerken başka bir şeye tıklanmasın -->
+    <Panel Background="#B0000000">
+        <Border Width="440" Padding="28" CornerRadius="8"
+                Background="#FF202024" BorderBrush="#33FFFFFF" BorderThickness="1"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel>
+                <TextBlock Text="{loc:T Login.Title}" FontSize="19" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Username}" Opacity="0.6" FontSize="12" Margin="0,3,0,0" />
+
+                <!-- 1. adım: şifre. Yalnızca bellekte; SteamCMD'ye stdin'den veriliyor. -->
+                <StackPanel Margin="0,20,0,0" IsVisible="{Binding ShowPasswordStep}">
+                    <TextBlock Classes="label" Text="{loc:T Login.Password}" Margin="0,0,0,4" />
+                    <TextBox PasswordChar="•" Text="{Binding Password}" FontSize="14" />
+
+                    <Border Classes="note" Padding="12" Margin="0,14,0,0">
+                        <TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="11" Text="{loc:T Login.Note}" />
+                    </Border>
+                </StackPanel>
+
+                <!-- 2a. adım: Steam Guard kodu -->
+                <StackPanel Margin="0,20,0,0" IsVisible="{Binding ShowGuardStep}">
+                    <TextBlock Classes="label" Text="{loc:T Login.GuardCode}" Margin="0,0,0,4" />
+                    <TextBox Text="{Binding GuardCode}" Watermark="ABCDE" FontSize="17" MaxLength="10" />
+
+                    <Button Classes="accent" Margin="0,14,0,0" Command="{Binding SubmitGuardCodeCommand}">
+                        <c:IconLabel Symbol="Send" Text="{loc:T Login.GuardSend}" />
+                    </Button>
+                </StackPanel>
+
+                <!-- 2b. adım: telefondan onay -->
+                <Border Margin="0,20,0,0" Background="#33B8860B" CornerRadius="6" Padding="14"
+                        IsVisible="{Binding ShowMobileStep}">
+                    <StackPanel>
+                        <TextBlock Text="{loc:T Login.Mobile.Title}" FontWeight="SemiBold" FontSize="13" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.85" FontSize="12" Margin="0,6,0,0" Text="{loc:T Login.Mobile.Body}" />
+                    </StackPanel>
+                </Border>
+
+                <ProgressBar Height="3" IsIndeterminate="True" Margin="0,18,0,0" IsVisible="{Binding IsBusy}" />
+
+                <TextBlock Text="{Binding StatusMessage}" Opacity="0.75" FontSize="12" Margin="0,10,0,0" TextWrapping="Wrap"
+                           IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Classes="error" Text="{Binding ErrorMessage}" FontSize="12"
+                           IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,20,0,0">
+                    <Button Classes="accent" Command="{Binding SubmitCommand}" IsVisible="{Binding ShowPasswordStep}">
+                        <c:IconLabel Symbol="Key" Text="{loc:T Login.Submit}" />
+                    </Button>
+                    <Button Classes="subtle" Content="{loc:T Common.Cancel}" Command="{Binding CancelCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Panel>
+</UserControl>

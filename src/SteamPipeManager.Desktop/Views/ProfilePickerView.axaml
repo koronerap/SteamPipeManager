@@ -1,0 +1,268 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:SteamPipeManager.Desktop.Localization"
+             xmlns:c="using:SteamPipeManager.Desktop.Controls"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="SteamPipeManager.Desktop.Views.ProfilePickerView">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+            <StackPanel>
+                <TextBlock Classes="section" Text="{loc:T Profile.Title}" Margin="0,0,0,4" />
+                <TextBlock Opacity="0.65" TextWrapping="Wrap" MaxWidth="720" HorizontalAlignment="Left"
+                           Text="{loc:T Profile.Subtitle}" />
+            </StackPanel>
+
+            <Button Grid.Column="1" Classes="accent" VerticalAlignment="Top"
+                    AutomationProperties.Name="{loc:T Profile.New}"
+                    ToolTip.Tip="{loc:T Profile.New}"
+                    Command="{Binding BeginAddProfileCommand}"
+                    IsVisible="{Binding !IsAddingProfile}">
+                <ic:SymbolIcon Symbol="PersonAdd" FontSize="18" />
+            </Button>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel>
+
+                <!-- Boş durum -->
+                <Border Classes="card" Padding="28" Margin="0,0,0,20" MaxWidth="640" HorizontalAlignment="Left"
+                        IsVisible="{Binding Cards.Count, Converter={StaticResource HasNoItems}}">
+                    <StackPanel>
+                        <TextBlock Text="{loc:T Profile.Empty.Title}" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,10" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.8" LineHeight="21"
+                                   Text="{loc:T Profile.Empty.Body}" IsVisible="{Binding SupportsSteam}" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.8" LineHeight="21"
+                                   Text="{loc:T Profile.Empty.Body.Epic}" IsVisible="{Binding IsEpicOnly}" />
+                    </StackPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Cards}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Classes="card" Width="340" Margin="0,0,20,20">
+                                <StackPanel>
+
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <!-- Steam avatarı; yoksa baş harf rozeti -->
+                                        <Panel Grid.Column="0" Width="48" Height="48" VerticalAlignment="Top">
+                                            <Border CornerRadius="24" Background="#2F6FEB" IsVisible="{Binding !HasAvatar}">
+                                                <TextBlock Text="{Binding Initial}" FontSize="20" FontWeight="SemiBold"
+                                                           Foreground="White"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <Border CornerRadius="24" ClipToBounds="True" IsVisible="{Binding HasAvatar}">
+                                                <Image Source="{Binding AvatarPath, Converter={StaticResource PathToBitmap}}"
+                                                       Stretch="UniformToFill" />
+                                            </Border>
+                                        </Panel>
+
+                                        <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding DisplayName}" FontSize="17" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis" />
+
+                                                <!-- Mağaza etiketi yalnızca iki mağazanın bir arada olduğu üründe -->
+                                                <Border CornerRadius="4" Padding="6,1" Margin="8,2,0,0" VerticalAlignment="Center"
+                                                        Background="{Binding Provider, Converter={StaticResource ProviderBrush}}"
+                                                        IsVisible="{Binding $parent[ItemsControl].DataContext.ShowProviderChoice}">
+                                                    <TextBlock Text="{Binding ProviderName}" FontSize="10" FontWeight="SemiBold" />
+                                                </Border>
+                                            </StackPanel>
+
+                                            <TextBlock Text="{Binding AccountLine}" Opacity="0.6" FontSize="12"
+                                                       Margin="0,1,0,0" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <TextBlock Text="{Binding Summary}" Opacity="0.8" Margin="0,16,0,0" />
+
+                                    <!-- Oturum durumu -->
+                                    <Border Classes="note" Padding="12,8" Margin="0,14,0,0">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Ellipse Grid.Column="0" Width="9" Height="9" VerticalAlignment="Center" Margin="0,0,10,0"
+                                                     Fill="{Binding SessionTone, Converter={StaticResource ToneBrush}}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding SessionText}" VerticalAlignment="Center"
+                                                       FontSize="12" TextTrimming="CharacterEllipsis" />
+                                            <Button Grid.Column="2" Classes="subtle" Padding="6,2"
+                                                    AutomationProperties.Name="{loc:T Profile.Recheck.Tip}"
+                                                    ToolTip.Tip="{loc:T Profile.Recheck.Tip}"
+                                                    IsEnabled="{Binding IsIdle}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.CheckSessionCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ic:SymbolIcon Symbol="ArrowSync" FontSize="14" />
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+
+                                    <Grid ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+                                        <Button Classes="accent" HorizontalAlignment="Left"
+                                                ToolTip.Tip="{loc:T Profile.Open.Tip}"
+                                                Command="{Binding $parent[ItemsControl].DataContext.SelectCommand}"
+                                                CommandParameter="{Binding}">
+                                            <c:IconLabel Symbol="Open" Text="{loc:T Common.Open}" />
+                                        </Button>
+
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                            <!-- Steam girişi Epic profillerinde yok: kimlik client secret'tan geliyor. -->
+                                            <Button Padding="9,7" IsVisible="{Binding !IsEpic}"
+                                                    AutomationProperties.Name="{loc:T Profile.Login.Tip}"
+                                                    ToolTip.Tip="{loc:T Profile.Login.Tip}"
+                                                    IsEnabled="{Binding IsIdle}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.LoginCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ic:SymbolIcon Symbol="Key" FontSize="16" />
+                                            </Button>
+                                            <Button Padding="9,7"
+                                                    AutomationProperties.Name="{loc:T Profile.Edit.Tip}"
+                                                    ToolTip.Tip="{loc:T Profile.Edit.Tip}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.BeginEditCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ic:SymbolIcon Symbol="Edit" FontSize="16" />
+                                            </Button>
+                                            <Button Classes="subtle" Padding="9,7"
+                                                    AutomationProperties.Name="{loc:T Profile.Delete.Tip}"
+                                                    ToolTip.Tip="{loc:T Profile.Delete.Tip}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.DeleteCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ic:SymbolIcon Symbol="Delete" FontSize="16" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Profil düzenleme -->
+                <Border Classes="card" Padding="24" MaxWidth="520" HorizontalAlignment="Left" Margin="0,0,0,16"
+                        IsVisible="{Binding IsEditing}">
+                    <StackPanel>
+                        <TextBlock Text="{loc:T Profile.Edit.Tip}" FontWeight="SemiBold" FontSize="17" Margin="0,0,0,4" />
+
+                        <TextBlock Classes="label" Text="{loc:T Profile.Name}" />
+                        <TextBox Text="{Binding EditName}" />
+
+                        <!-- Steam: kullanıcı adı -->
+                        <StackPanel IsVisible="{Binding IsEditingSteam}">
+                            <TextBlock Classes="label" Text="{loc:T Profile.Username}" />
+                            <TextBox Text="{Binding EditUsername}" />
+                            <TextBlock Classes="hint" Text="{loc:T Profile.Edit.Warning}" />
+                        </StackPanel>
+
+                        <!-- Epic: secret forma hiç yüklenmiyor; boş bırakılırsa kayıtlı olan korunuyor. -->
+                        <StackPanel IsVisible="{Binding IsEditingEpic}">
+                            <TextBlock Classes="label" Text="{loc:T Epic.OrganizationId}" />
+                            <TextBox Text="{Binding EditOrganizationId}" />
+
+                            <TextBlock Classes="label" Text="{loc:T Epic.ClientId}" />
+                            <TextBox Text="{Binding EditClientId}" />
+
+                            <TextBlock Classes="label" Text="{loc:T Epic.ClientSecret}" />
+                            <TextBox PasswordChar="•" Text="{Binding EditClientSecret}" />
+                            <TextBlock Classes="hint" Text="{loc:T Epic.SecretUnchanged}" IsVisible="{Binding EditHasStoredSecret}" />
+                            <TextBlock Classes="hint" Text="{loc:T Epic.Credentials.Hint}" IsVisible="{Binding !EditHasStoredSecret}" />
+                        </StackPanel>
+
+                        <TextBlock Classes="error" Text="{Binding ErrorMessage}"
+                                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,18,0,0">
+                            <Button Classes="accent" Command="{Binding ConfirmEditCommand}">
+                                <c:IconLabel Symbol="Save" Text="{loc:T Common.Save}" />
+                            </Button>
+                            <Button Classes="subtle" Content="{loc:T Common.Cancel}" Command="{Binding CancelEditCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Yeni profil -->
+                <Border Classes="card" Padding="24" MaxWidth="520" HorizontalAlignment="Left"
+                        IsVisible="{Binding IsAddingProfile}">
+                    <StackPanel>
+                        <TextBlock Text="{loc:T Profile.New}" FontWeight="SemiBold" FontSize="17" Margin="0,0,0,4" />
+
+                        <!-- Mağaza seçimi yalnızca birden çok mağazası olan üründe -->
+                        <StackPanel IsVisible="{Binding ShowProviderChoice}">
+                            <TextBlock Classes="label" Text="{loc:T Profile.Store}" />
+                            <ComboBox ItemsSource="{Binding Providers}" SelectedItem="{Binding NewProvider}"
+                                      HorizontalAlignment="Stretch" />
+                        </StackPanel>
+
+                        <Border Background="#33B8860B" CornerRadius="6" Padding="12" Margin="0,10,0,0"
+                                IsVisible="{Binding IsNewProfileEpic}">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <ic:SymbolIcon Symbol="Beaker" FontSize="16" VerticalAlignment="Top" />
+                                <TextBlock Grid.Column="1" TextWrapping="Wrap" FontSize="12" Margin="8,0,0,0"
+                                           Text="{loc:T Epic.Experimental}" />
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Classes="label" Text="{loc:T Profile.Name}" />
+                        <TextBox Text="{Binding NewProfileName}" Watermark="Studio" />
+
+                        <!-- Steam alanları -->
+                        <StackPanel IsVisible="{Binding !IsNewProfileEpic}">
+                            <TextBlock Classes="label" Text="{loc:T Profile.Username}" />
+                            <TextBox Text="{Binding NewSteamUsername}" Watermark="steam_partner_account" />
+                            <TextBlock Classes="hint" Text="{loc:T Profile.Username.Hint}" />
+
+                            <Border Classes="note" Margin="0,16,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T Profile.NoPassword.Title}" FontWeight="SemiBold" FontSize="12" />
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="12" Margin="0,4,0,0"
+                                               Text="{loc:T Profile.NoPassword.Body}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Epic alanları -->
+                        <StackPanel IsVisible="{Binding IsNewProfileEpic}">
+                            <TextBlock Classes="label" Text="{loc:T Epic.OrganizationId}" />
+                            <TextBox Text="{Binding NewOrganizationId}" />
+
+                            <TextBlock Classes="label" Text="{loc:T Epic.ClientId}" />
+                            <TextBox Text="{Binding NewClientId}" />
+
+                            <TextBlock Classes="label" Text="{loc:T Epic.ClientSecret}" />
+                            <TextBox PasswordChar="•" Text="{Binding NewClientSecret}" />
+                            <TextBlock Classes="hint" Text="{loc:T Epic.Credentials.Hint}" />
+
+                            <!-- Secret'ın nerede durduğu platforma göre değişiyor -->
+                            <Border Classes="note" Margin="0,16,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T Epic.SecretStorage.Title}" FontWeight="SemiBold" FontSize="12" />
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.75" FontSize="12" Margin="0,4,0,0"
+                                               Text="{Binding SecretStorageKey, Converter={StaticResource Localize}}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <TextBlock Classes="error" Text="{Binding ErrorMessage}"
+                                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,18,0,0">
+                            <Button Classes="accent" Command="{Binding ConfirmAddProfileCommand}">
+                                <c:IconLabel Symbol="Checkmark" Text="{loc:T Common.Create}" />
+                            </Button>
+                            <Button Classes="subtle" Content="{loc:T Common.Cancel}" Command="{Binding CancelAddProfileCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Classes="note" Padding="14,10" Margin="0,12,0,0"
+                IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Opacity="0.9" />
+        </Border>
+    </Grid>
+</UserControl>

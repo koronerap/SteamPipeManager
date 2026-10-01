@@ -1,0 +1,170 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:SteamPipeManager.Desktop.Localization"
+        xmlns:views="using:SteamPipeManager.Desktop.Views"
+        xmlns:c="using:SteamPipeManager.Desktop.Controls"
+        xmlns:ic="using:FluentIcons.Avalonia"
+        x:Class="SteamPipeManager.Desktop.MainWindow"
+        Title="{Binding ProductName}"
+        Width="1280" Height="820"
+        MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        TransparencyLevelHint="Mica, AcrylicBlur, Blur, None"
+        Background="Transparent">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Breadcrumb: ev ikonu → profil avatarı → oyun adı -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="24,12,24,16" IsVisible="{Binding IsChromeVisible}">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Classes="subtle" Padding="8,6"
+                        AutomationProperties.Name="{loc:T Nav.Home}"
+                        ToolTip.Tip="{loc:T Nav.Home.Tip}"
+                        Command="{Binding GoToProfilesCommand}">
+                    <ic:SymbolIcon Symbol="Home" FontSize="18" />
+                </Button>
+
+                <TextBlock Text="›" Margin="8,0" Opacity="0.4" VerticalAlignment="Center" FontSize="15"
+                           IsVisible="{Binding Navigation.HasProfile}" />
+
+                <!-- Profil: yalnızca avatar; adı tooltip'te -->
+                <Button Classes="subtle" Padding="4"
+                        AutomationProperties.Name="{Binding ActiveProfileTooltip}"
+                        ToolTip.Tip="{Binding ActiveProfileTooltip}"
+                        Command="{Binding GoToAppsCommand}"
+                        IsVisible="{Binding Navigation.HasProfile}">
+                    <Panel Width="30" Height="30">
+                        <Border CornerRadius="13" Background="#2F6FEB" Width="26" Height="26"
+                                HorizontalAlignment="Left" VerticalAlignment="Top"
+                                IsVisible="{Binding !HasActiveAvatar}">
+                            <TextBlock Text="{Binding ActiveInitial}" FontSize="12" FontWeight="SemiBold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <Border CornerRadius="13" Width="26" Height="26" ClipToBounds="True"
+                                HorizontalAlignment="Left" VerticalAlignment="Top"
+                                IsVisible="{Binding HasActiveAvatar}">
+                            <Image Source="{Binding ActiveAvatarPath, Converter={StaticResource PathToBitmap}}"
+                                   Stretch="UniformToFill" />
+                        </Border>
+
+                        <!-- Oturum durumu: avatarın sağ alt köşesinde küçük bir nokta. -->
+                        <Border Width="12" Height="12" CornerRadius="6"
+                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                Background="{DynamicResource SystemRegionBrush}">
+                            <Border Width="8" Height="8" CornerRadius="4"
+                                    Background="{Binding ActiveSessionTone, Converter={StaticResource ToneBrush}}" />
+                        </Border>
+                    </Panel>
+                </Button>
+
+                <TextBlock Text="›" Margin="8,0" Opacity="0.4" VerticalAlignment="Center" FontSize="15"
+                           IsVisible="{Binding Navigation.HasApp}" />
+
+                <TextBlock Text="{Binding Navigation.App.Title}"
+                           VerticalAlignment="Center" FontWeight="SemiBold" FontSize="14"
+                           IsVisible="{Binding Navigation.HasApp}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Classes="subtle" Padding="9,6"
+                        AutomationProperties.Name="{loc:T Nav.Settings}"
+                        ToolTip.Tip="{loc:T Nav.Settings}"
+                        Command="{Binding OpenSettingsCommand}"
+                        IsVisible="{Binding !IsSettings}">
+                    <ic:SymbolIcon Symbol="Settings" FontSize="18" />
+                </Button>
+                <Button Classes="subtle" Padding="9,6"
+                        AutomationProperties.Name="{loc:T Nav.Back}"
+                        ToolTip.Tip="{loc:T Nav.Back}"
+                        Command="{Binding CloseSettingsCommand}"
+                        IsVisible="{Binding IsSettings}">
+                    <ic:SymbolIcon Symbol="ArrowLeft" FontSize="18" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <DockPanel Grid.Row="1" Margin="24,0,24,24">
+
+            <!-- Güncelleme şeridi: yeni sürüm, indirme ilerlemesi ya da "güncellendi" bildirimi.
+                 Her sayfanın üstünde; kurulum yalnızca düğmeye basınca başlıyor. -->
+            <Border DockPanel.Dock="Top" Margin="0,0,0,12" Padding="14,10" CornerRadius="6"
+                    Background="#1F2F6FEB" BorderBrush="#552F6FEB" BorderThickness="1"
+                    DataContext="{Binding Updates}"
+                    AutomationProperties.AutomationId="UpdateBanner"
+                    IsVisible="{Binding IsBannerVisible}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <ic:SymbolIcon Grid.Column="0" Symbol="ArrowSync" FontSize="18"
+                                   VerticalAlignment="Center" Margin="0,0,10,0" />
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding BannerText}" TextWrapping="Wrap"
+                                   AutomationProperties.AutomationId="UpdateBannerText" />
+                        <TextBlock Text="{Binding Note}" TextWrapping="Wrap" Opacity="0.75" FontSize="12"
+                                   Margin="0,2,0,0"
+                                   IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <ProgressBar Margin="0,6,0,0" Height="4" Minimum="0" Maximum="1"
+                                     Value="{Binding Progress, Mode=OneWay}"
+                                     IsIndeterminate="{Binding IsProgressIndeterminate, Mode=OneWay}"
+                                     IsVisible="{Binding ShowProgress}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <Button Classes="accent" Padding="12,6"
+                                ToolTip.Tip="{loc:T Update.Install.Tip}"
+                                AutomationProperties.AutomationId="UpdateInstallButton"
+                                Command="{Binding InstallCommand}"
+                                IsVisible="{Binding CanInstall}">
+                            <c:IconLabel Symbol="ArrowDownload" Text="{loc:T Update.Install}" />
+                        </Button>
+                        <Button Margin="8,0,0,0" Padding="12,6"
+                                Command="{Binding OpenReleasePageCommand}"
+                                IsVisible="{Binding CanOpenReleasePage}">
+                            <c:IconLabel Symbol="Open" Text="{Binding ReleasePageLabel}" />
+                        </Button>
+                        <Button Classes="subtle" Margin="4,0,0,0" Padding="8,6"
+                                AutomationProperties.Name="{loc:T Update.Later}"
+                                ToolTip.Tip="{loc:T Update.Later}"
+                                Command="{Binding DismissCommand}"
+                                IsVisible="{Binding CanDismiss}">
+                            <ic:SymbolIcon Symbol="Dismiss" FontSize="16" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Sayfalar: görünürlük kabuğa, içerik kendi ViewModel'ine bağlı -->
+            <Panel>
+                <Panel IsVisible="{Binding IsProfilePicker}">
+                    <views:ProfilePickerView DataContext="{Binding ProfilePicker}" />
+                </Panel>
+                <Panel IsVisible="{Binding IsAppPicker}">
+                    <views:AppPickerView DataContext="{Binding AppPicker}" />
+                </Panel>
+                <Panel IsVisible="{Binding IsSteamWorkspace}">
+                    <views:SubAppWorkspaceView DataContext="{Binding Workspace}" />
+                </Panel>
+                <Panel IsVisible="{Binding IsEpicWorkspace}">
+                    <views:EpicWorkspaceView DataContext="{Binding EpicWorkspace}" />
+                </Panel>
+                <Panel IsVisible="{Binding IsSetup}">
+                    <views:SetupView DataContext="{Binding Setup}" />
+                </Panel>
+                <Panel IsVisible="{Binding IsSettings}">
+                    <views:SettingsView DataContext="{Binding Settings}" />
+                </Panel>
+            </Panel>
+        </DockPanel>
+
+        <!-- Kabuk düzeyindeki hata (ör. profiller okunamadı): WPF bunu mesaj kutusuyla gösteriyordu -->
+        <Border Grid.Row="1" VerticalAlignment="Bottom" Margin="24,0,24,8" Classes="note"
+                AutomationProperties.AutomationId="ShellStatus"
+                IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Foreground="IndianRed" />
+        </Border>
+
+        <!-- Giriş penceresi tüm satırların üstünü kaplar -->
+        <views:LoginOverlay Grid.Row="0" Grid.RowSpan="2" DataContext="{Binding Login}" />
+    </Grid>
+</Window>

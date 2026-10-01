@@ -1,0 +1,187 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:SteamPipeManager.Desktop.Localization"
+             xmlns:c="using:SteamPipeManager.Desktop.Controls"
+             xmlns:ic="using:FluentIcons.Avalonia"
+             x:Class="SteamPipeManager.Desktop.Views.AppPickerView">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+            <TextBlock Classes="section" Text="{loc:T Apps.Title}" Margin="0" />
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                <Button IsVisible="{Binding IsSteamProfile}"
+                        AutomationProperties.Name="{loc:T Apps.Import.Tip}"
+                        ToolTip.Tip="{loc:T Apps.Import.Tip}"
+                        Command="{Binding BeginImportCommand}">
+                    <ic:SymbolIcon Symbol="FolderArrowRight" FontSize="18" />
+                </Button>
+                <Button Classes="accent"
+                        AutomationProperties.Name="{loc:T Apps.New.Tip}"
+                        ToolTip.Tip="{loc:T Apps.New.Tip}"
+                        Command="{Binding AddAppCommand}">
+                    <ic:SymbolIcon Symbol="Add" FontSize="18" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel>
+
+                <!-- Oyun adını düzenleme -->
+                <Border Classes="card" Margin="0,0,0,16" MaxWidth="480" HorizontalAlignment="Left"
+                        IsVisible="{Binding IsEditing}">
+                    <StackPanel>
+                        <TextBlock Classes="title" Text="{loc:T Apps.Edit.Title}" Margin="0,0,0,12" />
+                        <TextBox Text="{Binding EditTitle}" />
+
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,0">
+                            <Button Classes="accent" Command="{Binding ConfirmEditCommand}">
+                                <c:IconLabel Symbol="Save" Text="{loc:T Common.Save}" />
+                            </Button>
+                            <Button Classes="subtle" Content="{loc:T Common.Cancel}" Command="{Binding CancelEditCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- İçe aktarma paneli -->
+                <Border Classes="card" Margin="0,0,0,16" IsVisible="{Binding IsImporting}">
+                    <StackPanel>
+                        <TextBlock Classes="title" Text="{loc:T Import.Title}" />
+                        <TextBlock Classes="body" Text="{loc:T Import.Body}" />
+
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                            <TextBox Grid.Column="0" Text="{Binding ImportPath}" Watermark="~/SteamPipe (Pixel Racer)" />
+                            <Button Grid.Column="1" Margin="8,0,0,0" Padding="10,8"
+                                    AutomationProperties.Name="{loc:T Common.PickFolder}"
+                                    ToolTip.Tip="{loc:T Common.PickFolder}"
+                                    Command="{Binding BrowseImportPathCommand}">
+                                <ic:SymbolIcon Symbol="FolderOpen" FontSize="16" />
+                            </Button>
+                            <Button Grid.Column="2" Margin="8,0,0,0" Padding="10,8"
+                                    AutomationProperties.Name="{loc:T Import.Scan.Tip}"
+                                    ToolTip.Tip="{loc:T Import.Scan.Tip}"
+                                    Command="{Binding ScanImportPathCommand}">
+                                <ic:SymbolIcon Symbol="Search" FontSize="16" />
+                            </Button>
+                        </Grid>
+
+                        <TextBlock Text="{Binding StatusMessage}" Margin="0,12,0,0" Opacity="0.85" TextWrapping="Wrap"
+                                   IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                        <ItemsControl ItemsSource="{Binding ImportCandidates}" Margin="0,12,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderThickness="0,0,0,1" BorderBrush="#22FFFFFF" Padding="0,8">
+                                        <Grid ColumnDefinitions="Auto,*">
+                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}"
+                                                      VerticalAlignment="Top" Margin="0,2,8,0" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{Binding SubApp.Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Description}" Opacity="0.7" FontSize="12" />
+                                                <TextBlock Text="{Binding SourceFile}" Opacity="0.5" FontSize="11" />
+                                                <TextBlock Text="{Binding WarningText}" Foreground="Goldenrod" FontSize="12"
+                                                           TextWrapping="Wrap"
+                                                           IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,0">
+                            <Button Classes="accent" Content="{loc:T Import.Confirm}"
+                                    Command="{Binding ConfirmImportCommand}"
+                                    IsVisible="{Binding ImportCandidates.Count, Converter={StaticResource HasItems}}" />
+                            <Button Classes="subtle" Content="{loc:T Common.Cancel}" Command="{Binding CancelImportCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Boş durum -->
+                <Border Classes="card" Padding="24" Margin="0,0,0,16" MaxWidth="620" HorizontalAlignment="Left"
+                        IsVisible="{Binding Cards.Count, Converter={StaticResource HasNoItems}}">
+                    <StackPanel>
+                        <TextBlock Classes="title" Text="{loc:T Apps.Empty.Title}" Margin="0,0,0,8" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.8" Text="{loc:T Apps.Empty.Body}"
+                                   IsVisible="{Binding IsSteamProfile}" />
+                        <TextBlock TextWrapping="Wrap" Opacity="0.8" Text="{loc:T Apps.Empty.Body.Epic}"
+                                   IsVisible="{Binding !IsSteamProfile}" />
+                    </StackPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Cards}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Classes="card" Width="220" Margin="0,0,18,18" Padding="0">
+                                <StackPanel>
+                                    <!-- Steam dikey kütüphane kapsülü (2:3); yoksa yer tutucu -->
+                                    <Panel Height="300">
+                                        <Border CornerRadius="6,6,0,0" IsVisible="{Binding !HasCapsule}">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                    <GradientStop Color="#2A3B5C" Offset="0" />
+                                                    <GradientStop Color="#16203A" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding Initial}" FontSize="52" FontWeight="Light"
+                                                           Opacity="0.5" HorizontalAlignment="Center" />
+                                                <TextBlock Text="{loc:T Common.NoImage}" FontSize="10" Opacity="0.35"
+                                                           HorizontalAlignment="Center" Margin="0,6,0,0" />
+                                            </StackPanel>
+                                        </Border>
+
+                                        <Border CornerRadius="6,6,0,0" ClipToBounds="True" IsVisible="{Binding HasCapsule}">
+                                            <Image Source="{Binding CapsulePath, Converter={StaticResource PathToBitmap}}"
+                                                   Stretch="UniformToFill" />
+                                        </Border>
+                                    </Panel>
+
+                                    <StackPanel Margin="14,12,14,14">
+                                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Summary}" Opacity="0.65" Margin="0,3,0,0" FontSize="11"
+                                                   TextTrimming="CharacterEllipsis" />
+
+                                        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,12,0,0">
+                                            <Button Grid.Column="0" Classes="accent" Padding="12,6"
+                                                    HorizontalAlignment="Stretch"
+                                                    ToolTip.Tip="{loc:T Apps.Manage.Tip}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.SelectCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <c:IconLabel Symbol="Settings" Text="{loc:T Apps.Manage}" />
+                                            </Button>
+                                            <Button Grid.Column="1" Margin="6,0,0,0" Padding="8,6"
+                                                    AutomationProperties.Name="{loc:T Apps.Edit.Tip}"
+                                                    ToolTip.Tip="{loc:T Apps.Edit.Tip}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.BeginEditCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ic:SymbolIcon Symbol="Edit" FontSize="16" />
+                                            </Button>
+                                            <Button Grid.Column="2" Classes="subtle" Margin="6,0,0,0" Padding="8,6"
+                                                    AutomationProperties.Name="{loc:T Apps.Delete.Tip}"
+                                                    ToolTip.Tip="{loc:T Apps.Delete.Tip}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.DeleteCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ic:SymbolIcon Symbol="Delete" FontSize="16" />
+                                            </Button>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

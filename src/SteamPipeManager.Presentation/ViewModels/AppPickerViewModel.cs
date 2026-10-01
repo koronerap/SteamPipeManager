@@ -13,6 +13,9 @@ namespace SteamPipeManager.Presentation.ViewModels;
 
 public sealed partial class AppCard(SteamApp app) : ObservableObject
 {
+    /// <summary>Liste öğesinin erişilebilir adı (ekran okuyucu, otomasyon).</summary>
+    public override string ToString() => Title;
+
     public SteamApp App { get; } = app;
 
     public string Title => App.Title;
