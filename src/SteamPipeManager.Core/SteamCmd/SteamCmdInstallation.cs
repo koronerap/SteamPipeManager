@@ -47,6 +47,15 @@ public sealed class SteamCmdInstallation
     /// <summary>M0'da canlı yazıldığı doğrulanan dosya (Windows).</summary>
     public string ConsoleLogPath => Path.Combine(LogsDirectory, "console_log.txt");
 
+    /// <summary>
+    /// Canlı ilerlemenin nereden okunacağı. Windows'ta stdout boru üzerinden tamponlanıyor
+    /// ve ancak süreç bitince geliyor, canlı kaynak <c>console_log.txt</c> (M0 ölçümleri).
+    /// Linux'ta tam tersi: <c>console_log.txt</c> hiç yazılmıyor, stdout ise satır satır
+    /// geliyor (WSL'de Ubuntu 24.04, SteamCMD 1788292693 ile ölçüldü). macOS Linux gibi
+    /// varsayılıyor; CI'da ölçülüyor.
+    /// </summary>
+    public bool LiveOutputIsStandardOutput => !Platform.IsWindows;
+
     /// <summary>Oturum cache'i burada tutulur; profiller arası paylaşılır.</summary>
     public string ConfigPath => Path.Combine(DataDirectory, "config", "config.vdf");
 

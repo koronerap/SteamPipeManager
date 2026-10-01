@@ -32,19 +32,32 @@ var logPath = Path.Combine(logsDir, "console_log.txt");
 
 var buffered = new StringBuilder();
 
+// Ölçülmüş platform farkı: Windows'ta stdout boruda tamponlanıyor ve canlı kaynak
+// console_log.txt; Linux'ta console_log.txt hiç yazılmıyor, stdout satır satır geliyor.
+// Sahte araç ikisini de taklit ediyor ki çalıştırıcı her platformda gerçek koşullarda
+// sınansın.
+var liveStdout = !OperatingSystem.IsWindows();
+
 void Emit(string line)
 {
     var stamped = $"[{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}] {line}";
 
-    // console_log.txt anında boşaltılır — gerçek steamcmd de böyle yapıyor.
-    if (writeLog)
+    // console_log.txt anında boşaltılır — gerçek steamcmd de Windows'ta böyle yapıyor.
+    if (writeLog && !liveStdout)
     {
         using var stream = new FileStream(logPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
         using var writer = new StreamWriter(stream);
         writer.WriteLine(stamped);
     }
 
-    // stdout ise süreç bitene kadar tutulur.
+    if (liveStdout)
+    {
+        Console.Out.WriteLine(stamped);
+        Console.Out.Flush();
+        return;
+    }
+
+    // Windows'ta stdout süreç bitene kadar tutulur.
     buffered.AppendLine(stamped);
 }
 

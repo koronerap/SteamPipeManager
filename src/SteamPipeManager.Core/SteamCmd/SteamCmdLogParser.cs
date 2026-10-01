@@ -31,7 +31,9 @@ public sealed partial class SteamCmdLogParser
             return null;
         }
 
-        var (timestamp, text) = SplitTimestamp(rawLine);
+        // Linux'ta SteamCMD çıktısı renk kodları taşıyor ("\e[0mLogging in user ...");
+        // satır başı eşleşmeleri onlar yüzünden kaçmasın.
+        var (timestamp, text) = SplitTimestamp(AnsiPattern().Replace(rawLine, ""));
         text = text.Trim();
 
         if (text.Length == 0)
@@ -157,6 +159,12 @@ public sealed partial class SteamCmdLogParser
             return Event(SteamCmdEventKind.LoginFailed) with
             {
                 FailureReason = ClassifyFailure(failure.Groups["reason"].Value),
+
+                // Hata satırı hesap adını taşıyorsa (Linux'ta giriş ve sonuç aynı satırda)
+                // olay o hesaba bağlanıyor; başka bir hesabın kalıntısı karışmasın.
+                Username = LoginUserPattern().Match(text) is { Success: true } user
+                    ? user.Groups["user"].Value
+                    : null,
             };
         }
 
@@ -256,6 +264,15 @@ public sealed partial class SteamCmdLogParser
             };
         }
 
+        // Linux'ta her çalıştırmada basılan zararsız bir satır: önyükleyici kendi dil
+        // dosyasını bulamıyor ("ILocalize::AddFile() failed to load file ..."). Hata
+        // sayılsaydı log'da kırmızı görünür, başka bir sebeple başarısız olan bir build'in
+        // açıklaması olarak da gösterilebilirdi.
+        if (text.StartsWith("ILocalize::", StringComparison.Ordinal))
+        {
+            return Event(SteamCmdEventKind.Info);
+        }
+
         if (text.StartsWith("ERROR!", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("Failed to ", StringComparison.OrdinalIgnoreCase))
         {
@@ -291,6 +308,9 @@ public sealed partial class SteamCmdLogParser
         @"Successfully finished appID (?<app>\d+) build(?:\s+preview)?(?:\s*\(BuildID (?<build>\d+)\))?",
         RegexOptions.IgnoreCase)]
     private static partial Regex BuildSucceededPattern();
+
+    [GeneratedRegex(@"\x1B\[[0-9;?]*[A-Za-z]")]
+    private static partial Regex AnsiPattern();
 
     [GeneratedRegex(@"\[U:1:(?<acct>\d+)\]")]
     private static partial Regex SteamAccountPattern();

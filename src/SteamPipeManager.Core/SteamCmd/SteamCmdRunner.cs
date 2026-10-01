@@ -13,6 +13,12 @@ public sealed record SteamCmdRunResult(
     bool TimedOut,
     bool Cancelled)
 {
+    /// <summary>
+    /// Canlı log beklenen yerde görüldü mü. Görülmediyse olaylar süreç bittikten sonra
+    /// stdout'tan çıkarıldı: sonuç doğru ama ilerleme canlı gösterilemedi.
+    /// </summary>
+    public bool LiveLogFound { get; init; }
+
     public bool SawInteractionPrompt =>
         Events.Any(e => e.Kind == SteamCmdEventKind.NeedsInteraction);
 
@@ -64,8 +70,13 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Could not start SteamCMD.");
 
+        // Canlı kaynak platforma göre: Windows'ta console_log.txt, Linux/macOS'ta stdout
+        // (bkz. SteamCmdInstallation.LiveOutputIsStandardOutput).
+        var fromStdout = Installation.LiveOutputIsStandardOutput;
+
         var stdout = new StringBuilder();
-        var stdoutTask = DrainAsync(process.StandardOutput, stdout);
+        var stdoutReader = fromStdout ? new StreamLineReader(process.StandardOutput) : null;
+        var stdoutTask = fromStdout ? Task.CompletedTask : DrainAsync(process.StandardOutput, stdout);
         var stderrTask = DrainAsync(process.StandardError, stdout);
 
         var events = new List<SteamCmdEvent>();
@@ -75,11 +86,17 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
         using var stallSource = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var timedOut = false;
 
-        var watchdog = WatchStallAsync(tail, process, stallSource, () => timedOut = true);
+        var watchdog = stdoutReader is not null
+            ? WatchStallAsync(() => true, () => stdoutReader.LastGrowthAt, process, stallSource, () => timedOut = true)
+            : WatchStallAsync(() => tail.HasSeenFile, () => tail.LastGrowthAt, process, stallSource, () => timedOut = true);
+
+        var lines = stdoutReader is not null
+            ? stdoutReader.ReadLinesAsync(stallSource.Token)
+            : tail.ReadLinesAsync(() => process.HasExited, stallSource.Token);
 
         try
         {
-            await foreach (var line in tail.ReadLinesAsync(() => process.HasExited, stallSource.Token))
+            await foreach (var line in lines)
             {
                 if (parser.Feed(line) is not { } evt)
                 {
@@ -114,6 +131,11 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
         await Task.WhenAll(stdoutTask, stderrTask);
         await process.WaitForExitAsync(CancellationToken.None);
 
+        if (stdoutReader is not null)
+        {
+            stdout.Insert(0, stdoutReader.Captured);
+        }
+
         // Canlı log'dan hiç olay çıkmadıysa (bir platformda SteamCMD log'unu başka yere
         // yazıyorsa ya da dosya son okumada erişilemediyse) sonuç yine de kaybolmasın:
         // stdout tamponlu ama süreç bitince eksiksiz, aynı satırlar oradan ayrıştırılıyor.
@@ -127,7 +149,10 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
         }
 
         return new SteamCmdRunResult(
-            process.ExitCode, events, stdout.ToString(), timedOut, cancelled);
+            process.ExitCode, events, stdout.ToString(), timedOut, cancelled)
+        {
+            LiveLogFound = stdoutReader is not null ? stdoutReader.Captured.Length > 0 : tail.HasSeenFile,
+        };
     }
 
     /// <summary>
@@ -145,7 +170,8 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
     }
 
     private async Task WatchStallAsync(
-        LogTail tail,
+        Func<bool> sourceSeen,
+        Func<DateTimeOffset> lastGrowth,
         Process process,
         CancellationTokenSource source,
         Action onStalled)
@@ -158,7 +184,7 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
 
                 // Log hiç görünmediyse "büyümüyor" bilgisi anlamsız; çalışan bir build'i
                 // takıldı sanıp öldürmemek için bekçi devreye girmiyor.
-                if (!tail.HasSeenFile || DateTimeOffset.UtcNow - tail.LastGrowthAt < StallTimeout)
+                if (!sourceSeen() || DateTimeOffset.UtcNow - lastGrowth() < StallTimeout)
                 {
                     continue;
                 }

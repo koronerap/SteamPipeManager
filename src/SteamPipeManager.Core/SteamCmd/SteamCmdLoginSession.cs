@@ -94,11 +94,22 @@ public sealed class SteamCmdLoginSession(SteamCmdInstallation installation)
         await process.StandardInput.WriteLineAsync(password);
         await process.StandardInput.FlushAsync(timeout.Token);
 
-        // stdout okunmazsa pipe dolup süreci bloklayabilir.
-        var drain = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
+        // Canlı kaynak platforma göre (bkz. SteamCmdInstallation.LiveOutputIsStandardOutput).
+        // stdout okunmazsa pipe dolup süreci bloklayabilir; canlı kaynak değilse boşaltılıyor.
+        var stdoutReader = installation.LiveOutputIsStandardOutput
+            ? new StreamLineReader(process.StandardOutput)
+            : null;
+        var drain = stdoutReader is null
+            ? process.StandardOutput.ReadToEndAsync(CancellationToken.None)
+            : Task.FromResult("");
         var drainError = process.StandardError.ReadToEndAsync(CancellationToken.None);
 
-        var result = await WatchAsync(process, username, logStart, progress, timeout);
+        var lines = stdoutReader is not null
+            ? stdoutReader.ReadLinesAsync(timeout.Token)
+            : new LogTail(installation.ConsoleLogPath, TimeSpan.FromMilliseconds(200), logStart)
+                .ReadLinesAsync(() => process.HasExited, timeout.Token);
+
+        var result = await WatchAsync(process, username, lines, progress, timeout);
 
         if (!process.HasExited)
         {
@@ -114,20 +125,18 @@ public sealed class SteamCmdLoginSession(SteamCmdInstallation installation)
     private async Task<LoginResult> WatchAsync(
         Process process,
         string username,
-        long logStart,
+        IAsyncEnumerable<string> lines,
         IProgress<LoginProgress>? progress,
         CancellationTokenSource timeout)
     {
         var parser = new SteamCmdLogParser();
-        var tail = new LogTail(
-            installation.ConsoleLogPath, TimeSpan.FromMilliseconds(200), logStart);
         var guardRequested = false;
 
         progress?.Report(new LoginProgress(LoginStage.SigningIn, Loc.T("Login.Connecting")));
 
         try
         {
-            await foreach (var line in tail.ReadLinesAsync(() => process.HasExited, timeout.Token))
+            await foreach (var line in lines)
             {
                 if (parser.Feed(line) is not { } evt)
                 {
