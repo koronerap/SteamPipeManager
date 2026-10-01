@@ -281,7 +281,7 @@
     "Epic.SecretMissing": "Bu profil için kayıtlı client secret yok. Profili düzenle ekranından ekleyebilirsin.",
     "Epic.Tool": "BuildPatchTool (Epic)",
     "Epic.ExperimentalBadge": "DENEYSEL",
-    "Epic.Tool.Body": "Epic yüklemeleri BuildPatchTool üzerinden yapılır. Uygulama onu sizin için indiremez; araç Epic Dev Portal'ın arkasında. Oradan indirin (Epic Games Store → Artifacts and Binaries), zip'i açın ve klasörü ya da exe'yi gösterin.",
+    "Epic.Tool.Body": "Epic yüklemeleri BuildPatchTool üzerinden yapılır. Uygulama onu sizin için indiremez; araç Epic Dev Portal'ın arkasında. Oradan indirin (Epic Games Store → Artifacts and Binaries), zip'i açın ve açtığınız klasörü gösterin.",
     "Epic.Tool.Placeholder": "…/BuildPatchTool_1.8.8",
     "Epic.Tool.Pick.Tip": "BuildPatchTool'u ya da zip'in açıldığı klasörü seçin",
     "Epic.Tool.Verify.Tip": "Bu yolda BuildPatchTool var mı kontrol et",

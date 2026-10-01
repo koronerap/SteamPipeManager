@@ -281,7 +281,7 @@
     "Epic.SecretMissing": "Für dieses Profil ist kein Client Secret gespeichert. Füge es im Bearbeitungsbildschirm des Profils hinzu.",
     "Epic.Tool": "BuildPatchTool (Epic)",
     "Epic.ExperimentalBadge": "EXPERIMENTELL",
-    "Epic.Tool.Body": "Epic-Uploads laufen über BuildPatchTool. Die App kann es nicht für dich herunterladen – es liegt hinter dem Epic Dev Portal. Lade es dort herunter (Epic Games Store → Artifacts and Binaries), entpacke es und wähle den Ordner oder die exe.",
+    "Epic.Tool.Body": "Epic-Uploads laufen über BuildPatchTool. Die App kann es nicht für dich herunterladen – es liegt hinter dem Epic Dev Portal. Lade es dort herunter (Epic Games Store → Artifacts and Binaries), entpacke es und wähle den entpackten Ordner.",
     "Epic.Tool.Placeholder": "…/BuildPatchTool_1.8.8",
     "Epic.Tool.Pick.Tip": "BuildPatchTool oder den Ordner wählen, in den es entpackt wurde",
     "Epic.Tool.Verify.Tip": "Prüfen, ob BuildPatchTool unter diesem Pfad liegt",

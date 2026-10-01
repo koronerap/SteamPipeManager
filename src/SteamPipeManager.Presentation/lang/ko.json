@@ -281,7 +281,7 @@
     "Epic.SecretMissing": "이 프로필에 저장된 client secret이 없습니다. 프로필 편집 화면에서 추가하세요.",
     "Epic.Tool": "BuildPatchTool (Epic)",
     "Epic.ExperimentalBadge": "실험적",
-    "Epic.Tool.Body": "Epic 업로드는 BuildPatchTool을 통해 이루어집니다. 이 도구는 Epic Dev Portal에서만 제공되므로 앱이 대신 다운로드할 수 없습니다. Epic Dev Portal(Epic Games Store → Artifacts and Binaries)에서 다운로드해 압축을 풀고 폴더나 exe를 지정하세요.",
+    "Epic.Tool.Body": "Epic 업로드는 BuildPatchTool을 통해 이루어집니다. 이 도구는 Epic Dev Portal에서만 제공되므로 앱이 대신 다운로드할 수 없습니다. Epic Dev Portal(Epic Games Store → Artifacts and Binaries)에서 다운로드해 압축을 풀고 압축을 푼 폴더를 지정하세요.",
     "Epic.Tool.Placeholder": "…/BuildPatchTool_1.8.8",
     "Epic.Tool.Pick.Tip": "BuildPatchTool 또는 압축을 푼 폴더 선택",
     "Epic.Tool.Verify.Tip": "이 경로에 BuildPatchTool이 있는지 확인",

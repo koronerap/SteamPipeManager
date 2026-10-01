@@ -281,7 +281,7 @@
     "Epic.SecretMissing": "Для этого профиля не сохранён client secret. Добавьте его на экране редактирования профиля.",
     "Epic.Tool": "BuildPatchTool (Epic)",
     "Epic.ExperimentalBadge": "ЭКСПЕРИМЕНТ",
-    "Epic.Tool.Body": "Загрузки в Epic выполняются через BuildPatchTool. Приложение не может скачать его за вас — он доступен только в Epic Dev Portal. Скачайте его там (Epic Games Store → Artifacts and Binaries), распакуйте и укажите папку или exe.",
+    "Epic.Tool.Body": "Загрузки в Epic выполняются через BuildPatchTool. Приложение не может скачать его за вас — он доступен только в Epic Dev Portal. Скачайте его там (Epic Games Store → Artifacts and Binaries), распакуйте и укажите распакованную папку.",
     "Epic.Tool.Placeholder": "…/BuildPatchTool_1.8.8",
     "Epic.Tool.Pick.Tip": "Выберите BuildPatchTool или папку, в которую он распакован",
     "Epic.Tool.Verify.Tip": "Проверить, есть ли BuildPatchTool по этому пути",

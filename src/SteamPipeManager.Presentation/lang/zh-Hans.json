@@ -281,7 +281,7 @@
     "Epic.SecretMissing": "此配置文件未保存 client secret。请在配置文件编辑界面添加。",
     "Epic.Tool": "BuildPatchTool (Epic)",
     "Epic.ExperimentalBadge": "实验性",
-    "Epic.Tool.Body": "Epic 上传通过 BuildPatchTool 完成。该工具只能从 Epic Dev Portal 获取，应用无法代为下载。请在 Epic Dev Portal（Epic Games Store → Artifacts and Binaries）下载并解压，然后指定其文件夹或 exe。",
+    "Epic.Tool.Body": "Epic 上传通过 BuildPatchTool 完成。该工具只能从 Epic Dev Portal 获取，应用无法代为下载。请在 Epic Dev Portal（Epic Games Store → Artifacts and Binaries）下载并解压，然后指定解压后的文件夹。",
     "Epic.Tool.Placeholder": "…/BuildPatchTool_1.8.8",
     "Epic.Tool.Pick.Tip": "选择 BuildPatchTool 或其解压后的文件夹",
     "Epic.Tool.Verify.Tip": "检查此路径下是否有 BuildPatchTool",
