@@ -152,6 +152,8 @@ jobs:
           open -n --env SPM_DATA_DIR="$PWD/data" "out/extracted/Pipe Manager Hub.app"
           sleep 20
           screencapture -x shot-macos-${{ matrix.arch }}.png || true
+          echo "--- uygulama menüsü ---"
+          osascript -e 'tell application "System Events" to tell process "PipeManagerHub" to get {name of menu bar item 2 of menu bar 1, name of every menu item of menu 1 of menu bar item 2 of menu bar 1}' || echo "(erişilebilirlik izni yok)"
           if pgrep -x PipeManagerHub; then echo "Uygulama çalışıyor"; pkill -x PipeManagerHub; else echo "Uygulama çalışmıyor"; exit 1; fi
           ls data data/lang | head -20
 

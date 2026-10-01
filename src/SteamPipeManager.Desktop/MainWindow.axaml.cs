@@ -18,8 +18,13 @@ public sealed partial class MainWindow : Window
     /// <summary>
     /// Akrilik ve bulanıklıkta zemin biraz kapatılıyor: arkadaki açık renkli pencereler
     /// metni okunmaz yapmasın. Mica'da Windows bu tonu kendisi veriyor.
+    ///
+    /// macOS'ta Avalonia'nın buzlu katmanı sistem temasından bağımsız olarak açık renkli;
+    /// Windows'taki ton orada zemini griye çeviriyordu (siyah masaüstü önünde #4D4D4F
+    /// ölçüldü). Bu yüzden Mac'te ton daha koyu.
     /// </summary>
-    private static readonly IBrush TintedBackground = new SolidColorBrush(Color.FromArgb(0xB8, 0x1C, 0x1C, 0x1F));
+    private static readonly IBrush TintedBackground = new SolidColorBrush(
+        Color.FromArgb(OperatingSystem.IsMacOS() ? (byte)0xEB : (byte)0xB8, 0x1C, 0x1C, 0x1F));
 
     public MainWindow()
     {

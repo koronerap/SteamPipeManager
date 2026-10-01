@@ -1,6 +1,9 @@
 using System.Reflection;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Data;
+using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using SteamPipeManager.Core.Epic;
@@ -24,7 +27,54 @@ public sealed class App : Application
 {
     private ServiceProvider? _services;
 
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    /// <summary>Hangi ürün çalışıyor: derleme sırasında assembly meta verisine yazılıyor.</summary>
+    private static ProductProfile CurrentProduct { get; } = ProductProfile.Parse(
+        Assembly.GetExecutingAssembly()
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "SpmProduct")?.Value);
+
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+
+        // macOS menü çubuğu uygulamanın adını buradan alıyor (varsayılanı "Avalonia
+        // Application"). Avalonia adı ve uygulama menüsünü Initialize'ın hemen ardından okuyor.
+        Name = CurrentProduct.Name;
+
+        if (OperatingSystem.IsMacOS())
+        {
+            NativeMenu.SetMenu(this, CreateMacAppMenu());
+        }
+    }
+
+    /// <summary>
+    /// macOS uygulama menüsü. Verilmezse Avalonia "About Avalonia" içeren kendi menüsünü
+    /// koyuyor; Gizle ve Çık öğelerini her durumda kendisi ekliyor. Mac'te alışılmış
+    /// "Ayarlar… ⌘," buraya konuyor.
+    /// </summary>
+    private NativeMenu CreateMacAppMenu()
+    {
+        var settings = new NativeMenuItem { Gesture = new KeyGesture(Key.OemComma, KeyModifiers.Meta) };
+
+        settings.Bind(NativeMenuItem.HeaderProperty, new Binding("[Nav.Settings]")
+        {
+            Source = AppLocalizer.Instance,
+            StringFormat = "{0}…",
+        });
+
+        settings.Click += (_, _) =>
+        {
+            // Kurulum sihirbazındayken ayarlar açılmıyor; arayüzdeki düğme de o sırada gizli.
+            var window = (ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+
+            if (window?.DataContext is ShellViewModel { IsChromeVisible: true } shell)
+            {
+                shell.OpenSettingsCommand.Execute(null);
+            }
+        };
+
+        return new NativeMenu { settings };
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {
@@ -126,11 +176,7 @@ public sealed class App : Application
         services.AddSingleton<SteamCmdProvisioner>();
         services.AddSingleton(_ => new SteamImageService(layout.CoversDirectory));
 
-        // Hangi ürün çalışıyor: derleme sırasında assembly meta verisine yazılıyor.
-        services.AddSingleton(_ => ProductProfile.Parse(
-            Assembly.GetExecutingAssembly()
-                .GetCustomAttributes<AssemblyMetadataAttribute>()
-                .FirstOrDefault(a => a.Key == "SpmProduct")?.Value));
+        services.AddSingleton(CurrentProduct);
 
         // Epic client secret'ları: macOS'ta Anahtar Zinciri, Linux'ta gizli bilgi servisi.
         services.AddSingleton(_ => new EpicSecretStore(layout.EpicSecretsFile));

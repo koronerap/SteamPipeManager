@@ -105,12 +105,73 @@ public sealed class RealSteamCmdTests(ITestOutputHelper output) : IDisposable
         }
 
         output.WriteLine("--- kurulum klasöründe 'logs' var mı ---");
-        output.WriteLine(Directory.Exists(Path.Combine(installation.Directory, "logs")) ? "evet (beklenmiyordu)" : "hayır");
+        var installLogs = Path.Combine(installation.Directory, "logs");
+        output.WriteLine(Directory.Exists(installLogs)
+            ? "evet: " + string.Join(", ", Directory.EnumerateFiles(installLogs).Select(Path.GetFileName))
+            : "hayır");
+
+        WriteStderrFile(installation);
 
         Assert.Equal(0, result.ExitCode);
         Assert.True(distinctSeconds > 2, "Olaylar canlı gelmedi; süreç bitince bir arada geldi.");
         Assert.True(result.LiveLogFound, $"Canlı log beklenen yerde görülmedi: {installation.ConsoleLogPath}");
         Assert.Contains(result.Events, e => e.Kind == SteamCmdEventKind.LoginSucceeded);
+    }
+
+    /// <summary>
+    /// Giriş hatası canlı kaynağa düşüyor mu. SteamCMD Linux ve macOS'ta stderr'i bir
+    /// dosyaya yönlendiriyor ("Redirecting stderr to ..."); hata oraya giderse uygulama
+    /// yanlış şifreyi göremez, giriş belirsiz biçimde biterdi. Var olmayan bir hesapla
+    /// tek deneme.
+    /// </summary>
+    [RealSteamCmdFact]
+    public async Task A_failed_login_reaches_the_live_output()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+
+        var exe = await new SteamCmdProvisioner().EnsureInstalledAsync(Path.Combine(_root, "steamcmd"), ct: timeout.Token);
+        var installation = new SteamCmdInstallation(exe, homeDirectory: Path.Combine(_root, "home"));
+        var runner = new SteamCmdRunner(installation) { StallTimeout = TimeSpan.FromMinutes(5) };
+
+        SteamCmdRunResult result = null!;
+
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            result = await runner.RunAsync($"+login spm_ci_{Guid.NewGuid():N} not-a-password +quit", ct: timeout.Token);
+
+            output.WriteLine($"Deneme {attempt}: çıkış {result.ExitCode}, " +
+                             $"{result.Events.Count} olay: {string.Join(", ", result.Events.Select(e => e.Kind).Distinct())}");
+
+            if (result.ExitCode != SteamCmdInstallation.RestartRequiredExitCode)
+            {
+                break;
+            }
+        }
+
+        output.WriteLine("--- giriş satırları ---");
+        foreach (var evt in result.Events.Where(e => e.Kind is SteamCmdEventKind.LoginFailed or SteamCmdEventKind.Error))
+        {
+            output.WriteLine($"{evt.Kind} ({evt.FailureReason}): {evt.Message}");
+        }
+
+        WriteStderrFile(installation);
+
+        Assert.Contains(result.Events, e => e.Kind == SteamCmdEventKind.LoginFailed);
+    }
+
+    private void WriteStderrFile(SteamCmdInstallation installation)
+    {
+        var path = Directory.EnumerateFiles(Path.Combine(_root, "home"), "stderr.txt", SearchOption.AllDirectories).FirstOrDefault();
+
+        output.WriteLine($"--- stderr.txt ({(path is null ? "yok" : new FileInfo(path).Length + " bayt")}) ---");
+
+        if (path is not null)
+        {
+            foreach (var line in File.ReadLines(path).Take(20))
+            {
+                output.WriteLine(line);
+            }
+        }
     }
 }
 
