@@ -123,6 +123,8 @@ public sealed class SteamCmdSessionService(SteamCmdInstallation installation)
             return;
         }
 
+        Installation.EnsureCanRun();
+
         var home = Installation.HomeDirectory!;
         Directory.CreateDirectory(home);
         UnixPermissions.EnsureExecutable(Installation.ExecutablePath);

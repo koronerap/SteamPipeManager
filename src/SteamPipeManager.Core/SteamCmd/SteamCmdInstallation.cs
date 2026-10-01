@@ -60,11 +60,28 @@ public sealed class SteamCmdInstallation
     public string ConfigPath => Path.Combine(DataDirectory, "config", "config.vdf");
 
     /// <summary>
+    /// SteamCMD bu makinede çalışabilir mi. macOS SteamCMD'si yalnızca Intel ikilisi;
+    /// Apple Silicon'da Rosetta yoksa "Bad CPU type in executable" ile düşüyor ve
+    /// kullanıcı ne olduğunu anlamıyor. Ne yapacağını söyleyen hata burada.
+    /// </summary>
+    public void EnsureCanRun()
+    {
+        if (Platform.IsMac && Platform.Architecture == "arm64" && OperatingSystem.IsMacOS() && !Rosetta.IsInstalled())
+        {
+            throw new InvalidOperationException(
+                "SteamCMD is an Intel program, and this Mac needs Rosetta to run it. " +
+                $"Install Rosetta in Terminal with \"{Rosetta.InstallCommand}\", then try again.");
+        }
+    }
+
+    /// <summary>
     /// SteamCMD süreci başlamadan önce: Linux/macOS'ta ev dizinini ayarlar ve betiğin
-    /// çalıştırma iznini garanti eder. Windows'ta hiçbir şey yapmaz.
+    /// çalıştırma iznini garanti eder. Windows'ta yalnızca çalışabilirliğe bakar.
     /// </summary>
     public void Prepare(ProcessStartInfo startInfo)
     {
+        EnsureCanRun();
+
         if (HomeDirectory is not { } home)
         {
             return;

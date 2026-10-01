@@ -202,4 +202,24 @@ public sealed class LocalizerTests : IDisposable
         Assert.Contains(names, n => string.IsNullOrEmpty(n));
         Assert.Contains("Item[]", names);
     }
+
+    /// <summary>
+    /// Dil yüklenmeden kurulan bir bağlama (macOS uygulama menüsü) anahtarı alıyor.
+    /// Yükleme bildirmeseydi, dil zaten seçili olanla aynıyken hiç tazelenmezdi.
+    /// </summary>
+    [Fact]
+    public void Loading_the_languages_refreshes_bindings_made_before_it()
+    {
+        var localizer = new Localizer();
+        Assert.Equal("Greeting", localizer["Greeting"]);
+
+        var names = new List<string?>();
+        localizer.PropertyChanged += (_, e) => names.Add(e.PropertyName);
+
+        localizer.Initialize(BuiltIn(("en.json", "en", "English", [("Greeting", "Hello")])), _dir);
+        localizer.Use("en");
+
+        Assert.Contains("Item[]", names);
+        Assert.Equal("Hello", localizer["Greeting"]);
+    }
 }

@@ -49,6 +49,7 @@ public sealed class RealSteamCmdTests(ITestOutputHelper output) : IDisposable
         output.WriteLine($"Platform:        {HostPlatform.Current.RuntimeId}");
         output.WriteLine($"Çalıştırılabilir: {exe}");
         output.WriteLine($"Beklenen log:    {installation.ConsoleLogPath}");
+        output.WriteLine($"Rosetta:         {(OperatingSystem.IsMacOS() ? Rosetta.IsInstalled() ? "kurulu" : "YOK" : "-")}");
 
         var runner = new SteamCmdRunner(installation) { StallTimeout = TimeSpan.FromMinutes(5) };
 

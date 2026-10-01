@@ -156,6 +156,10 @@ public sealed class Localizer : INotifyPropertyChanged
                 _userPacks[pack.Code] = pack;
             }
         }
+
+        // Metinler değişti; bundan önce kurulmuş bağlamalar da tazelensin. macOS uygulama
+        // menüsü dil yüklenmeden kuruluyor ve bu olmadan anahtarı gösteriyordu.
+        RaiseTextsChanged();
     }
 
     private static IEnumerable<string> EnumerateLanguageFiles(string directory) =>
@@ -263,11 +267,18 @@ public sealed class Localizer : INotifyPropertyChanged
 
         _currentCode = target;
 
-        // Boş ad tüm bağlamaları tazeler (WPF). Avalonia dizin bağlamalarını yalnızca
-        // "Item[]" bildirimiyle tazeliyor; ikisi birden gönderiliyor.
+        RaiseTextsChanged();
+        return true;
+    }
+
+    /// <summary>
+    /// Boş ad tüm bağlamaları tazeler (WPF). Avalonia dizin bağlamalarını yalnızca
+    /// "Item[]" bildirimiyle tazeliyor; ikisi birden gönderiliyor.
+    /// </summary>
+    private void RaiseTextsChanged()
+    {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
-        return true;
     }
 
     /// <summary>
