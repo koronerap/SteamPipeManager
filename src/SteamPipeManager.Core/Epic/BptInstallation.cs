@@ -1,3 +1,5 @@
+using SteamPipeManager.Core.Platform;
+
 namespace SteamPipeManager.Core.Epic;
 
 /// <summary>
@@ -9,9 +11,6 @@ namespace SteamPipeManager.Core.Epic;
 /// </summary>
 public sealed class BptInstallation
 {
-    /// <summary>Zip açıldığında exe'nin bulunduğu göreli yol.</summary>
-    private const string WindowsRelativePath = @"Engine\Binaries\Win64\BuildPatchTool.exe";
-
     public BptInstallation(string executablePath) => ExecutablePath = executablePath;
 
     public string ExecutablePath { get; }
@@ -19,24 +18,49 @@ public sealed class BptInstallation
     public bool Exists => File.Exists(ExecutablePath);
 
     /// <summary>
+    /// Epic'in zip'i üç platformun ikilisini birden taşıyor; aranan, çalışılan
+    /// platformunki. Windows'ta <c>.exe</c>, Linux ve macOS'ta uzantısız.
+    /// </summary>
+    public static string ExecutableName(HostPlatform platform) =>
+        platform.IsWindows ? "BuildPatchTool.exe" : "BuildPatchTool";
+
+    /// <summary>Zip açıldığında aracın bulunduğu göreli yol.</summary>
+    public static string RelativePath(HostPlatform platform) => Path.Combine(
+        "Engine",
+        "Binaries",
+        platform.Os switch
+        {
+            HostOs.Windows => "Win64",
+            HostOs.MacOS => "Mac",
+            _ => "Linux",
+        },
+        ExecutableName(platform));
+
+    /// <summary>
     /// Kullanıcının gösterdiği yolda BuildPatchTool'u arar.
     ///
-    /// Kabul edilenler: exe'nin kendisi, zip'in açıldığı kök klasör
-    /// (<c>BuildPatchTool_1.8.8\</c>) ve arada kalan klasörler. Kullanıcının
+    /// Kabul edilenler: aracın kendisi, zip'in açıldığı kök klasör
+    /// (<c>BuildPatchTool_1.8.8</c>) ve arada kalan klasörler. Kullanıcının
     /// hangisini seçeceğini bilmediğimiz için hepsi denenir.
     /// </summary>
-    public static string? LocateExecutable(string path)
+    public static string? LocateExecutable(string path, HostPlatform? platform = null)
     {
+        platform ??= HostPlatform.Current;
+
         if (path is not { Length: > 0 })
         {
             return null;
         }
 
+        var name = ExecutableName(platform);
+        var relative = RelativePath(platform);
+
         if (File.Exists(path))
         {
-            return path.EndsWith("BuildPatchTool.exe", StringComparison.OrdinalIgnoreCase)
-                ? path
-                : null;
+            // Linux/macOS'ta ad büyük/küçük harfe duyarlı; Windows'ta değil.
+            var comparison = platform.IsWindows ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+            return string.Equals(Path.GetFileName(path), name, comparison) ? path : null;
         }
 
         if (!Directory.Exists(path))
@@ -46,8 +70,8 @@ public sealed class BptInstallation
 
         var candidates = new[]
         {
-            Path.Combine(path, WindowsRelativePath),
-            Path.Combine(path, "BuildPatchTool.exe"),
+            Path.Combine(path, relative),
+            Path.Combine(path, name),
         };
 
         foreach (var candidate in candidates)
@@ -59,12 +83,12 @@ public sealed class BptInstallation
         }
 
         // Zip bir alt klasöre açılmış olabilir (ör. seçilen klasörün içinde
-        // BuildPatchTool_1.8.8\ duruyordur).
+        // BuildPatchTool_1.8.8 duruyordur).
         try
         {
             foreach (var directory in Directory.EnumerateDirectories(path))
             {
-                var nested = Path.Combine(directory, WindowsRelativePath);
+                var nested = Path.Combine(directory, relative);
 
                 if (File.Exists(nested))
                 {

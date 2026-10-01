@@ -377,6 +377,9 @@
     "Close.SaveTimedOut": "保存耗时过长。",
     "Apps.Empty.Body.Epic": "使用上方按钮添加你的第一个游戏。需要它在 Epic Developer Portal 中的 Product ID。",
     "Profile.Empty.Body.Epic": "为你发布所用的每个 Epic 组织创建一个配置。需要 Epic Developer Portal 中的 Organization ID 和一个 BuildPatchTool 客户端（Client ID 和 Client Secret）。",
-    "Setup.Epic.Pick": "选择 BuildPatchTool"
+    "Setup.Epic.Pick": "选择 BuildPatchTool",
+    "Epic.SecretStorage.Body.Keychain": "BuildPatchTool 每次上传都需要 Client Secret，因此必须保存。它保存在你的 macOS 钥匙串中，profiles.json 不含任何凭据，可以放心备份或共享。",
+    "Epic.SecretStorage.Body.SecretService": "BuildPatchTool 每次上传都需要 Client Secret，因此必须保存。它保存在桌面的密钥存储（GNOME Keyring 或 KWallet）中，profiles.json 不含任何凭据，可以放心备份或共享。",
+    "Epic.SecretStorage.Body.File": "BuildPatchTool 每次上传都需要 Client Secret，因此必须保存。未找到密钥存储（GNOME Keyring 或 KWallet），因此它以未加密形式保存在只有你的用户可以读取的文件中，就像 SSH 密钥一样。profiles.json 仍然不含任何凭据。"
   }
 }

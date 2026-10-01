@@ -8,8 +8,15 @@ namespace SteamPipeManager.Core.Workspace;
 /// </summary>
 public sealed class WorkspaceLayout(string rootDirectory)
 {
+    /// <summary>
+    /// Platformun alışılmış yeri: Windows'ta <c>%AppData%</c> (1.0'dan beri), Linux'ta
+    /// <c>~/.local/share</c> (XDG_DATA_HOME'a uyar), macOS'ta
+    /// <c>~/Library/Application Support</c>. .NET'te son ikisi LocalApplicationData.
+    /// </summary>
     public static string DefaultRoot => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        Environment.GetFolderPath(OperatingSystem.IsWindows()
+            ? Environment.SpecialFolder.ApplicationData
+            : Environment.SpecialFolder.LocalApplicationData),
         "SteamPipeManager");
 
     /// <summary>
@@ -44,6 +51,12 @@ public sealed class WorkspaceLayout(string rootDirectory)
 
     /// <summary>İndirilen güncelleme paketleri ve açıldıkları hazırlık klasörü.</summary>
     public string UpdatesDirectory => Path.Combine(Root, "updates");
+
+    /// <summary>
+    /// Linux/macOS'ta SteamCMD'ye verilen ev dizini: log'u ve oturum önbelleği burada,
+    /// kullanıcının gerçek ev dizininden ve Steam istemcisinden ayrı.
+    /// </summary>
+    public string SteamCmdHomeDirectory => Path.Combine(Root, "steamcmd-home");
 
     /// <summary>Uygulamanın kendi indirdiği SteamCMD kurulumu.</summary>
     public string ManagedSteamCmdDirectory => Path.Combine(Root, "steamcmd");

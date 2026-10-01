@@ -1,6 +1,8 @@
+using System.Formats.Tar;
 using System.IO.Compression;
 
 using SteamPipeManager.Core.Localization;
+using SteamPipeManager.Core.Platform;
 
 namespace SteamPipeManager.Core.SteamCmd;
 
@@ -10,18 +12,29 @@ public sealed record ProvisionProgress(string Stage, double? Fraction = null);
 /// SteamCMD kurulumunu hazırlar. Steamworks SDK'nın tamamı gerekmez: <c>run_app_build</c> için
 /// Valve'ın herkese açık standalone steamcmd'si yeterlidir ve indirmesi kimlik doğrulaması istemez.
 /// </summary>
-public sealed class SteamCmdProvisioner(HttpClient? httpClient = null)
+public sealed class SteamCmdProvisioner(HttpClient? httpClient = null, HostPlatform? platform = null)
 {
-    public const string DownloadUrl = "https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip";
-
     private readonly HttpClient _http = httpClient ?? new HttpClient();
 
-    /// <summary>Kullanıcının gösterdiği yolu çözer: exe'nin kendisi, ContentBuilder ya da SDK kökü olabilir.</summary>
-    public static string? LocateExecutable(string path)
+    private readonly HostPlatform _platform = platform ?? HostPlatform.Current;
+
+    /// <summary>Bu platform için Valve'ın paket adresi.</summary>
+    public Uri DownloadUrl => SteamCmdLayout.DownloadUrl(_platform);
+
+    /// <summary>
+    /// Kullanıcının gösterdiği yolu çözer: aracın kendisi, ContentBuilder ya da SDK kökü
+    /// olabilir. Windows'ta <c>steamcmd.exe</c>, Linux/macOS'ta <c>steamcmd.sh</c> aranıyor;
+    /// SDK'da her platformun ayrı builder klasörü var.
+    /// </summary>
+    public static string? LocateExecutable(string path, HostPlatform? platform = null)
     {
+        platform ??= HostPlatform.Current;
+        var name = SteamCmdLayout.ExecutableName(platform);
+        var builder = SteamCmdLayout.BuilderFolder(platform);
+
         if (File.Exists(path))
         {
-            return string.Equals(Path.GetFileName(path), "steamcmd.exe", StringComparison.OrdinalIgnoreCase)
+            return string.Equals(Path.GetFileName(path), name, StringComparison.OrdinalIgnoreCase)
                 ? path
                 : null;
         }
@@ -33,9 +46,9 @@ public sealed class SteamCmdProvisioner(HttpClient? httpClient = null)
 
         string[] candidates =
         [
-            Path.Combine(path, "steamcmd.exe"),
-            Path.Combine(path, "builder", "steamcmd.exe"),
-            Path.Combine(path, "tools", "ContentBuilder", "builder", "steamcmd.exe"),
+            Path.Combine(path, name),
+            Path.Combine(path, builder, name),
+            Path.Combine(path, "tools", "ContentBuilder", builder, name),
         ];
 
         return candidates.FirstOrDefault(File.Exists);
@@ -50,37 +63,59 @@ public sealed class SteamCmdProvisioner(HttpClient? httpClient = null)
         IProgress<ProvisionProgress>? progress = null,
         CancellationToken ct = default)
     {
-        var exePath = Path.Combine(targetDirectory, "steamcmd.exe");
+        var exePath = Path.Combine(targetDirectory, SteamCmdLayout.ExecutableName(_platform));
 
         if (File.Exists(exePath))
         {
+            UnixPermissions.EnsureExecutable(exePath);
             return exePath;
         }
 
         Directory.CreateDirectory(targetDirectory);
         progress?.Report(new ProvisionProgress(Loc.T("SteamCmd.Downloading")));
 
-        var zipPath = Path.Combine(targetDirectory, "steamcmd.zip");
+        var archivePath = Path.Combine(targetDirectory, Path.GetFileName(DownloadUrl.AbsolutePath));
 
         try
         {
-            await DownloadAsync(zipPath, progress, ct);
+            await DownloadAsync(archivePath, progress, ct);
 
             progress?.Report(new ProvisionProgress(Loc.T("SteamCmd.Extracting")));
-            ZipFile.ExtractToDirectory(zipPath, targetDirectory, overwriteFiles: true);
+            Extract(archivePath, targetDirectory);
         }
         finally
         {
-            if (File.Exists(zipPath))
+            if (File.Exists(archivePath))
             {
-                File.Delete(zipPath);
+                File.Delete(archivePath);
             }
         }
 
-        return File.Exists(exePath)
-            ? exePath
-            : throw new InvalidOperationException(
-                $"steamcmd.zip was extracted but {exePath} was not found.");
+        if (!File.Exists(exePath))
+        {
+            throw new InvalidOperationException(
+                $"{Path.GetFileName(archivePath)} was extracted but {exePath} was not found.");
+        }
+
+        UnixPermissions.EnsureExecutable(exePath);
+        return exePath;
+    }
+
+    /// <summary>
+    /// Windows paketi zip, Linux/macOS paketleri tar.gz. Tar, çalıştırma izinlerini
+    /// taşıyor; .NET Unix'te açarken onları uyguluyor.
+    /// </summary>
+    internal static void Extract(string archivePath, string targetDirectory)
+    {
+        if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            ZipFile.ExtractToDirectory(archivePath, targetDirectory, overwriteFiles: true);
+            return;
+        }
+
+        using var file = File.OpenRead(archivePath);
+        using var gzip = new GZipStream(file, CompressionMode.Decompress);
+        TarFile.ExtractToDirectory(gzip, targetDirectory, overwriteFiles: true);
     }
 
     private async Task DownloadAsync(string zipPath, IProgress<ProvisionProgress>? progress, CancellationToken ct)

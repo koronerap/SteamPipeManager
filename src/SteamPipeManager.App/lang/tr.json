@@ -377,6 +377,9 @@
     "Close.SaveTimedOut": "Kaydetme çok uzun sürdü.",
     "Apps.Empty.Body.Epic": "İlk oyununuzu yukarıdaki düğmeyle ekleyin. Epic Developer Portal'daki Product ID'si gerekecek.",
     "Profile.Empty.Body.Epic": "Yayın yaptığınız her Epic organizasyonu için bir profil oluşturun. Epic Developer Portal'dan Organization ID ve bir BuildPatchTool client'ı (Client ID ve Client Secret) gerekecek.",
-    "Setup.Epic.Pick": "BuildPatchTool'u seç"
+    "Setup.Epic.Pick": "BuildPatchTool'u seç",
+    "Epic.SecretStorage.Body.Keychain": "BuildPatchTool her yüklemede client secret'a ihtiyaç duyduğu için secret saklanmak zorunda. macOS Anahtar Zinciri'nde tutulur; böylece profiles.json kimlik bilgisi içermez, yedeklemek ya da paylaşmak güvenlidir.",
+    "Epic.SecretStorage.Body.SecretService": "BuildPatchTool her yüklemede client secret'a ihtiyaç duyduğu için secret saklanmak zorunda. Masaüstünüzün gizli bilgi deposunda (GNOME Keyring ya da KWallet) tutulur; böylece profiles.json kimlik bilgisi içermez, yedeklemek ya da paylaşmak güvenlidir.",
+    "Epic.SecretStorage.Body.File": "BuildPatchTool her yüklemede client secret'a ihtiyaç duyduğu için secret saklanmak zorunda. Bir gizli bilgi deposu (GNOME Keyring ya da KWallet) bulunamadı; bu yüzden SSH anahtarı gibi şifresiz ama yalnızca sizin kullanıcınızın okuyabildiği bir dosyada tutulur. profiles.json yine kimlik bilgisi içermez."
   }
 }

@@ -377,6 +377,9 @@
     "Close.SaveTimedOut": "Saving took too long.",
     "Apps.Empty.Body.Epic": "Add your first game with the button above. You will need its Product ID from the Epic Developer Portal.",
     "Profile.Empty.Body.Epic": "Create a profile for each Epic organization you publish for. You will need the Organization ID and a BuildPatchTool client (Client ID and Client Secret) from the Epic Developer Portal.",
-    "Setup.Epic.Pick": "Choose BuildPatchTool"
+    "Setup.Epic.Pick": "Choose BuildPatchTool",
+    "Epic.SecretStorage.Body.Keychain": "BuildPatchTool needs the client secret for every upload, so it has to be stored. It is kept in your macOS Keychain, so profiles.json stays free of credentials and safe to back up or share.",
+    "Epic.SecretStorage.Body.SecretService": "BuildPatchTool needs the client secret for every upload, so it has to be stored. It is kept in your desktop's secret store (GNOME Keyring or KWallet), so profiles.json stays free of credentials and safe to back up or share.",
+    "Epic.SecretStorage.Body.File": "BuildPatchTool needs the client secret for every upload, so it has to be stored. No secret store (GNOME Keyring or KWallet) was found, so it is kept unencrypted in a file only your user can read, like an SSH key. profiles.json still contains no credentials."
   }
 }

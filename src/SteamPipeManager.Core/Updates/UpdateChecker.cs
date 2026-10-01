@@ -1,3 +1,4 @@
+using SteamPipeManager.Core.Platform;
 using SteamPipeManager.Core.Publishing;
 
 namespace SteamPipeManager.Core.Updates;
@@ -9,8 +10,14 @@ namespace SteamPipeManager.Core.Updates;
 /// Paket ya da sağlama dosyası yoksa sonuç "elle indir" oluyor — sağlaması
 /// doğrulanamayan bir paket hiçbir koşulda kurulmuyor.
 /// </summary>
-public sealed class UpdateChecker(GitHubReleaseClient client, ProductId product)
+public sealed class UpdateChecker(GitHubReleaseClient client, UpdateTarget target)
 {
+    /// <summary>Windows paketi için kısa yol.</summary>
+    public UpdateChecker(GitHubReleaseClient client, ProductId product)
+        : this(client, new UpdateTarget(product, product.ToString(), HostPlatform.WindowsX64))
+    {
+    }
+
     public async Task<UpdateCheckResult> CheckAsync(AppVersion current, CancellationToken ct = default)
     {
         var release = await client.GetLatestAsync(ct);
@@ -20,7 +27,7 @@ public sealed class UpdateChecker(GitHubReleaseClient client, ProductId product)
             return new UpdateCheckResult(UpdateAvailability.UpToDate, current, release);
         }
 
-        var package = release.FindAsset(UpdateAssets.PackageName(product));
+        var package = release.FindAsset(target.PackageName);
         var checksums = release.FindAsset(UpdateAssets.ChecksumFileName);
 
         var installable =

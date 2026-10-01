@@ -1,25 +1,71 @@
+using System.Diagnostics;
+using SteamPipeManager.Core.Platform;
+
 namespace SteamPipeManager.Core.SteamCmd;
 
 /// <summary>
 /// Diskteki bir SteamCMD kurulumu. Yolların tek yerden türetilmesini sağlar;
 /// özellikle canlı logun okunacağı <c>logs/console_log.txt</c>.
+///
+/// Linux ve macOS'ta log ve oturum önbelleği kurulum klasöründe değil, ev dizininde
+/// duruyor (bkz. <see cref="SteamCmdLayout"/>). Orada SteamCMD'ye uygulamanın kendi
+/// ev dizini veriliyor; <see cref="Prepare"/> bunu her süreç için ayarlıyor.
 /// </summary>
-public sealed class SteamCmdInstallation(string executablePath)
+public sealed class SteamCmdInstallation
 {
     /// <summary>SteamCMD güncellendiğinde bu kodla çıkar; hata değil, "yeniden başlat" demektir.</summary>
     public const int RestartRequiredExitCode = 7;
 
-    public string ExecutablePath { get; } = executablePath;
+    /// <param name="homeDirectory">
+    /// Linux/macOS'ta SteamCMD'ye verilecek ev dizini. Verilmezse kurulumun yanındaki
+    /// <c>home</c> klasörü. Windows'ta kullanılmıyor.
+    /// </param>
+    public SteamCmdInstallation(string executablePath, HostPlatform? platform = null, string? homeDirectory = null)
+    {
+        ExecutablePath = executablePath;
+        Platform = platform ?? HostPlatform.Current;
+        HomeDirectory = Platform.IsWindows
+            ? null
+            : homeDirectory ?? Path.Combine(Directory, "home");
+    }
+
+    public string ExecutablePath { get; }
+
+    public HostPlatform Platform { get; }
 
     public string Directory => Path.GetDirectoryName(ExecutablePath)!;
 
-    public string LogsDirectory => Path.Combine(Directory, "logs");
+    /// <summary>Linux/macOS'ta SteamCMD'nin <c>HOME</c>'u; Windows'ta null.</summary>
+    public string? HomeDirectory { get; }
 
-    /// <summary>M0'da canlı yazıldığı doğrulanan dosya.</summary>
+    /// <summary>Log ve oturum önbelleğinin kökü.</summary>
+    public string DataDirectory =>
+        SteamCmdLayout.DataDirectory(Platform, Directory, HomeDirectory ?? Directory);
+
+    public string LogsDirectory => Path.Combine(DataDirectory, "logs");
+
+    /// <summary>M0'da canlı yazıldığı doğrulanan dosya (Windows).</summary>
     public string ConsoleLogPath => Path.Combine(LogsDirectory, "console_log.txt");
 
     /// <summary>Oturum cache'i burada tutulur; profiller arası paylaşılır.</summary>
-    public string ConfigPath => Path.Combine(Directory, "config", "config.vdf");
+    public string ConfigPath => Path.Combine(DataDirectory, "config", "config.vdf");
+
+    /// <summary>
+    /// SteamCMD süreci başlamadan önce: Linux/macOS'ta ev dizinini ayarlar ve betiğin
+    /// çalıştırma iznini garanti eder. Windows'ta hiçbir şey yapmaz.
+    /// </summary>
+    public void Prepare(ProcessStartInfo startInfo)
+    {
+        if (HomeDirectory is not { } home)
+        {
+            return;
+        }
+
+        System.IO.Directory.CreateDirectory(home);
+        startInfo.Environment["HOME"] = home;
+
+        UnixPermissions.EnsureExecutable(ExecutablePath);
+    }
 
     public bool Exists => File.Exists(ExecutablePath);
 

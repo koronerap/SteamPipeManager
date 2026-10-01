@@ -78,7 +78,8 @@ public sealed partial class UpdateViewModel : ObservableObject
 
         var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         _client = new GitHubReleaseClient(http, UpdateSource.Resolve());
-        _checker = new UpdateChecker(_client, product.Id);
+        _target = UpdateTarget.For(product);
+        _checker = new UpdateChecker(_client, _target);
 
         // İndirme ayrı bir istemciyle: 30 saniyelik zaman aşımı yavaş bağlantıda
         // 70 MB'lık paketi kesmesin; üst sınır iptal belirteciyle konuyor.
@@ -93,7 +94,11 @@ public sealed partial class UpdateViewModel : ObservableObject
 
     public string InstalledVersionText => AppLocalizer.Instance.Format("Settings.Updates.Current", Current);
 
-    private string ExecutableName => UpdateAssets.ExecutableName(_product.Id);
+    /// <summary>Bu ürünün bu platformdaki paketi ve paketin içindeki düzen.</summary>
+    private readonly UpdateTarget _target;
+
+    /// <summary>Uygulama kökünden çalıştırılan dosyaya göreli yol; macOS'ta .app içinde.</summary>
+    private string ExecutableName => _target.ExecutableRelativePath;
 
     private static string? RunningExecutable => Environment.ProcessPath;
 
@@ -265,7 +270,7 @@ public sealed partial class UpdateViewModel : ObservableObject
     /// <summary>Paket kurulabilir olsa da bu kopya yerinde güncellenebilir mi.</summary>
     private void ApplyReadiness()
     {
-        switch (UpdateInstaller.CheckReadiness(RunningExecutable, ExecutableName))
+        switch (UpdateInstaller.CheckReadiness(RunningExecutable, _target))
         {
             case InstallReadiness.Ready:
                 Stage = UpdateStage.Available;
@@ -303,7 +308,7 @@ public sealed partial class UpdateViewModel : ObservableObject
 
         if (Stage != UpdateStage.Available ||
             RunningExecutable is not { } executable ||
-            Path.GetDirectoryName(executable) is not { } appDirectory)
+            _target.AppRootOf(executable) is not { } appDirectory)
         {
             return;
         }
@@ -403,8 +408,8 @@ public sealed partial class UpdateViewModel : ObservableObject
                 }
             }
 
-            if (UpdateInstaller.CheckReadiness(RunningExecutable, ExecutableName) == InstallReadiness.Ready &&
-                Path.GetDirectoryName(RunningExecutable) is { } appDirectory)
+            if (UpdateInstaller.CheckReadiness(RunningExecutable, _target) == InstallReadiness.Ready &&
+                _target.AppRootOf(RunningExecutable) is { } appDirectory)
             {
                 for (var attempt = 0; attempt < 5 && UpdateInstaller.CleanupLeftovers(appDirectory) > 0; attempt++)
                 {

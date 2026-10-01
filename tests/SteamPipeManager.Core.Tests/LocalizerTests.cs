@@ -192,12 +192,14 @@ public sealed class LocalizerTests : IDisposable
     public void Language_change_raises_a_refresh_notification()
     {
         var localizer = Create();
-        var raised = false;
+        var names = new List<string?>();
 
-        localizer.PropertyChanged += (_, e) => raised = string.IsNullOrEmpty(e.PropertyName);
+        localizer.PropertyChanged += (_, e) => names.Add(e.PropertyName);
         localizer.Use("tr");
 
-        // Boş ad tüm bağlamaların tazelenmesini sağlar; canlı dil değişimi buna dayanıyor.
-        Assert.True(raised);
+        // Boş ad WPF'te tüm bağlamaları tazeliyor; Avalonia dizin bağlamaları ise
+        // "Item[]" bekliyor. Canlı dil değişimi ikisine de dayanıyor.
+        Assert.Contains(names, n => string.IsNullOrEmpty(n));
+        Assert.Contains("Item[]", names);
     }
 }

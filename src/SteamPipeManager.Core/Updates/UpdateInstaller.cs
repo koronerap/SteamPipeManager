@@ -1,3 +1,4 @@
+using System.Formats.Tar;
 using System.IO.Compression;
 
 namespace SteamPipeManager.Core.Updates;
@@ -30,6 +31,7 @@ public static class UpdateInstaller
 {
     public const string OldSuffix = ".spm-old";
 
+    /// <summary>Windows düzeni için kısa yol: uygulama kökü exe'nin klasörü.</summary>
     public static InstallReadiness CheckReadiness(string? runningExecutable, string expectedExecutableName)
     {
         if (runningExecutable is not { Length: > 0 } ||
@@ -39,6 +41,19 @@ public static class UpdateInstaller
             return InstallReadiness.DevelopmentBuild;
         }
 
+        return CheckWritable(directory);
+    }
+
+    /// <summary>
+    /// Platformun paket düzenine göre (macOS'ta <c>.app</c> paketi) kontrol eder.
+    /// </summary>
+    public static InstallReadiness CheckReadiness(string? runningExecutable, UpdateTarget target) =>
+        target.AppRootOf(runningExecutable) is { } root
+            ? CheckWritable(root)
+            : InstallReadiness.DevelopmentBuild;
+
+    private static InstallReadiness CheckWritable(string directory)
+    {
         var probe = Path.Combine(directory, $".spm-write-test-{Guid.NewGuid():N}");
 
         try
@@ -58,8 +73,14 @@ public static class UpdateInstaller
     /// Yayın zip'lerinde dosyalar ürün adıyla bir klasörün içinde duruyor; doğrudan
     /// kökte duran paketler de kabul ediliyor.
     /// </summary>
-    public static string Stage(string packagePath, string stagingDirectory, string executableName)
+    /// <param name="executableRelativePath">
+    /// Uygulama kökünden çalıştırılan dosyaya göreli yol (bkz. <see cref="UpdateTarget.ExecutableRelativePath"/>);
+    /// paketin hangi klasörü kök sayılacağı buna göre bulunuyor.
+    /// </param>
+    public static string Stage(string packagePath, string stagingDirectory, string executableRelativePath)
     {
+        var executableName = executableRelativePath;
+
         if (Directory.Exists(stagingDirectory))
         {
             Directory.Delete(stagingDirectory, recursive: true);
@@ -72,6 +93,12 @@ public static class UpdateInstaller
 
         try
         {
+            if (!packagePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
+                ExtractTarGz(packagePath, root, rootWithSeparator);
+            }
+            else
+            {
             using var archive = ZipFile.OpenRead(packagePath);
 
             foreach (var entry in archive.Entries)
@@ -94,8 +121,9 @@ public static class UpdateInstaller
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 entry.ExtractToFile(destination, overwrite: true);
             }
+            }
         }
-        catch (InvalidDataException ex)
+        catch (Exception ex) when (ex is InvalidDataException or FormatException or EndOfStreamException)
         {
             throw new UpdateException(UpdateFailure.PackageInvalid, ex.Message, ex);
         }
@@ -114,6 +142,41 @@ public static class UpdateInstaller
         }
 
         throw new UpdateException(UpdateFailure.PackageInvalid, $"{executableName} is not in the package.");
+    }
+
+    /// <summary>
+    /// Linux/macOS paketi. Tar, çalıştırma izinlerini taşıyor ve .NET Unix'te açarken
+    /// uyguluyor. Yalnızca klasörler ve sıradan dosyalar açılıyor; bağlantılar (link)
+    /// paket dışını gösterebileceği için atlanıyor.
+    /// </summary>
+    private static void ExtractTarGz(string packagePath, string root, string rootWithSeparator)
+    {
+        using var file = File.OpenRead(packagePath);
+        using var gzip = new GZipStream(file, CompressionMode.Decompress);
+        using var reader = new TarReader(gzip);
+
+        while (reader.GetNextEntry() is { } entry)
+        {
+            var destination = Path.GetFullPath(Path.Combine(root, entry.Name));
+
+            if (!destination.StartsWith(rootWithSeparator, StringComparison.Ordinal) &&
+                !string.Equals(destination, root, StringComparison.Ordinal))
+            {
+                throw new UpdateException(UpdateFailure.PackageInvalid, $"Entry escapes the package: {entry.Name}");
+            }
+
+            switch (entry.EntryType)
+            {
+                case TarEntryType.Directory:
+                    Directory.CreateDirectory(destination);
+                    break;
+
+                case TarEntryType.RegularFile or TarEntryType.V7RegularFile:
+                    Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                    entry.ExtractToFile(destination, overwrite: true);
+                    break;
+            }
+        }
     }
 
     /// <summary>

@@ -63,7 +63,7 @@ public sealed class BuildCoordinator(
         if (settings.SteamCmdPath is { Length: > 0 } configured &&
             SteamCmdProvisioner.LocateExecutable(configured) is { } located)
         {
-            _installation = new SteamCmdInstallation(located);
+            _installation = new SteamCmdInstallation(located, homeDirectory: layout.SteamCmdHomeDirectory);
             return _installation;
         }
 
@@ -75,7 +75,7 @@ public sealed class BuildCoordinator(
         var exePath = await provisioner.EnsureInstalledAsync(
             layout.ManagedSteamCmdDirectory, progress, ct);
 
-        _installation = new SteamCmdInstallation(exePath);
+        _installation = new SteamCmdInstallation(exePath, homeDirectory: layout.SteamCmdHomeDirectory);
 
         status?.Report("SteamCMD ilk kez başlatılıyor (kendini güncelliyor)…");
         await new SteamCmdSessionService(_installation).BootstrapAsync(ct: ct);
@@ -148,10 +148,8 @@ public sealed class BuildCoordinator(
 
         status?.Report("SteamCMD giriş penceresi açıldı — şifreni oraya yaz.");
 
-        using var process = new SteamCmdSessionService(installation)
-            .StartInteractiveLogin(profile.SteamUsername);
-
-        await process.WaitForExitAsync(ct);
+        await new SteamCmdSessionService(installation)
+            .RunInteractiveLoginAsync(profile.SteamUsername, ct);
 
         return await CheckSessionAsync(profile, status, ct);
     }

@@ -377,6 +377,9 @@
     "Close.SaveTimedOut": "Das Speichern hat zu lange gedauert.",
     "Apps.Empty.Body.Epic": "Füge dein erstes Spiel mit der Schaltfläche oben hinzu. Du brauchst seine Product ID aus dem Epic Developer Portal.",
     "Profile.Empty.Body.Epic": "Lege für jede Epic-Organisation, für die du veröffentlichst, ein Profil an. Du brauchst die Organization ID und einen BuildPatchTool-Client (Client ID und Client Secret) aus dem Epic Developer Portal.",
-    "Setup.Epic.Pick": "BuildPatchTool auswählen"
+    "Setup.Epic.Pick": "BuildPatchTool auswählen",
+    "Epic.SecretStorage.Body.Keychain": "BuildPatchTool braucht das Client Secret bei jedem Upload, deshalb muss es gespeichert werden. Es liegt in deinem macOS-Schlüsselbund, sodass profiles.json keine Zugangsdaten enthält und sicher gesichert oder geteilt werden kann.",
+    "Epic.SecretStorage.Body.SecretService": "BuildPatchTool braucht das Client Secret bei jedem Upload, deshalb muss es gespeichert werden. Es liegt im Geheimnisspeicher deines Desktops (GNOME Keyring oder KWallet), sodass profiles.json keine Zugangsdaten enthält und sicher gesichert oder geteilt werden kann.",
+    "Epic.SecretStorage.Body.File": "BuildPatchTool braucht das Client Secret bei jedem Upload, deshalb muss es gespeichert werden. Es wurde kein Geheimnisspeicher (GNOME Keyring oder KWallet) gefunden, daher liegt es unverschlüsselt in einer Datei, die nur dein Benutzer lesen kann – wie ein SSH-Schlüssel. profiles.json enthält weiterhin keine Zugangsdaten."
   }
 }

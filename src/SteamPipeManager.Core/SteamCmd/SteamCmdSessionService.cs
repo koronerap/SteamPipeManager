@@ -1,6 +1,7 @@
 using System.Diagnostics;
 
 using SteamPipeManager.Core.Localization;
+using SteamPipeManager.Core.Platform;
 using SteamPipeManager.Core.Publishing;
 
 namespace SteamPipeManager.Core.SteamCmd;
@@ -91,22 +92,87 @@ public sealed class SteamCmdSessionService(SteamCmdInstallation installation)
     }
 
     /// <summary>
-    /// SteamCMD'yi kendi konsol penceresinde başlatır. Kullanıcı şifresini ve Steam Guard
-    /// kodunu doğrudan oraya yazar; uygulama araya girmez.
+    /// SteamCMD'yi kendi konsol penceresinde açar ve kapanmasını bekler. Kullanıcı
+    /// şifresini ve Steam Guard kodunu doğrudan oraya yazar; uygulama araya girmez.
+    ///
+    /// Windows'ta konsol penceresi sürecin kendisi. Linux ve macOS'ta bir terminal
+    /// uygulaması açılıyor; terminaller genellikle hemen döndüğü için (macOS'ta
+    /// Terminal, Linux'ta gnome-terminal) süreç beklenemiyor. Onun yerine betik
+    /// bitince bir işaret dosyası bırakıyor ve o bekleniyor.
     /// </summary>
-    public Process StartInteractiveLogin(string steamUsername)
-    {
-        var startInfo = new ProcessStartInfo(Installation.ExecutablePath, $"+login {steamUsername}")
-        {
-            WorkingDirectory = Installation.Directory,
-            // Yönlendirme yok, gizli pencere yok: gerçek bir konsol gerekiyor ki
-            // SteamCMD istemlerini göstersin ve klavyeden okuyabilsin.
-            UseShellExecute = true,
-            CreateNoWindow = false,
-        };
+    /// <summary>Terminalde girişin en fazla sürebileceği süre.</summary>
+    public static readonly TimeSpan InteractiveLoginLimit = TimeSpan.FromMinutes(15);
 
-        return Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Could not open the SteamCMD sign-in window.");
+    public async Task RunInteractiveLoginAsync(string steamUsername, CancellationToken ct = default)
+    {
+        if (installation.Platform.IsWindows)
+        {
+            var startInfo = new ProcessStartInfo(installation.ExecutablePath, $"+login {steamUsername}")
+            {
+                WorkingDirectory = installation.Directory,
+                // Yönlendirme yok, gizli pencere yok: gerçek bir konsol gerekiyor ki
+                // SteamCMD istemlerini göstersin ve klavyeden okuyabilsin.
+                UseShellExecute = true,
+                CreateNoWindow = false,
+            };
+
+            using var process = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("Could not open the SteamCMD sign-in window.");
+
+            await process.WaitForExitAsync(ct);
+            return;
+        }
+
+        var home = installation.HomeDirectory!;
+        Directory.CreateDirectory(home);
+        UnixPermissions.EnsureExecutable(installation.ExecutablePath);
+
+        var done = Path.Combine(home, $".spm-login-{Guid.NewGuid():N}.done");
+        var script = Path.Combine(home, installation.Platform.IsMac ? "spm-login.command" : "spm-login.sh");
+
+        File.WriteAllText(script, InteractiveLoginScript(installation, steamUsername, done));
+        UnixPermissions.EnsureExecutable(script);
+
+        using (TerminalLauncher.Open(script, installation.Platform))
+        {
+            // Terminal betik bitmeden kapatılırsa işaret hiç gelmez; sonsuza kadar
+            // beklememek için üst sınır. Steam Guard onayı için bol bir süre.
+            using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            limit.CancelAfter(InteractiveLoginLimit);
+
+            while (!File.Exists(done))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500), limit.Token);
+            }
+        }
+
+        TryDelete(done);
+    }
+
+    /// <summary>
+    /// Terminalde çalışacak betik. Kullanıcı adı tek tırnak içinde: kabuğun onu komut
+    /// olarak yorumlamasına izin verilmiyor.
+    /// </summary>
+    internal static string InteractiveLoginScript(SteamCmdInstallation installation, string steamUsername, string doneMarker) =>
+        "#!/bin/sh\n" +
+        $"export HOME={ShellQuote(installation.HomeDirectory!)}\n" +
+        $"cd {ShellQuote(installation.Directory)}\n" +
+        $"{ShellQuote(installation.ExecutablePath)} +login {ShellQuote(steamUsername)} +quit\n" +
+        $"touch {ShellQuote(doneMarker)}\n";
+
+    /// <summary>POSIX kabuk için tek tırnaklı değer; içindeki tek tırnak <c>'\''</c> olur.</summary>
+    internal static string ShellQuote(string value) => "'" + value.Replace("'", @"'\''") + "'";
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            // Ev dizininde küçük bir artık kalır.
+        }
     }
 
     /// <summary>

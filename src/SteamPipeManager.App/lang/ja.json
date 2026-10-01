@@ -377,6 +377,9 @@
     "Close.SaveTimedOut": "保存に時間がかかりすぎました。",
     "Apps.Empty.Body.Epic": "上のボタンから最初のゲームを追加してください。Epic Developer Portal の Product ID が必要です。",
     "Profile.Empty.Body.Epic": "公開に使う Epic の組織ごとにプロファイルを作成してください。Epic Developer Portal の Organization ID と BuildPatchTool クライアント (Client ID と Client Secret) が必要です。",
-    "Setup.Epic.Pick": "BuildPatchTool を選択"
+    "Setup.Epic.Pick": "BuildPatchTool を選択",
+    "Epic.SecretStorage.Body.Keychain": "BuildPatchTool はアップロードのたびに Client Secret を必要とするため、保存しておく必要があります。Secret は macOS のキーチェーンに保存されるので、profiles.json には認証情報が含まれず、安全にバックアップや共有ができます。",
+    "Epic.SecretStorage.Body.SecretService": "BuildPatchTool はアップロードのたびに Client Secret を必要とするため、保存しておく必要があります。Secret はデスクトップのシークレットストア (GNOME Keyring または KWallet) に保存されるので、profiles.json には認証情報が含まれず、安全にバックアップや共有ができます。",
+    "Epic.SecretStorage.Body.File": "BuildPatchTool はアップロードのたびに Client Secret を必要とするため、保存しておく必要があります。シークレットストア (GNOME Keyring または KWallet) が見つからなかったため、SSH 鍵と同様に、暗号化せずに自分のユーザーだけが読めるファイルに保存されます。profiles.json には引き続き認証情報は含まれません。"
   }
 }

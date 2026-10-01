@@ -37,6 +37,12 @@ public sealed class LogTail(
     public DateTimeOffset LastGrowthAt { get; private set; } = DateTimeOffset.UtcNow;
 
     /// <summary>
+    /// Dosya bu takip sırasında en az bir kez görüldü mü. Görülmediyse araç log'unu
+    /// beklenen yere yazmıyor demektir; "log büyümüyor" o zaman takılma işareti değil.
+    /// </summary>
+    public bool HasSeenFile { get; private set; }
+
+    /// <summary>
     /// <paramref name="stopWhen"/> true dönene kadar (yani süreç bitene kadar) satır üretir;
     /// süreç bittikten sonra kalan içerik son bir kez okunur.
     /// </summary>
@@ -90,6 +96,8 @@ public sealed class LogTail(
         {
             yield break;
         }
+
+        HasSeenFile = true;
 
         FileStream stream;
 

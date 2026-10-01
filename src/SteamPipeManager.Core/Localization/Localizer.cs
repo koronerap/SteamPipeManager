@@ -263,8 +263,10 @@ public sealed class Localizer : INotifyPropertyChanged
 
         _currentCode = target;
 
-        // Boş ad tüm bağlamaları tazeler; dizin bağlamaları da buna dahil.
+        // Boş ad tüm bağlamaları tazeler (WPF). Avalonia dizin bağlamalarını yalnızca
+        // "Item[]" bildirimiyle tazeliyor; ikisi birden gönderiliyor.
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
         return true;
     }
 

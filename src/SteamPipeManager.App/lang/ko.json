@@ -377,6 +377,9 @@
     "Close.SaveTimedOut": "저장하는 데 시간이 너무 오래 걸렸습니다.",
     "Apps.Empty.Body.Epic": "위의 버튼으로 첫 게임을 추가하세요. Epic Developer Portal의 Product ID가 필요합니다.",
     "Profile.Empty.Body.Epic": "게시하는 Epic 조직마다 프로필을 만드세요. Epic Developer Portal의 Organization ID와 BuildPatchTool 클라이언트(Client ID와 Client Secret)가 필요합니다.",
-    "Setup.Epic.Pick": "BuildPatchTool 선택"
+    "Setup.Epic.Pick": "BuildPatchTool 선택",
+    "Epic.SecretStorage.Body.Keychain": "BuildPatchTool은 업로드할 때마다 Client Secret이 필요하므로 저장해 두어야 합니다. Secret은 macOS 키체인에 저장되므로 profiles.json에는 자격 증명이 없으며 안전하게 백업하거나 공유할 수 있습니다.",
+    "Epic.SecretStorage.Body.SecretService": "BuildPatchTool은 업로드할 때마다 Client Secret이 필요하므로 저장해 두어야 합니다. Secret은 데스크톱의 비밀 저장소(GNOME Keyring 또는 KWallet)에 저장되므로 profiles.json에는 자격 증명이 없으며 안전하게 백업하거나 공유할 수 있습니다.",
+    "Epic.SecretStorage.Body.File": "BuildPatchTool은 업로드할 때마다 Client Secret이 필요하므로 저장해 두어야 합니다. 비밀 저장소(GNOME Keyring 또는 KWallet)를 찾지 못해 SSH 키처럼 암호화하지 않고 현재 사용자만 읽을 수 있는 파일에 저장합니다. profiles.json에는 여전히 자격 증명이 없습니다."
   }
 }

@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Text;
 using SteamPipeManager.Core.Publishing;
 
+using SteamPipeManager.Core.Platform;
+
 namespace SteamPipeManager.Core.Epic;
 
 public sealed record BptRunResult(
@@ -64,6 +66,9 @@ public sealed class BptRunner(BptInstallation installation)
         DeleteQuietly(logPath);
 
         var withLog = command.WithLogFile(logPath);
+
+        // Zip'ten açılan Linux/macOS ikilisi çalıştırma iznini kaybetmiş olabilir.
+        UnixPermissions.EnsureExecutable(Installation.ExecutablePath);
 
         var startInfo = new ProcessStartInfo(Path.GetFullPath(Installation.ExecutablePath))
         {

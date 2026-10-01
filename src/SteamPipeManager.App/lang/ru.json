@@ -377,6 +377,9 @@
     "Close.SaveTimedOut": "Сохранение заняло слишком много времени.",
     "Apps.Empty.Body.Epic": "Добавьте первую игру кнопкой выше. Понадобится её Product ID из Epic Developer Portal.",
     "Profile.Empty.Body.Epic": "Создайте профиль для каждой организации Epic, от имени которой вы публикуете. Понадобятся Organization ID и клиент BuildPatchTool (Client ID и Client Secret) из Epic Developer Portal.",
-    "Setup.Epic.Pick": "Выбрать BuildPatchTool"
+    "Setup.Epic.Pick": "Выбрать BuildPatchTool",
+    "Epic.SecretStorage.Body.Keychain": "BuildPatchTool нужен client secret при каждой загрузке, поэтому его приходится хранить. Он хранится в связке ключей macOS, так что в profiles.json нет учётных данных и его безопасно копировать или передавать.",
+    "Epic.SecretStorage.Body.SecretService": "BuildPatchTool нужен client secret при каждой загрузке, поэтому его приходится хранить. Он хранится в хранилище секретов вашего рабочего стола (GNOME Keyring или KWallet), так что в profiles.json нет учётных данных и его безопасно копировать или передавать.",
+    "Epic.SecretStorage.Body.File": "BuildPatchTool нужен client secret при каждой загрузке, поэтому его приходится хранить. Хранилище секретов (GNOME Keyring или KWallet) не найдено, поэтому он хранится без шифрования в файле, который может читать только ваш пользователь, — как SSH-ключ. В profiles.json по-прежнему нет учётных данных."
   }
 }

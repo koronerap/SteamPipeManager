@@ -1,109 +1,74 @@
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
+using SteamPipeManager.Core.Platform;
 
 namespace SteamPipeManager.Core.Epic;
 
 /// <summary>
-/// Epic client secret'larının yerel, şifreli deposu.
+/// Epic client secret'larının yerel deposu.
 ///
-/// Neden ayrı bir dosya: <c>profiles.json</c>'ın yedeklenebilir ve paylaşılabilir kalması
-/// Steam tarafında verdiğimiz bir sözdü ve README'de yazıyor. Epic'te secret'ın kalıcı
-/// olması gerekiyor (Steam'deki gibi aracın hatırladığı bir oturum yok), ama bu sözü
-/// bozmanın gerekçesi olamaz — secret buraya, profil dosyasının dışına yazılıyor.
+/// Neden profil dosyasının dışında: <c>profiles.json</c>'ın yedeklenebilir ve
+/// paylaşılabilir kalması Steam tarafında verdiğimiz bir sözdü ve README'de yazıyor.
+/// Epic'te secret'ın kalıcı olması gerekiyor (Steam'deki gibi aracın hatırladığı bir
+/// oturum yok), ama bu sözü bozmanın gerekçesi olamaz.
 ///
-/// Şifreleme <b>DPAPI</b> ile ve <see cref="DataProtectionScope.CurrentUser"/> kapsamında:
-/// dosya başka bir kullanıcıya ya da başka bir makineye kopyalansa çözülemiyor. Bu, bir
-/// parola yöneticisi değil; amacı, düz metin secret'ın diskte durmasını engellemek.
+/// Nerede durduğu platforma göre değişiyor (bkz. <see cref="SecretStorageKind"/>):
+/// Windows'ta DPAPI ile şifreli dosya, macOS'ta Anahtar Zinciri, Linux'ta masaüstünün
+/// gizli bilgi servisi; o da yoksa yalnızca sahibinin okuyabildiği bir dosya.
 /// </summary>
-public sealed class EpicSecretStore(string filePath)
+public sealed class EpicSecretStore
 {
-    /// <summary>
-    /// DPAPI'ye verilen ek giriş. Aynı kullanıcının başka bir programının bu dosyayı
-    /// çözmesini zorlaştırır.
-    /// </summary>
-    private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("SteamPipeManager.Epic.ClientSecret.v1");
+    private readonly ISecretBackend _backend;
 
-    public string FilePath { get; } = filePath;
-
-    /// <summary>Profil kimliği → şifrelenmiş secret (base64).</summary>
-    private Dictionary<string, string> Load()
+    /// <param name="filePath">Dosya tabanlı depoların (DPAPI, 0600) kullandığı dosya.</param>
+    /// <param name="backend">Testler ya da özel kurulumlar için; verilmezse platformunki.</param>
+    public EpicSecretStore(string filePath, ISecretBackend? backend = null, HostPlatform? platform = null)
     {
-        if (!File.Exists(FilePath))
-        {
-            return [];
-        }
-
-        try
-        {
-            return JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(FilePath))
-                   ?? [];
-        }
-        catch (Exception ex) when (ex is JsonException or IOException)
-        {
-            // Bozuk depo, secret'ın kaybolması demek — kullanıcı yeniden girer.
-            // Build'i engellememesi için sessizce boş kabul ediliyor.
-            return [];
-        }
+        FilePath = filePath;
+        _backend = backend ?? CreateDefault(filePath, platform ?? HostPlatform.Current);
     }
 
-    private void Save(Dictionary<string, string> entries)
+    public string FilePath { get; }
+
+    public SecretStorageKind Kind => _backend.Kind;
+
+    /// <summary>Secret şifreli mi duruyor; değilse arayüz kullanıcıyı uyarıyor.</summary>
+    public bool IsEncrypted => Kind != SecretStorageKind.OwnerOnlyFile;
+
+    public static ISecretBackend CreateDefault(string filePath, HostPlatform platform)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+        if (platform.IsWindows && OperatingSystem.IsWindows())
+        {
+            return new DpapiFileBackend(filePath);
+        }
 
-        var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
-        var temporary = FilePath + ".tmp";
+        if (platform.IsMac)
+        {
+            return new MacKeychainBackend();
+        }
 
-        File.WriteAllText(temporary, json);
-        File.Move(temporary, FilePath, overwrite: true);
+        return LinuxSecretServiceBackend.IsAvailable()
+            ? new LinuxSecretServiceBackend()
+            : new OwnerOnlyFileBackend(filePath);
     }
 
-    public bool Has(Guid profileId) => Load().ContainsKey(profileId.ToString("N"));
+    private static string Key(Guid profileId) => profileId.ToString("N");
 
-    /// <summary>Secret'ı çözer; yoksa ya da çözülemiyorsa null döner.</summary>
-    public string? Read(Guid profileId)
-    {
-        if (!Load().TryGetValue(profileId.ToString("N"), out var encrypted))
-        {
-            return null;
-        }
+    public bool Has(Guid profileId) => _backend.Has(Key(profileId));
 
-        try
-        {
-            var bytes = ProtectedData.Unprotect(
-                Convert.FromBase64String(encrypted), Entropy, DataProtectionScope.CurrentUser);
+    /// <summary>Secret'ı okur; yoksa ya da çözülemiyorsa null döner.</summary>
+    public string? Read(Guid profileId) => _backend.Read(Key(profileId));
 
-            return Encoding.UTF8.GetString(bytes);
-        }
-        catch (Exception ex) when (ex is CryptographicException or FormatException)
-        {
-            // Başka bir kullanıcı/makine tarafından yazılmış olabilir; çözülemiyorsa
-            // yok sayılır ve kullanıcıdan yeniden istenir.
-            return null;
-        }
-    }
-
-    /// <summary>Secret'ı şifreleyip yazar. Boş değer kaydı siler.</summary>
+    /// <summary>Secret'ı yazar. Boş değer kaydı siler.</summary>
     public void Write(Guid profileId, string? secret)
     {
-        var entries = Load();
-        var key = profileId.ToString("N");
-
         if (secret is not { Length: > 0 })
         {
-            entries.Remove(key);
-            Save(entries);
-
+            _backend.Delete(Key(profileId));
             return;
         }
 
-        var encrypted = ProtectedData.Protect(
-            Encoding.UTF8.GetBytes(secret), Entropy, DataProtectionScope.CurrentUser);
-
-        entries[key] = Convert.ToBase64String(encrypted);
-        Save(entries);
+        _backend.Write(Key(profileId), secret);
     }
 
     /// <summary>Profil silindiğinde secret'ı da götürür.</summary>
-    public void Remove(Guid profileId) => Write(profileId, null);
+    public void Remove(Guid profileId) => _backend.Delete(Key(profileId));
 }

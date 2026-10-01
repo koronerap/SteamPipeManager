@@ -59,6 +59,8 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
             StandardErrorEncoding = Encoding.UTF8,
         };
 
+        Installation.Prepare(startInfo);
+
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Could not start SteamCMD.");
 
@@ -112,6 +114,18 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
         await Task.WhenAll(stdoutTask, stderrTask);
         await process.WaitForExitAsync(CancellationToken.None);
 
+        // Canlı log beklenen yerde hiç görünmediyse (ör. bir platformda SteamCMD log'unu
+        // başka yere yazıyorsa) sonuç yine de kaybolmasın: stdout tamponlu ama süreç
+        // bitince eksiksiz, aynı satırlar oradan ayrıştırılıyor.
+        if (!tail.HasSeenFile && events.Count == 0)
+        {
+            foreach (var evt in new SteamCmdLogParser().FeedAll(stdout.ToString().Split('\n')))
+            {
+                events.Add(evt);
+                progress?.Report(evt);
+            }
+        }
+
         return new SteamCmdRunResult(
             process.ExitCode, events, stdout.ToString(), timedOut, cancelled);
     }
@@ -142,7 +156,9 @@ public sealed class SteamCmdRunner(SteamCmdInstallation installation)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1), source.Token);
 
-                if (DateTimeOffset.UtcNow - tail.LastGrowthAt < StallTimeout)
+                // Log hiç görünmediyse "büyümüyor" bilgisi anlamsız; çalışan bir build'i
+                // takıldı sanıp öldürmemek için bekçi devreye girmiyor.
+                if (!tail.HasSeenFile || DateTimeOffset.UtcNow - tail.LastGrowthAt < StallTimeout)
                 {
                     continue;
                 }

@@ -197,6 +197,22 @@ public sealed partial class ProfilePickerViewModel(
     public bool IsEditingSteam => Editing is { IsEpic: false };
 
     /// <summary>
+    /// "Secret nerede duruyor" açıklamasının dil anahtarı. Platforma göre değişiyor:
+    /// Windows'ta DPAPI, macOS'ta Anahtar Zinciri, Linux'ta gizli bilgi servisi ya da
+    /// — o yoksa — yalnızca sahibinin okuyabildiği şifresiz dosya.
+    /// </summary>
+    public string SecretStorageKey => secrets.Kind switch
+    {
+        SecretStorageKind.MacKeychain => "Epic.SecretStorage.Body.Keychain",
+        SecretStorageKind.LinuxSecretService => "Epic.SecretStorage.Body.SecretService",
+        SecretStorageKind.OwnerOnlyFile => "Epic.SecretStorage.Body.File",
+        _ => "Epic.SecretStorage.Body",
+    };
+
+    /// <summary>Secret şifresiz saklanıyorsa form bunu uyarı olarak gösteriyor.</summary>
+    public bool IsSecretStorageUnencrypted => !secrets.IsEncrypted;
+
+    /// <summary>
     /// Boş liste metni ürüne göre: Epic ürününde SteamPipe içe aktarmasından söz
     /// etmek anlamsız ve kafa karıştırıcı.
     /// </summary>

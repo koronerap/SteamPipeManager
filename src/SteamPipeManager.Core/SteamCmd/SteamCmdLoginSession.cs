@@ -79,6 +79,8 @@ public sealed class SteamCmdLoginSession(SteamCmdInstallation installation)
             StandardErrorEncoding = Encoding.UTF8,
         };
 
+        installation.Prepare(startInfo);
+
         using var process = Process.Start(startInfo)
             ?? throw new InvalidOperationException("Could not start SteamCMD.");
 
