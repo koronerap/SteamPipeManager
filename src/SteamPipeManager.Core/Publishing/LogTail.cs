@@ -58,7 +58,7 @@ public sealed class LogTail(
             // Süreç bitmişse bir tur daha okunur; son yazılanlar kaçmasın.
             var lastPass = finished;
 
-            foreach (var line in ReadNewLines(carry))
+            foreach (var line in ReadNewLines(carry, retryWhenLocked: lastPass))
             {
                 yield return line;
             }
@@ -90,7 +90,12 @@ public sealed class LogTail(
         }
     }
 
-    private IEnumerable<string> ReadNewLines(StringBuilder carry)
+    /// <param name="retryWhenLocked">
+    /// Son okumada dosya bir an kilitliyse (ör. virüs tarayıcısı yeni yazılan dosyayı
+    /// inceliyorsa) birkaç kez yeniden deneniyor. Bu okuma atlanırsa sürecin son
+    /// satırları — çoğu zaman sonucun kendisi — kaybolur.
+    /// </param>
+    private IEnumerable<string> ReadNewLines(StringBuilder carry, bool retryWhenLocked = false)
     {
         if (!File.Exists(FilePath))
         {
@@ -99,19 +104,26 @@ public sealed class LogTail(
 
         HasSeenFile = true;
 
-        FileStream stream;
+        FileStream? stream = null;
 
-        try
+        for (var attempt = 0; stream is null; attempt++)
         {
-            // SteamCMD yazmaya devam ederken kilitlememek için tam paylaşım.
-            stream = new FileStream(
-                FilePath, FileMode.Open, FileAccess.Read,
-                FileShare.ReadWrite | FileShare.Delete);
-        }
-        catch (IOException)
-        {
-            // Anlık kilit çakışması; bir sonraki turda tekrar denenir.
-            yield break;
+            try
+            {
+                // SteamCMD yazmaya devam ederken kilitlememek için tam paylaşım.
+                stream = new FileStream(
+                    FilePath, FileMode.Open, FileAccess.Read,
+                    FileShare.ReadWrite | FileShare.Delete);
+            }
+            catch (IOException) when (retryWhenLocked && attempt < 10)
+            {
+                Thread.Sleep(50);
+            }
+            catch (IOException)
+            {
+                // Anlık kilit çakışması; bir sonraki turda tekrar denenir.
+                yield break;
+            }
         }
 
         using (stream)
@@ -133,7 +145,9 @@ public sealed class LogTail(
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
             var chunk = reader.ReadToEnd();
 
-            Position = stream.Length;
+            // Okunan kadar ilerlenir: okuma sürerken araç yazmaya devam ettiyse dosya
+            // uzunluğu okunandan büyük olabilir; uzunluğa atlamak o satırları kaçırırdı.
+            Position = stream.Position;
             LastGrowthAt = DateTimeOffset.UtcNow;
 
             carry.Append(chunk);

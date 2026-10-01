@@ -164,6 +164,35 @@ public sealed class LogTailTests : IDisposable
         Assert.True(tail.Position > 0);
     }
 
+    /// <summary>
+    /// Süreç bittikten sonraki son okumada dosya bir an kilitliyse (virüs tarayıcısı yeni
+    /// yazılan dosyayı inceliyor) son satırlar kaybolmamalı. Eskiden bu okuma sessizce
+    /// atlanıyordu ve oturum kontrolü sonucu hiç görmeden "giriş gerekli" diyordu.
+    /// </summary>
+    [Fact]
+    public async Task The_final_read_waits_out_a_brief_lock_instead_of_dropping_the_last_lines()
+    {
+        await File.WriteAllTextAsync(LogPath, "Logging in user 'tester'\nFAILED (Rate Limit Exceeded)\n");
+        var tail = new LogTail(LogPath, TimeSpan.FromMilliseconds(20));
+
+        var exclusive = new FileStream(LogPath, FileMode.Open, FileAccess.Read, FileShare.None);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(200);
+            await exclusive.DisposeAsync();
+        });
+
+        var lines = new List<string>();
+
+        // Süreç zaten bitmiş: ilk tur doğrudan son okuma.
+        await foreach (var line in tail.ReadLinesAsync(() => true, TestTimeout()))
+        {
+            lines.Add(line);
+        }
+
+        Assert.Equal(["Logging in user 'tester'", "FAILED (Rate Limit Exceeded)"], lines);
+    }
+
     private static CancellationToken TestTimeout() =>
         new CancellationTokenSource(TimeSpan.FromSeconds(15)).Token;
 }
