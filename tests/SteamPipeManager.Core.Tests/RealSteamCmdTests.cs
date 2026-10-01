@@ -55,9 +55,20 @@ public sealed class RealSteamCmdTests(ITestOutputHelper output) : IDisposable
         // İlk çalıştırma kendini güncelliyor ve çoğu zaman "yeniden başlat" koduyla çıkıyor.
         SteamCmdRunResult result = null!;
 
+        var arrivals = new List<DateTimeOffset>();
+        var started = DateTimeOffset.UtcNow;
+
         for (var attempt = 1; attempt <= 3; attempt++)
         {
-            result = await runner.RunAsync("+login anonymous +quit", ct: timeout.Token);
+            arrivals.Clear();
+            started = DateTimeOffset.UtcNow;
+
+            // Olaylar geldiği an kaydediliyor: hepsi süreç bitince bir arada geliyorsa
+            // kaynak tamponlu demektir, canlı ilerleme gösterilemez.
+            result = await runner.RunAsync(
+                "+login anonymous +app_info_update 1 +quit",
+                new SyncProgress(_ => arrivals.Add(DateTimeOffset.UtcNow)),
+                timeout.Token);
 
             output.WriteLine($"Deneme {attempt}: çıkış {result.ExitCode}, canlı log {(result.LiveLogFound ? "görüldü" : "GÖRÜLMEDİ")}, " +
                              $"{result.Events.Count} olay: {string.Join(", ", result.Events.Select(e => e.Kind).Distinct())}");
@@ -67,6 +78,11 @@ public sealed class RealSteamCmdTests(ITestOutputHelper output) : IDisposable
                 break;
             }
         }
+
+        var spreadSeconds = arrivals.Count > 1 ? (arrivals[^1] - arrivals[0]).TotalSeconds : 0;
+        var distinctSeconds = arrivals.Select(a => (long)(a - started).TotalSeconds).Distinct().Count();
+        output.WriteLine($"Canlılık:        {arrivals.Count} olay {spreadSeconds:N1} saniyeye, {distinctSeconds} farklı saniyeye yayıldı " +
+                         $"({(distinctSeconds > 2 ? "canlı" : "TAMPONLU görünüyor")})");
 
         output.WriteLine("--- hata sayılan satırlar ---");
         foreach (var error in result.Events.Where(e => e.Kind == SteamCmdEventKind.Error).Take(15))
@@ -92,7 +108,13 @@ public sealed class RealSteamCmdTests(ITestOutputHelper output) : IDisposable
         output.WriteLine(Directory.Exists(Path.Combine(installation.Directory, "logs")) ? "evet (beklenmiyordu)" : "hayır");
 
         Assert.Equal(0, result.ExitCode);
+        Assert.True(distinctSeconds > 2, "Olaylar canlı gelmedi; süreç bitince bir arada geldi.");
         Assert.True(result.LiveLogFound, $"Canlı log beklenen yerde görülmedi: {installation.ConsoleLogPath}");
         Assert.Contains(result.Events, e => e.Kind == SteamCmdEventKind.LoginSucceeded);
     }
+}
+
+file sealed class SyncProgress(Action<SteamCmdEvent> report) : IProgress<SteamCmdEvent>
+{
+    public void Report(SteamCmdEvent value) => report(value);
 }

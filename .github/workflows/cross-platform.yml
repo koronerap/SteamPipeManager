@@ -1,0 +1,162 @@
+# Linux ve macOS doğrulaması. Geliştirme Windows'ta yapılıyor; bu iş akışı Linux ve
+# macOS'a özgü varsayımları gerçek makinelerde sınıyor:
+#   - test paketi
+#   - gerçek SteamCMD ölçümü (anonim giriş; log yeri, canlı çıktı)
+#   - Avalonia uygulaması açılıyor mu (ekran görüntüsüyle)
+#   - macOS: .app paketi ve imzası Apple'ın kendi araçlarıyla geçerli mi
+name: Cross-platform
+
+on:
+  push:
+    branches: [xplat]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  test:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # SteamCMD 32 bit bir program.
+      - name: Linux packages
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lib32gcc-s1
+
+      # macOS SteamCMD'si Intel ikilisi; Apple Silicon makinede Rosetta gerekiyor.
+      - name: Rosetta
+        if: runner.os == 'macOS'
+        run: softwareupdate --install-rosetta --agree-to-license || true
+
+      - name: Build
+        run: |
+          dotnet build tests/FakeSteamCmd -c Release
+          dotnet build tests/SteamPipeManager.Core.Tests -c Release
+
+      - name: Test
+        run: dotnet test tests/SteamPipeManager.Core.Tests -c Release --no-build --logger "console;verbosity=normal"
+
+      - name: Real SteamCMD
+        env:
+          SPM_REAL_STEAMCMD: "1"
+        run: dotnet test tests/SteamPipeManager.Core.Tests -c Release --no-build --filter "FullyQualifiedName~RealSteamCmd" --logger "console;verbosity=detailed"
+
+  linux-app:
+    name: App starts (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Packages
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq xvfb imagemagick libice6 libsm6 libfontconfig1
+
+      - name: Publish and package
+        run: |
+          dotnet publish src/SteamPipeManager.Desktop -c Release -r linux-x64 -p:SpmProduct=PipeManagerHub -o out/publish
+          dotnet run --project tools/Packager -c Release -- tar out/publish out/PipeManagerHub-linux-x64.tar.gz PipeManagerHub PipeManagerHub
+          mkdir -p out/extracted && tar -xzf out/PipeManagerHub-linux-x64.tar.gz -C out/extracted
+          ls -l out/extracted/PipeManagerHub
+
+      - name: Launch
+        run: |
+          mkdir -p data
+          printf '{"schemaVersion":1,"language":"en","checkForUpdates":false}' > data/settings.json
+          export SPM_DATA_DIR="$PWD/data"
+          xvfb-run -a -s "-screen 0 1280x860x24" bash -c '
+            ./out/extracted/PipeManagerHub/PipeManagerHub > app.log 2>&1 &
+            pid=$!
+            sleep 20
+            import -window root shot-linux.png
+            if kill -0 $pid; then echo "Uygulama çalışıyor"; kill $pid; else echo "Uygulama kapandı"; cat app.log; exit 1; fi'
+          ls data data/lang | head -20
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-app
+          path: |
+            shot-linux.png
+            app.log
+
+  macos-app:
+    name: App bundle (macOS ${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Publish and build the .app
+        run: |
+          dotnet publish src/SteamPipeManager.Desktop -c Release -r osx-${{ matrix.arch }} -p:SpmProduct=PipeManagerHub -o out/publish
+          dotnet run --project tools/Packager -c Release -- macapp out/publish "out/bundle/Pipe Manager Hub.app" "Pipe Manager Hub" PipeManagerHub io.github.koronerap.pipemanagerhub 1.1.0 src/SteamPipeManager.App/app.ico
+
+      # publish.ps1 Windows'ta rcodesign ile imzalıyor; burada aynı araçla imzalanıp
+      # Apple'ın kendi araçlarıyla doğrulanıyor.
+      - name: Sign with rcodesign
+        run: |
+          base="https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F0.29.0"
+          curl -sSL -o rc.tar.gz "$base/apple-codesign-0.29.0-macos-universal.tar.gz"
+          curl -sSL -o rc.sha256 "$base/apple-codesign-0.29.0-macos-universal.tar.gz.sha256"
+          echo "$(cat rc.sha256 | cut -d' ' -f1)  rc.tar.gz" | shasum -a 256 -c
+          tar -xzf rc.tar.gz
+          rc=$(find . -name rcodesign -type f | head -1)
+          "$rc" sign "out/bundle/Pipe Manager Hub.app"
+
+      - name: Package, unpack and verify
+        run: |
+          dotnet run --project tools/Packager -c Release -- tar "out/bundle/Pipe Manager Hub.app" out/hub.tar.gz "Pipe Manager Hub.app" Contents/MacOS/PipeManagerHub
+          mkdir -p out/extracted && tar -xzf out/hub.tar.gz -C out/extracted
+          app="out/extracted/Pipe Manager Hub.app"
+          ls -l "$app/Contents/MacOS"
+          echo "--- codesign --verify ---"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          echo "--- codesign -dv ---"
+          codesign -dv "$app" 2>&1 | head -12
+          echo "--- spctl (ad-hoc imza notarize değil; reddedilmesi bekleniyor) ---"
+          spctl --assess --type execute -vv "$app" || true
+
+      - name: Launch through Finder's path (open)
+        run: |
+          mkdir -p data
+          printf '{"schemaVersion":1,"language":"en","checkForUpdates":false}' > data/settings.json
+          open -n --env SPM_DATA_DIR="$PWD/data" "out/extracted/Pipe Manager Hub.app"
+          sleep 20
+          screencapture -x shot-macos-${{ matrix.arch }}.png || true
+          if pgrep -x PipeManagerHub; then echo "Uygulama çalışıyor"; pkill -x PipeManagerHub; else echo "Uygulama çalışmıyor"; exit 1; fi
+          ls data data/lang | head -20
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-app-${{ matrix.arch }}
+          path: shot-macos-${{ matrix.arch }}.png
