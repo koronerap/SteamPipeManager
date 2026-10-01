@@ -105,11 +105,11 @@ public sealed class SteamCmdSessionService(SteamCmdInstallation installation)
 
     public async Task RunInteractiveLoginAsync(string steamUsername, CancellationToken ct = default)
     {
-        if (installation.Platform.IsWindows)
+        if (Installation.Platform.IsWindows)
         {
-            var startInfo = new ProcessStartInfo(installation.ExecutablePath, $"+login {steamUsername}")
+            var startInfo = new ProcessStartInfo(Installation.ExecutablePath, $"+login {steamUsername}")
             {
-                WorkingDirectory = installation.Directory,
+                WorkingDirectory = Installation.Directory,
                 // Yönlendirme yok, gizli pencere yok: gerçek bir konsol gerekiyor ki
                 // SteamCMD istemlerini göstersin ve klavyeden okuyabilsin.
                 UseShellExecute = true,
@@ -123,17 +123,17 @@ public sealed class SteamCmdSessionService(SteamCmdInstallation installation)
             return;
         }
 
-        var home = installation.HomeDirectory!;
+        var home = Installation.HomeDirectory!;
         Directory.CreateDirectory(home);
-        UnixPermissions.EnsureExecutable(installation.ExecutablePath);
+        UnixPermissions.EnsureExecutable(Installation.ExecutablePath);
 
         var done = Path.Combine(home, $".spm-login-{Guid.NewGuid():N}.done");
-        var script = Path.Combine(home, installation.Platform.IsMac ? "spm-login.command" : "spm-login.sh");
+        var script = Path.Combine(home, Installation.Platform.IsMac ? "spm-login.command" : "spm-login.sh");
 
-        File.WriteAllText(script, InteractiveLoginScript(installation, steamUsername, done));
+        File.WriteAllText(script, InteractiveLoginScript(Installation, steamUsername, done));
         UnixPermissions.EnsureExecutable(script);
 
-        using (TerminalLauncher.Open(script, installation.Platform))
+        using (TerminalLauncher.Open(script, Installation.Platform))
         {
             // Terminal betik bitmeden kapatılırsa işaret hiç gelmez; sonsuza kadar
             // beklememek için üst sınır. Steam Guard onayı için bol bir süre.
