@@ -89,9 +89,10 @@ the current version is kept. The check can be turned off in Settings.
 
 ## Linux and macOS
 
-The Linux and macOS versions are new. They share all of their logic with the Windows app
-and the Windows test suite, and their interface has been exercised on Windows, but they
-have not yet been run by many people on Linux or macOS. Please report what you find.
+The Linux and macOS versions are new. They share all of their logic with the Windows app.
+The test suite and a real SteamCMD session run on Linux and on macOS (Apple Silicon and
+Intel) for every change, and the app is started on each, but few people have used them for
+real uploads yet. Please report what you find.
 
 **Linux**
 
@@ -120,6 +121,9 @@ tar -xzf SteamPipeManager-linux-x64.tar.gz
    xattr -dr com.apple.quarantine "/Applications/Steam Pipe Manager.app"
    ```
 
+- SteamCMD for macOS is an Intel program, so Apple Silicon Macs need Rosetta. If it is
+  missing, the app says so; install it with
+  `softwareupdate --install-rosetta --agree-to-license`.
 - Epic client secrets are stored in your login Keychain.
 - SteamCMD runs with its own home folder inside the app's data folder, so its log and
   sign-in cache stay separate from the Steam client's.

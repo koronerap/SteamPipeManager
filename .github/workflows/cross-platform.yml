@@ -103,10 +103,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Dil farklı: uygulama menüsünün metni iki dilde de denetleniyor.
           - runner: macos-latest
             arch: arm64
+            lang: tr
           - runner: macos-15-intel
             arch: x64
+            lang: en
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -148,7 +151,7 @@ jobs:
       - name: Launch through Finder's path (open)
         run: |
           mkdir -p data
-          printf '{"schemaVersion":1,"language":"en","checkForUpdates":false}' > data/settings.json
+          printf '{"schemaVersion":1,"language":"${{ matrix.lang }}","checkForUpdates":false}' > data/settings.json
           open -n --env SPM_DATA_DIR="$PWD/data" "out/extracted/Pipe Manager Hub.app"
           sleep 20
           screencapture -x shot-macos-${{ matrix.arch }}.png || true

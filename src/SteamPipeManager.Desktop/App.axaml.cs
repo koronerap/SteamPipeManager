@@ -2,7 +2,6 @@ using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +26,8 @@ public sealed class App : Application
 {
     private ServiceProvider? _services;
 
+    private WorkspaceLayout _layout = null!;
+
     /// <summary>Hangi ürün çalışıyor: derleme sırasında assembly meta verisine yazılıyor.</summary>
     private static ProductProfile CurrentProduct { get; } = ProductProfile.Parse(
         Assembly.GetExecutingAssembly()
@@ -36,6 +37,13 @@ public sealed class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+
+        // Dil menüden önce yükleniyor: macOS uygulama menüsü Initialize'ın hemen ardından
+        // dışa aktarılıyor ve metnini o anda okuyor.
+        _layout = WorkspaceLayout.Default();
+        _layout.EnsureCreated();
+
+        InitializeLanguage(_layout);
 
         // macOS menü çubuğu uygulamanın adını buradan alıyor (varsayılanı "Avalonia
         // Application"). Avalonia adı ve uygulama menüsünü Initialize'ın hemen ardından okuyor.
@@ -54,13 +62,15 @@ public sealed class App : Application
     /// </summary>
     private NativeMenu CreateMacAppMenu()
     {
-        var settings = new NativeMenuItem { Gesture = new KeyGesture(Key.OemComma, KeyModifiers.Meta) };
-
-        settings.Bind(NativeMenuItem.HeaderProperty, new Binding("[Nav.Settings]")
+        var settings = new NativeMenuItem
         {
-            Source = AppLocalizer.Instance,
-            StringFormat = "{0}…",
-        });
+            Header = SettingsMenuHeader(),
+            Gesture = new KeyGesture(Key.OemComma, KeyModifiers.Meta),
+        };
+
+        // Bağlama yerine elle: koddan kurulan bir dizin bağlaması menü öğesinde dil
+        // değişimine tepki vermedi (CI'da menü "Nav.Settings…" gösterdi).
+        AppLocalizer.Instance.PropertyChanged += (_, _) => settings.Header = SettingsMenuHeader();
 
         settings.Click += (_, _) =>
         {
@@ -76,16 +86,15 @@ public sealed class App : Application
         return new NativeMenu { settings };
     }
 
+    private static string SettingsMenuHeader() => AppLocalizer.Instance["Nav.Settings"] + "…";
+
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Pencere hemen gösteriliyor; yükleme onun ardından. Avalonia'da açılış
             // bekletilemiyor ve boş bir pencere, hiç pencere olmamasından iyi.
-            var layout = WorkspaceLayout.Default();
-            layout.EnsureCreated();
-
-            InitializeLanguage(layout);
+            var layout = _layout;
 
             _services = BuildServices(layout, desktop);
 
