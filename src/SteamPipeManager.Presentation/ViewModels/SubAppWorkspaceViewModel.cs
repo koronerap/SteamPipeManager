@@ -318,27 +318,33 @@ public sealed partial class SubAppWorkspaceViewModel(
     }
 
     /// <summary>
-    /// Her hedefin kapsül görselini çeker. Önbellekte varsa anında gelir; yayınlanmamış
-    /// app'lerde görsel olmadığı için yer tutucuda kalınır.
+    /// Her hedefin kapsül görseli: önbellektekiler hemen görünür, ardından açılış başına
+    /// bir kez Steam'e sorulup değiştiyse yenisiyle değiştirilir. Yayınlanmamış app'lerde
+    /// görsel olmadığı için yer tutucuda kalınır.
     /// </summary>
     private async Task LoadCapsulesAsync()
     {
-        foreach (var card in SubApps.ToList())
-        {
-            if (card.SubApp.SteamAppId == 0)
-            {
-                continue;
-            }
+        var cards = SubApps.Where(c => c.SubApp.SteamAppId != 0).ToList();
 
+        foreach (var card in cards)
+        {
+            card.CapsulePath = images.GetCachedAppLibraryCapsule(card.SubApp.SteamAppId);
+        }
+
+        await Task.WhenAll(cards.Select(async card =>
+        {
             try
             {
-                card.CapsulePath = await images.GetAppLibraryCapsuleAsync(card.SubApp.SteamAppId);
+                if (await images.GetAppLibraryCapsuleAsync(card.SubApp.SteamAppId) is { } path)
+                {
+                    card.CapsulePath = path;
+                }
             }
             catch
             {
                 // Görsel olmadan da çalışılır.
             }
-        }
+        }));
     }
 
     /// <summary>

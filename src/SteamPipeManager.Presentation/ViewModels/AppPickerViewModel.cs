@@ -102,27 +102,33 @@ public sealed partial class AppPickerViewModel(
     }
 
     /// <summary>
-    /// Kapsül görsellerini arka planda çeker; önbellekte varsa anında gelir.
-    /// Bulunamayanlar yer tutucuda kalır ve gün içinde tekrar denenmez.
+    /// Kapsül görselleri: önbellektekiler hemen görünür, ardından her biri açılış başına
+    /// bir kez Steam'e sorulup değiştiyse yenisiyle değiştirilir. Bulunamayanlar yer
+    /// tutucuda kalır.
     /// </summary>
     private async Task LoadCapsulesAsync()
     {
-        foreach (var card in Cards.ToList())
-        {
-            if (card.CapsuleAppId is not { } appId)
-            {
-                continue;
-            }
+        var cards = Cards.Where(c => c.CapsuleAppId is not null).ToList();
 
+        foreach (var card in cards)
+        {
+            card.CapsulePath = images.GetCachedAppLibraryCapsule(card.CapsuleAppId!.Value);
+        }
+
+        await Task.WhenAll(cards.Select(async card =>
+        {
             try
             {
-                card.CapsulePath = await images.GetAppLibraryCapsuleAsync(appId);
+                if (await images.GetAppLibraryCapsuleAsync(card.CapsuleAppId!.Value) is { } path)
+                {
+                    card.CapsulePath = path;
+                }
             }
             catch
             {
                 // Görsel olmadan da çalışmaya devam edilir.
             }
-        }
+        }));
     }
 
     [RelayCommand]

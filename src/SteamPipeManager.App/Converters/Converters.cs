@@ -95,6 +95,9 @@ public sealed class PathToImage : IValueConverter
             var image = new System.Windows.Media.Imaging.BitmapImage();
             image.BeginInit();
             image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            // WPF görselleri adrese göre önbellekliyor; aynı yola yazılan yeni görsel
+            // (ör. tazelenen avatar) yoksa eskisi olarak görünmeye devam ediyordu.
+            image.CreateOptions = System.Windows.Media.Imaging.BitmapCreateOptions.IgnoreImageCache;
             image.UriSource = new Uri(path);
             image.EndInit();
             image.Freeze();
