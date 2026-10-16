@@ -6,13 +6,27 @@ using SteamPipeManager.Core.Localization;
 
 namespace SteamPipeManager.Core.SteamCmd;
 
-/// <summary>Bir build isteğinin bağlamı.</summary>
+/// <summary>
+/// Bir build isteğinin bağlamı. <paramref name="DepotIds"/> verilirse yalnızca o depolar
+/// gönderilir; null ise hedefin bütün depoları.
+/// </summary>
 public sealed record BuildRequest(
     UserProfile Profile,
     SteamApp App,
     SubApp SubApp,
     string Description,
-    bool PreviewOverride = false);
+    bool PreviewOverride = false,
+    IReadOnlyCollection<uint>? DepotIds = null)
+{
+    /// <summary>Bu build'de gönderilecek depolar, hedefteki sırasıyla.</summary>
+    public IReadOnlyList<DepotConfig> SelectedDepots =>
+        DepotIds is null
+            ? [.. SubApp.Depots]
+            : [.. SubApp.Depots.Where(d => DepotIds.Contains(d.DepotId))];
+
+    /// <summary>Hedefin depolarından bazıları bilerek dışarıda bırakıldı mı.</summary>
+    public bool IsPartial => SelectedDepots.Count < SubApp.Depots.Count;
+}
 
 public sealed record BuildOutcomeResult(
     BuildRecord Record,
@@ -51,8 +65,9 @@ public sealed class BuildService(
         Directory.CreateDirectory(outputDir);
 
         var depotScriptPaths = new Dictionary<uint, string>();
+        var depots = request.SelectedDepots;
 
-        foreach (var depot in subApp.Depots)
+        foreach (var depot in depots)
         {
             var path = layout.DepotScriptPath(profile.Id, app.Id, subApp.Id, depot.DepotId);
             depotScriptPaths[depot.DepotId] = path;
@@ -62,7 +77,8 @@ public sealed class BuildService(
         }
 
         var appScript = BuildScriptBuilder.BuildAppScript(
-            subApp, outputDir, depotScriptPaths, request.Description, request.PreviewOverride);
+            subApp, outputDir, depotScriptPaths, request.Description, request.PreviewOverride,
+            [.. depots.Select(d => d.DepotId)]);
 
         var appScriptPath = layout.AppScriptPath(profile.Id, app.Id, subApp);
         await VdfWriter.WriteFileAsync(appScriptPath, appScript, ct);
@@ -89,7 +105,16 @@ public sealed class BuildService(
 
         try
         {
-            var validation = ProfileValidator.ValidateSubApp(request.SubApp);
+            var depots = request.SelectedDepots;
+
+            if (request.DepotIds is not null && depots.Count == 0)
+            {
+                return Blocked(request, Loc.T("Build.NoDepotSelected"));
+            }
+
+            // Yalnızca gönderilecek depolar denetleniyor: seçilmeyen bir deponun klasörü
+            // boş diye diğerlerinin yüklenmesi engellenmesin.
+            var validation = ProfileValidator.ValidateSubApp(request.SubApp, depots: depots);
 
             if (!validation.CanBuild)
             {
@@ -114,6 +139,7 @@ public sealed class BuildService(
                 WasPreview = request.SubApp.Preview || request.PreviewOverride,
                 Description = request.Description,
                 SetLiveBranch = request.SubApp.SetLiveBranch,
+                DepotIds = request.IsPartial ? [.. depots.Select(d => d.DepotId)] : null,
             };
 
             var runner = new SteamCmdRunner(installation) { StallTimeout = StallTimeout };

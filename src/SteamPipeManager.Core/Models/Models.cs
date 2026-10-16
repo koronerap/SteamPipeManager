@@ -314,6 +314,16 @@ public sealed class BuildRecord
     /// <summary>SteamCMD'nin bildirdiği BuildID; sadece başarılı build'lerde dolu.</summary>
     public uint? SteamBuildId { get; set; }
 
+    /// <summary>
+    /// Yalnızca bazı depolar gönderildiyse onlar. Null: hedefin bütün depoları (eski
+    /// kayıtlar da böyle okunuyor).
+    /// </summary>
+    public List<uint>? DepotIds { get; set; }
+
+    /// <summary>Geçmiş ekranı için: kısmi gönderimde depo numaraları, değilse null.</summary>
+    [JsonIgnore]
+    public string? PartialDepotsText => DepotIds is { Count: > 0 } ids ? string.Join(", ", ids) : null;
+
     public int? ExitCode { get; set; }
     public string? FailureReason { get; set; }
 

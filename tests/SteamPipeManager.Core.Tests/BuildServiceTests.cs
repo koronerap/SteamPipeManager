@@ -148,6 +148,84 @@ public sealed class BuildServiceTests : IDisposable
         Assert.Equal(BuildOutcome.Failed, result.Record.Outcome);
     }
 
+    /// <summary>İki depolu hedef: Windows ve Mac, ikisinin de içeriği var.</summary>
+    private BuildRequest TwoDepots(IReadOnlyCollection<uint>? selected, string? macContent = null) =>
+        Request(s => s.Depots.Add(new DepotConfig { DepotId = 1002, Label = "Mac", ContentRoot = macContent ?? _content }))
+            with { DepotIds = selected };
+
+    [Fact]
+    public async Task Only_the_selected_depots_go_into_the_build_script()
+    {
+        using var fake = FakeSteamCmd.Create("success");
+        var service = new BuildService(Layout, fake.Installation);
+
+        var path = await service.WriteScriptsAsync(TwoDepots([1002]));
+
+        var depots = VdfParser.ParseSingleRootFile(path).Child("depots")!;
+        Assert.Null(depots.ValueOf("1001"));
+        Assert.NotNull(depots.ValueOf("1002"));
+    }
+
+    /// <summary>
+    /// Seçilmeyen deponun klasörü boş olabilir (o platformun build'i hazır değil);
+    /// bu yüzden seçilen depoların yüklenmesi engellenmemeli.
+    /// </summary>
+    [Fact]
+    public async Task An_unselected_depot_with_an_empty_folder_does_not_block_the_others()
+    {
+        var empty = Path.Combine(_root, "bos");
+        Directory.CreateDirectory(empty);
+
+        using var fake = FakeSteamCmd.Create("success");
+        var service = new BuildService(Layout, fake.Installation);
+
+        var result = await service.BuildAsync(TwoDepots([1001], macContent: empty), ct: Timeout());
+
+        Assert.True(result.Started, result.BlockedReason);
+        Assert.Equal(BuildOutcome.Succeeded, result.Record.Outcome);
+        Assert.Equal([1001u], result.Record.DepotIds);
+    }
+
+    /// <summary>Boş içerik koruması seçilen depolar için aynen geçerli.</summary>
+    [Fact]
+    public async Task A_selected_depot_with_an_empty_folder_still_blocks_the_build()
+    {
+        var empty = Path.Combine(_root, "bos");
+        Directory.CreateDirectory(empty);
+
+        using var fake = FakeSteamCmd.Create("success");
+        var service = new BuildService(Layout, fake.Installation);
+
+        var result = await service.BuildAsync(TwoDepots([1002], macContent: empty), ct: Timeout());
+
+        Assert.False(result.Started);
+        Assert.Contains("Validate.ContentEmpty", result.BlockedReason);
+    }
+
+    [Fact]
+    public async Task Selecting_every_depot_is_recorded_as_a_full_build()
+    {
+        using var fake = FakeSteamCmd.Create("success");
+        var service = new BuildService(Layout, fake.Installation);
+
+        var result = await service.BuildAsync(TwoDepots([1001, 1002]), ct: Timeout());
+
+        Assert.Equal(BuildOutcome.Succeeded, result.Record.Outcome);
+        Assert.Null(result.Record.DepotIds);
+    }
+
+    [Fact]
+    public async Task Selecting_no_depot_blocks_the_build()
+    {
+        using var fake = FakeSteamCmd.Create("success");
+        var service = new BuildService(Layout, fake.Installation);
+
+        var result = await service.BuildAsync(TwoDepots([]), ct: Timeout());
+
+        Assert.False(result.Started);
+        Assert.Contains("Build.NoDepotSelected", result.BlockedReason);
+    }
+
     [Fact]
     public async Task Default_branch_blocks_the_build()
     {

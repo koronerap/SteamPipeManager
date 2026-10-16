@@ -65,8 +65,15 @@ public static class ProfileValidator
         return new ValidationResult(issues);
     }
 
-    public static ValidationResult ValidateSubApp(SubApp subApp, bool checkFileSystem = true) =>
-        new([.. ValidateSubAppCore(subApp, subAppLabel: subApp.Title, new(), new(), checkFileSystem)]);
+    /// <summary>
+    /// Tek hedefi denetler. <paramref name="depots"/> verilirse yalnızca onlar denetlenir:
+    /// depoların bir kısmı gönderilirken geri kalanların sorunları build'i engellemez.
+    /// </summary>
+    public static ValidationResult ValidateSubApp(
+        SubApp subApp,
+        bool checkFileSystem = true,
+        IReadOnlyCollection<DepotConfig>? depots = null) =>
+        new([.. ValidateSubAppCore(subApp, subAppLabel: subApp.Title, new(), new(), checkFileSystem, depots)]);
 
     private static IEnumerable<ValidationIssue> ValidateApp(
         SteamApp app,
@@ -108,8 +115,11 @@ public static class ProfileValidator
         string subAppLabel,
         Dictionary<uint, string> appIds,
         Dictionary<uint, string> depotIds,
-        bool checkFileSystem)
+        bool checkFileSystem,
+        IReadOnlyCollection<DepotConfig>? depots = null)
     {
+        depots ??= subApp.Depots;
+
         if (string.IsNullOrWhiteSpace(subApp.Title))
         {
             yield return new(IssueSeverity.Error, Loc.T("Validate.TargetNameRequired"));
@@ -134,12 +144,12 @@ public static class ProfileValidator
                 nameof(subApp.SetLiveBranch));
         }
 
-        if (subApp.Depots.Count == 0)
+        if (depots.Count == 0)
         {
             yield return new(IssueSeverity.Error, Loc.T("Validate.DepotRequired", subAppLabel));
         }
 
-        foreach (var depot in subApp.Depots)
+        foreach (var depot in depots)
         {
             foreach (var issue in ValidateDepot(depot, subApp, subAppLabel, depotIds, checkFileSystem))
             {

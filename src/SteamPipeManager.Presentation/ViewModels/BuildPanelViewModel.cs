@@ -35,6 +35,34 @@ public sealed class LogLine(SteamCmdEvent evt)
     };
 }
 
+/// <summary>Yükleme öncesi depo seçimindeki tek satır.</summary>
+public sealed partial class DepotChoice : ObservableObject
+{
+    public DepotChoice(DepotConfig depot, string? problem)
+    {
+        Depot = depot;
+        Problem = problem;
+        IsAvailable = problem is null;
+        _isSelected = IsAvailable;
+    }
+
+    public DepotConfig Depot { get; }
+
+    public string Title => Depot.Label is { Length: > 0 } label
+        ? $"{Depot.DepotId} · {label}"
+        : Depot.DepotId.ToString();
+
+    /// <summary>Kendi başına gönderilemiyorsa nedeni (ör. içerik klasörü boş); seçilemez.</summary>
+    public string? Problem { get; }
+
+    public bool IsAvailable { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    public override string ToString() => Title;
+}
+
 /// <summary>
 /// Build çalıştırma, canlı log ve oturum durumu. Seçili build hedefi
 /// <see cref="SubAppWorkspaceViewModel"/> tarafından beslenir.
@@ -70,8 +98,33 @@ public sealed partial class BuildPanelViewModel(
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanBuild))]
+    [NotifyPropertyChangedFor(nameof(CanPreview))]
     [NotifyPropertyChangedFor(nameof(CanCancel))]
     private bool _isBusy;
+
+    /// <summary>
+    /// Yükle'ye basınca, hedefte birden çok depo varsa açılan seçim. Hepsi işaretli
+    /// başlıyor; gönderilemeyecek depolar işaretsiz ve kapalı.
+    /// </summary>
+    public ObservableCollection<DepotChoice> DepotChoices { get; } = [];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanBuild))]
+    [NotifyPropertyChangedFor(nameof(CanPreview))]
+    private bool _isChoosingDepots;
+
+    public int SelectedDepotCount => DepotChoices.Count(c => c.IsSelected);
+
+    public bool HasSelectedDepots => SelectedDepotCount > 0;
+
+    public string UploadSelectedText =>
+        AppLocalizer.Instance.Format("Build.Depots.Upload", SelectedDepotCount, DepotChoices.Count);
+
+    /// <summary>
+    /// Tek başına gönderilebilecek depolar. Hedefin bir deposu bozuk (ör. o platformun
+    /// klasörü boş) diye diğerlerinin yüklenmesi engellenmesin.
+    /// </summary>
+    private int _sendableDepotCount;
 
     [ObservableProperty]
     private string _statusMessage = "";
@@ -120,14 +173,82 @@ public sealed partial class BuildPanelViewModel(
     /// <summary>Doğrulama sonucundan gelir; sorunluysa build butonu kapalı kalır.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanBuild))]
+    [NotifyPropertyChangedFor(nameof(CanPreview))]
     private bool _targetIsValid;
 
-    public bool CanBuild => !IsBusy && TargetIsValid && navigation.SubApp is not null;
+    /// <summary>Yükle: en az bir depo gönderilebiliyorsa açık; hangileri, seçimde soruluyor.</summary>
+    public bool CanBuild => !IsBusy && !IsChoosingDepots && navigation.SubApp is not null &&
+                            (TargetIsValid || _sendableDepotCount > 0);
+
+    /// <summary>Önizleme bütün depoları gönderiyor; hedefin tamamı geçerli olmalı.</summary>
+    public bool CanPreview => !IsBusy && !IsChoosingDepots && TargetIsValid && navigation.SubApp is not null;
 
     public bool CanCancel => IsBusy;
 
     [RelayCommand]
-    private Task BuildAsync() => RunBuildAsync(preview: false);
+    private Task BuildAsync()
+    {
+        // Kısayol (Ctrl+B) düğmeden bağımsız geliyor: build sürerken ya da seçim açıkken yok sayılıyor.
+        if (IsBusy || IsChoosingDepots)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (navigation.SubApp is { Depots.Count: > 1 } subApp)
+        {
+            OpenDepotChoice(subApp);
+            return Task.CompletedTask;
+        }
+
+        return RunBuildAsync(preview: false);
+    }
+
+    private void OpenDepotChoice(SubApp subApp)
+    {
+        foreach (var choice in DepotChoices)
+        {
+            choice.PropertyChanged -= OnDepotChoiceChanged;
+        }
+
+        DepotChoices.Clear();
+
+        foreach (var depot in subApp.Depots)
+        {
+            var problem = ProfileValidator.ValidateSubApp(subApp, depots: [depot]).Issues.FirstOrDefault()?.Message;
+            var choice = new DepotChoice(depot, problem);
+            choice.PropertyChanged += OnDepotChoiceChanged;
+            DepotChoices.Add(choice);
+        }
+
+        OnDepotChoiceChanged(null, null);
+        IsChoosingDepots = true;
+    }
+
+    private void OnDepotChoiceChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs? e)
+    {
+        OnPropertyChanged(nameof(SelectedDepotCount));
+        OnPropertyChanged(nameof(HasSelectedDepots));
+        OnPropertyChanged(nameof(UploadSelectedText));
+    }
+
+    [RelayCommand]
+    private Task UploadSelectedDepotsAsync()
+    {
+        var selected = DepotChoices.Where(c => c.IsSelected).Select(c => c.Depot.DepotId).ToList();
+
+        if (selected.Count == 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        IsChoosingDepots = false;
+
+        // Hepsi seçiliyse sıradan bir build: geçmişte "kısmi" görünmesin.
+        return RunBuildAsync(preview: false, selected.Count == DepotChoices.Count ? null : selected);
+    }
+
+    [RelayCommand]
+    private void CancelDepotChoice() => IsChoosingDepots = false;
 
     [RelayCommand]
     private Task PreviewAsync() => RunBuildAsync(preview: true);
@@ -142,7 +263,7 @@ public sealed partial class BuildPanelViewModel(
     [RelayCommand]
     private void ToggleLog() => IsLogVisible = !IsLogVisible;
 
-    private async Task RunBuildAsync(bool preview)
+    private async Task RunBuildAsync(bool preview, IReadOnlyCollection<uint>? depotIds = null)
     {
         if (navigation.Profile is not { } profile ||
             navigation.App is not { } app ||
@@ -154,9 +275,18 @@ public sealed partial class BuildPanelViewModel(
         // Canlıya alma geri alınamaz bir yayın işlemi; önce açıkça onaylatılır.
         if (!preview && subApp.SetLiveBranch is { Length: > 0 } branch)
         {
+            var body = AppLocalizer.Instance.Format("Build.Confirm.Body", branch, app.Title, subApp.Title, subApp.SteamAppId);
+
+            // Yalnızca bazı depolar canlıya gidiyorsa bu da açıkça söyleniyor.
+            if (depotIds is not null)
+            {
+                body += Environment.NewLine + Environment.NewLine +
+                        AppLocalizer.Instance.Format("Build.Confirm.PartialDepots", string.Join(", ", depotIds));
+            }
+
             var confirmed = await confirmation.ConfirmAsync(
                 AppLocalizer.Instance.Get("Build.Confirm.Title"),
-                AppLocalizer.Instance.Format("Build.Confirm.Body", branch, app.Title, subApp.Title, subApp.SteamAppId),
+                body,
                 confirmText: AppLocalizer.Instance.Get("Build.Confirm.Ok"),
                 isDestructive: true);
 
@@ -180,7 +310,7 @@ public sealed partial class BuildPanelViewModel(
             var description = BuildDescription.Render(
                 subApp.BuildDescriptionTemplate, app, subApp, profile);
 
-            var request = new BuildRequest(profile, app, subApp, description, preview);
+            var request = new BuildRequest(profile, app, subApp, description, preview, depotIds);
 
             var progress = new Progress<SteamCmdEvent>(evt =>
             {
@@ -278,6 +408,11 @@ public sealed partial class BuildPanelViewModel(
             _ => record.FailureReason ?? AppLocalizer.Instance.Get("Build.Failed"),
         };
 
+        if (record.Outcome == BuildOutcome.Succeeded && record.PartialDepotsText is { } depots)
+        {
+            LastBuildSummary += " " + AppLocalizer.Instance.Format("Build.PartialDepots", depots);
+        }
+
         StatusMessage = LastBuildSummary;
     }
 
@@ -286,7 +421,15 @@ public sealed partial class BuildPanelViewModel(
     /// <summary>Seçili hedef değiştiğinde panel sıfırlanır ve o hedefin geçmişi yüklenir.</summary>
     public void OnTargetChanged(bool isValid)
     {
+        IsChoosingDepots = false;
+
+        _sendableDepotCount = navigation.SubApp is { Depots.Count: > 1 } subApp && !isValid
+            ? subApp.Depots.Count(d => ProfileValidator.ValidateSubApp(subApp, depots: [d]).CanBuild)
+            : 0;
+
         TargetIsValid = isValid;
+        OnPropertyChanged(nameof(CanBuild));
+        OnPropertyChanged(nameof(CanPreview));
 
         if (!IsBusy)
         {

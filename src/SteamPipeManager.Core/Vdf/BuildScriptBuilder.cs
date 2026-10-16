@@ -26,7 +26,8 @@ public static class BuildScriptBuilder
         string buildOutputDirectory,
         IReadOnlyDictionary<uint, string> depotScriptPaths,
         string description,
-        bool previewOverride = false)
+        bool previewOverride = false,
+        IReadOnlyCollection<uint>? depotIds = null)
     {
         ArgumentNullException.ThrowIfNull(subApp);
 
@@ -41,7 +42,8 @@ public static class BuildScriptBuilder
 
         var depots = VdfNode.Block("depots");
 
-        foreach (var depot in subApp.Depots)
+        // Seçim verildiyse yalnızca o depolar; build'e girmeyen depo script'e de yazılmıyor.
+        foreach (var depot in subApp.Depots.Where(d => depotIds is null || depotIds.Contains(d.DepotId)))
         {
             if (!depotScriptPaths.TryGetValue(depot.DepotId, out var scriptPath))
             {

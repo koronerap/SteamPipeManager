@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SteamPipeManager.Core\SteamPipeManager.Core.csproj" />
+    <ProjectReference Include="..\..\src\SteamPipeManager.Presentation\SteamPipeManager.Presentation.csproj" />
   </ItemGroup>
 
 </Project>

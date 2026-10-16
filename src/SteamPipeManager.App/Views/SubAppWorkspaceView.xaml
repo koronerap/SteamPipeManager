@@ -244,8 +244,9 @@ ToolTip="{loc:T Depot.Add.Tip}"
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <!-- Eylemler -->
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+                        <!-- Eylemler. Üstte sabit: aynı satırdaki sorunlar kartı satırı uzatınca
+                             düğmeler ortalanıp kartın üstüne biniyordu. -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20" VerticalAlignment="Top">
                             <ui:Button Appearance="Primary" Padding="22,10" FontWeight="SemiBold"
                                        Icon="{ui:SymbolIcon CloudArrowUp24}"
                                        Content="{loc:T Build.Start}"
@@ -257,7 +258,7 @@ ToolTip="{loc:T Build.Start.Tip}"
                                        Content="{loc:T Build.Preview}"
 ToolTip="{loc:T Build.Preview.Tip}"
                                        Command="{Binding PreviewCommand}"
-                                       IsEnabled="{Binding CanBuild}" />
+                                       IsEnabled="{Binding CanPreview}" />
                             <ui:Button Margin="10,0,0,0" Padding="12,10"
                                        Appearance="Danger"
                                        Icon="{ui:SymbolIcon Stop24}"
@@ -268,7 +269,7 @@ ToolTip="{loc:T Build.Preview.Tip}"
                         </StackPanel>
 
                         <!-- Log her zaman açılabilmeli, ilk build'den önce de -->
-                        <ui:Button Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                        <ui:Button Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,0,0"
                                    Appearance="Transparent" Padding="10,6"
                                    Icon="{ui:SymbolIcon DocumentText24}"
                                    AutomationProperties.Name="{Binding LogToggleText}"
@@ -285,19 +286,62 @@ ToolTip="{loc:T Build.Preview.Tip}"
                                 <ItemsControl ItemsSource="{Binding Issues}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                            <!-- Grid: yatay StackPanel genişliği sınırsız verdiği için uzun yollar
+                                                 kaydırılmıyor, satır kesiliyordu. -->
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
                                                 <Ellipse Width="8" Height="8" VerticalAlignment="Top" Margin="0,5,10,0"
                                                          Fill="{Binding Severity, Converter={StaticResource SeverityBrush}}" />
-                                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" />
-                                            </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" />
+                                            </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
                         </ui:Card>
 
+                        <StackPanel Grid.Row="1">
+
+                        <!-- Depot seçimi: hedefte birden çok depot varsa Build'e basınca açılıyor -->
+                        <ui:Card Padding="20" Margin="0,0,0,16"
+                                 Visibility="{Binding IsChoosingDepots, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{loc:T Build.Depots.Title}" FontWeight="SemiBold" FontSize="15" />
+                                <TextBlock Text="{loc:T Build.Depots.Note}" Opacity="0.65" FontSize="12"
+                                           Margin="0,4,0,12" TextWrapping="Wrap" />
+
+                                <ItemsControl ItemsSource="{Binding DepotChoices}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,0,0,8">
+                                                <CheckBox Content="{Binding Title}" IsChecked="{Binding IsSelected}"
+                                                          IsEnabled="{Binding IsAvailable}" />
+                                                <TextBlock Text="{Binding Problem}" Foreground="IndianRed" FontSize="11"
+                                                           Margin="28,2,0,0" TextWrapping="Wrap"
+                                                           Visibility="{Binding Problem, Converter={StaticResource TextToVis}}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <ui:Button Appearance="Primary" Padding="18,9" FontWeight="SemiBold"
+                                               Icon="{ui:SymbolIcon CloudArrowUp24}"
+                                               Content="{Binding UploadSelectedText}"
+                                               Command="{Binding UploadSelectedDepotsCommand}"
+                                               IsEnabled="{Binding HasSelectedDepots}" />
+                                    <ui:Button Margin="10,0,0,0" Padding="16,9"
+                                               Content="{loc:T Common.Cancel}"
+                                               Command="{Binding CancelDepotChoiceCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ui:Card>
+
                         <!-- Bu build hedefine özgü ayarlar: açıklama, branch, preview -->
-                        <ui:Card Grid.Row="1" Padding="20" Margin="0,0,0,16"
+                        <ui:Card Padding="20" Margin="0,0,0,16"
                                  DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                  Visibility="{Binding BuildPanel.IsBusy, Converter={StaticResource BoolToVisInverted}}">
                             <StackPanel>
@@ -342,6 +386,8 @@ ToolTip="{loc:T Build.Preview.Tip}"
                                 </Grid>
                             </StackPanel>
                         </ui:Card>
+
+                        </StackPanel>
 
                         <!-- Aşama ve ilerleme: ham log yerine bu gösteriliyor -->
                         <ui:Card Grid.Row="2" Padding="20" Margin="0,0,0,16">
@@ -488,6 +534,11 @@ ToolTip="{loc:T Build.Preview.Tip}"
                                                         <TextBlock Text="{Binding SteamBuildId, TargetNullValue='—'}" FontSize="11" />
                                                         <TextBlock Text="{loc:T History.Branch}" FontSize="11" />
                                                         <TextBlock Text="{Binding SetLiveBranch, TargetNullValue='—'}" FontSize="11" />
+                                                        <!-- Yalnızca bazı depot'lar gönderildiyse -->
+                                                        <TextBlock Text="{loc:T History.Depots}" FontSize="11"
+                                                                   Visibility="{Binding PartialDepotsText, Converter={StaticResource TextToVis}}" />
+                                                        <TextBlock Text="{Binding PartialDepotsText}" FontSize="11"
+                                                                   Visibility="{Binding PartialDepotsText, Converter={StaticResource TextToVis}}" />
                                                     </StackPanel>
 
                                                     <TextBlock Text="{Binding FailureReason}" Foreground="IndianRed"

@@ -169,7 +169,7 @@
                                         <c:IconLabel Symbol="CloudArrowUp" Text="{loc:T Build.Start}" />
                                     </Button>
                                     <Button Padding="16,10" ToolTip.Tip="{loc:T Build.Preview.Tip}"
-                                            Command="{Binding PreviewCommand}" IsEnabled="{Binding CanBuild}">
+                                            Command="{Binding PreviewCommand}" IsEnabled="{Binding CanPreview}">
                                         <c:IconLabel Symbol="Eye" Text="{loc:T Build.Preview}" />
                                     </Button>
                                     <Button Classes="danger" Padding="12,10"
@@ -205,6 +205,39 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Depot seçimi: hedefte birden çok depot varsa Build'e basınca açılıyor -->
+                            <Border Classes="card" Margin="0,0,0,16" IsVisible="{Binding IsChoosingDepots}">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:T Build.Depots.Title}" FontWeight="SemiBold" FontSize="15" />
+                                    <TextBlock Text="{loc:T Build.Depots.Note}" Opacity="0.65" FontSize="12"
+                                               Margin="0,4,0,12" TextWrapping="Wrap" />
+
+                                    <ItemsControl ItemsSource="{Binding DepotChoices}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="0,0,0,8">
+                                                    <CheckBox Content="{Binding Title}" IsChecked="{Binding IsSelected}"
+                                                              IsEnabled="{Binding IsAvailable}" />
+                                                    <TextBlock Text="{Binding Problem}" Foreground="IndianRed" FontSize="11"
+                                                               Margin="28,2,0,0" TextWrapping="Wrap"
+                                                               IsVisible="{Binding Problem, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,8,0,0">
+                                        <Button Classes="accent" Padding="18,9" FontWeight="SemiBold"
+                                                Command="{Binding UploadSelectedDepotsCommand}"
+                                                IsEnabled="{Binding HasSelectedDepots}">
+                                            <c:IconLabel Symbol="CloudArrowUp" Text="{Binding UploadSelectedText}" />
+                                        </Button>
+                                        <Button Padding="16,9" Content="{loc:T Common.Cancel}"
+                                                Command="{Binding CancelDepotChoiceCommand}" />
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
 
@@ -341,6 +374,11 @@
                                                         <TextBlock Text="{Binding SteamBuildId, TargetNullValue='—'}" FontSize="11" />
                                                         <TextBlock Text="{loc:T History.Branch}" FontSize="11" />
                                                         <TextBlock Text="{Binding SetLiveBranch, TargetNullValue='—'}" FontSize="11" />
+                                                        <!-- Yalnızca bazı depot'lar gönderildiyse -->
+                                                        <TextBlock Text="{loc:T History.Depots}" FontSize="11"
+                                                                   IsVisible="{Binding PartialDepotsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                        <TextBlock Text="{Binding PartialDepotsText}" FontSize="11"
+                                                                   IsVisible="{Binding PartialDepotsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                                     </StackPanel>
 
                                                     <TextBlock Text="{Binding FailureReason}" Foreground="IndianRed" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
