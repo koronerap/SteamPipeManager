@@ -47,6 +47,8 @@ jobs:
         run: |
           dotnet build tests/FakeSteamCmd -c Release
           dotnet build tests/SteamPipeManager.Core.Tests -c Release
+          # Simge adı testi Avalonia'nın simge kütüphanesini NuGet önbelleğinden okuyor.
+          dotnet restore src/SteamPipeManager.Desktop
 
       - name: Test
         run: dotnet test tests/SteamPipeManager.Core.Tests -c Release --no-build --logger "console;verbosity=normal"

@@ -448,6 +448,7 @@
     "Widget.Quit": "退出",
     "Widget.Summary.Players": "{0} 名玩家",
     "Widget.Summary.Wishlists": "愿望单 {0}",
-    "Widget.Summary.Sales": "今天 {0}"
+    "Widget.Summary.Sales": "今天 {0}",
+    "Startup.Failed": "{0} 无法启动：{1}\n\n详细信息已保存到：\n{2}"
   }
 }

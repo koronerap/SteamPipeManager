@@ -61,7 +61,7 @@
 
             <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
                 <ui:Button Padding="14,8" Margin="0,0,8,0"
-                           Icon="{ui:SymbolIcon PanelBottom24}"
+                           Icon="{ui:SymbolIcon DesktopPulse24}"
                            Content="{loc:T Analytics.OpenWidget}"
                            ToolTip="{loc:T Analytics.OpenWidget.Tip}"
                            Command="{Binding OpenWidgetCommand}"

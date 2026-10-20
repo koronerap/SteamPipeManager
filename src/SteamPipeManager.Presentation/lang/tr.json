@@ -448,6 +448,7 @@
     "Widget.Quit": "Çık",
     "Widget.Summary.Players": "{0} oyuncu",
     "Widget.Summary.Wishlists": "{0} wishlist",
-    "Widget.Summary.Sales": "bugün {0}"
+    "Widget.Summary.Sales": "bugün {0}",
+    "Startup.Failed": "{0} başlatılamadı: {1}\n\nAyrıntılar şuraya kaydedildi:\n{2}"
   }
 }

@@ -448,6 +448,7 @@
     "Widget.Quit": "Выход",
     "Widget.Summary.Players": "{0} игроков",
     "Widget.Summary.Wishlists": "{0} в желаемом",
-    "Widget.Summary.Sales": "сегодня {0}"
+    "Widget.Summary.Sales": "сегодня {0}",
+    "Startup.Failed": "Не удалось запустить {0}: {1}\n\nПодробности сохранены здесь:\n{2}"
   }
 }

@@ -448,6 +448,7 @@
     "Widget.Quit": "Beenden",
     "Widget.Summary.Players": "{0} Spieler",
     "Widget.Summary.Wishlists": "{0} Wunschlisten",
-    "Widget.Summary.Sales": "heute {0}"
+    "Widget.Summary.Sales": "heute {0}",
+    "Startup.Failed": "{0} konnte nicht starten: {1}\n\nDie Details wurden hier gespeichert:\n{2}"
   }
 }

@@ -26,6 +26,51 @@ public partial class App : Application
         base.OnStartup(e);
 
         var layout = WorkspaceLayout.Default();
+
+        try
+        {
+            await StartAsync(layout, e.Args);
+        }
+        catch (Exception ex)
+        {
+            ReportStartupFailure(layout, ex);
+            Shutdown(1);
+        }
+    }
+
+    /// <summary>
+    /// Açılışta bir şey patlarsa pencere hiç görünmeden uygulama kayboluyordu ve kullanıcı
+    /// yalnızca "açılmıyor" görüyordu (geçersiz bir simge adı böyle yaptı). Ayrıntı log
+    /// klasörüne yazılıyor, kullanıcıya nedeni ve dosyanın yeri söyleniyor.
+    /// </summary>
+    internal static void ReportStartupFailure(WorkspaceLayout layout, Exception ex)
+    {
+        string? logPath = null;
+
+        try
+        {
+            Directory.CreateDirectory(layout.LogsDirectory);
+            logPath = Path.Combine(layout.LogsDirectory, $"startup-error-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+            File.WriteAllText(logPath, ex.ToString());
+        }
+        catch (Exception logError) when (logError is IOException or UnauthorizedAccessException)
+        {
+            // Log yazılamasa da kullanıcıya neden söyleniyor.
+        }
+
+        var reason = ex.GetBaseException().Message;
+        var product = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyProductAttribute>()?.Product ?? "Steam Pipe Manager";
+
+        // Dil dosyaları yüklenmeden de patlayabilir; o zaman İngilizce.
+        var message = AppLocalizer.Instance.Get("Startup.Failed") is { } template && template != "Startup.Failed"
+            ? AppLocalizer.Instance.Format("Startup.Failed", product, reason, logPath ?? "—")
+            : $"{product} could not start: {reason}\n\nThe details were saved to:\n{logPath ?? "—"}";
+
+        MessageBox.Show(message, product, MessageBoxButton.OK, MessageBoxImage.Error);
+    }
+
+    private async Task StartAsync(WorkspaceLayout layout, string[] args)
+    {
         layout.EnsureCreated();
 
         await InitializeLanguageAsync(layout);
@@ -54,7 +99,7 @@ public partial class App : Application
         window.Show();
 
         // Pencere açıldıktan sonra: ağ beklemesi açılışı geciktirmesin.
-        _ = shell.Updates.StartAsync(e.Args);
+        _ = shell.Updates.StartAsync(args);
     }
 
     protected override void OnExit(ExitEventArgs e)

@@ -58,7 +58,7 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                 <Button Padding="14,8" Command="{Binding OpenWidgetCommand}" IsVisible="{Binding CanOpenWidget}"
                         ToolTip.Tip="{loc:T Analytics.OpenWidget.Tip}">
-                    <c:IconLabel Symbol="PanelBottom" Text="{loc:T Analytics.OpenWidget}" />
+                    <c:IconLabel Symbol="DesktopPulse" Text="{loc:T Analytics.OpenWidget}" />
                 </Button>
                 <Button Padding="14,8" Command="{Binding RefreshCommand}">
                     <c:IconLabel Symbol="ArrowSync" Text="{loc:T Analytics.Refresh}" />

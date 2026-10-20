@@ -448,6 +448,7 @@
     "Widget.Quit": "종료",
     "Widget.Summary.Players": "플레이어 {0}",
     "Widget.Summary.Wishlists": "위시리스트 {0}",
-    "Widget.Summary.Sales": "오늘 {0}"
+    "Widget.Summary.Sales": "오늘 {0}",
+    "Startup.Failed": "{0}을(를) 시작할 수 없습니다: {1}\n\n자세한 내용 저장 위치:\n{2}"
   }
 }

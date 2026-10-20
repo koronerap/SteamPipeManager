@@ -448,6 +448,7 @@
     "Widget.Quit": "終了",
     "Widget.Summary.Players": "プレイヤー {0}",
     "Widget.Summary.Wishlists": "ウィッシュリスト {0}",
-    "Widget.Summary.Sales": "今日 {0}"
+    "Widget.Summary.Sales": "今日 {0}",
+    "Startup.Failed": "{0} を起動できませんでした: {1}\n\n詳細の保存先:\n{2}"
   }
 }

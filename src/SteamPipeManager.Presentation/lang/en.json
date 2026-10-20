@@ -448,6 +448,7 @@
     "Widget.Quit": "Quit",
     "Widget.Summary.Players": "{0} players",
     "Widget.Summary.Wishlists": "{0} wishlists",
-    "Widget.Summary.Sales": "{0} today"
+    "Widget.Summary.Sales": "{0} today",
+    "Startup.Failed": "{0} could not start: {1}\n\nThe details were saved to:\n{2}"
   }
 }
