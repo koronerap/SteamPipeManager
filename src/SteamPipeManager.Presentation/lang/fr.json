@@ -513,6 +513,27 @@
     "Analytics.Chart.NoData": "Aucune donnée sur cette période",
     "Analytics.Chart.Gaps": "Là où la ligne s'interrompt, l'application et le widget étaient fermés : ces heures n'ont pas de données. Pour un historique plus ancien ou complet, consultez SteamDB.",
     "Analytics.OpenSteamDb": "Historique sur SteamDB",
-    "Analytics.OpenStore": "Page du magasin"
+    "Analytics.OpenStore": "Page du magasin",
+    "Analytics.HideAmounts": "Masquer les montants",
+    "Analytics.ShowAmounts": "Afficher les montants",
+    "Analytics.Earnings.Title": "Revenus",
+    "Analytics.Earnings.Month": "Ce mois-ci",
+    "Analytics.Earnings.Projection": "Fin du mois (estimation)",
+    "Analytics.Earnings.Payout": "Versement ≈ {0}",
+    "Analytics.Earnings.Gross": "Ventes brutes",
+    "Analytics.Earnings.Returns": "Remboursements ({0})",
+    "Analytics.Earnings.Tax": "Taxes",
+    "Analytics.Earnings.Net": "Net",
+    "Analytics.Earnings.SteamCut": "Part de Steam (estimation)",
+    "Analytics.Earnings.Share": "Versement estimé",
+    "Analytics.Earnings.Caption": "Période choisie : {0} derniers jours · jours du Pacifique",
+    "Analytics.Earnings.Note": "Estimations : les rétrofacturations et ajustements du rapport mensuel de Steam ne sont pas inclus. La part de Steam suit le palier de chaque ligne de vente (70 %, 75 % ou 80 % pour vous) ; les autres devises utilisent le taux du jour.",
+    "Analytics.Earnings.Upgrading": "Les détails de {0} jours plus anciens sont encore en téléchargement ; d'ici là, ces jours n'affichent ni remboursements ni taxes et supposent une part de 70 %.",
+    "Analytics.SalesMode.Payout": "Versement",
+    "Analytics.Chart.Payout": "Versement estimé",
+    "Settings.Currency": "Devise",
+    "Settings.Currency.Hint": "Les montants des ventes s'affichent aussi dans cette devise. Taux quotidiens de frankfurter.dev ; seuls le code de devise et les dates sont envoyés.",
+    "Settings.Currency.Auto": "Automatique ({0})",
+    "Settings.Currency.UsdOnly": "Dollars US uniquement (USD)"
   }
 }

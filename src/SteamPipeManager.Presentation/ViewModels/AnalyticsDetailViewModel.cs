@@ -14,16 +14,20 @@ namespace SteamPipeManager.Presentation.ViewModels;
 /// </summary>
 public sealed partial class AnalyticsDetailViewModel : ObservableObject
 {
-    private readonly AnalyticsService _service;
+    private readonly AnalyticsServices _analytics;
     private readonly string? _accountId;
+    private readonly string _currency;
     private readonly Action _close;
     private AppHistory? _history;
+    private ExchangeRates? _rates;
 
-    public AnalyticsDetailViewModel(AnalyticsCard card, AnalyticsService service, string? accountId, Action close)
+    /// <param name="currency">Tutarların yanında gösterilecek para birimi; "USD" ise çeviri yok.</param>
+    public AnalyticsDetailViewModel(AnalyticsCard card, AnalyticsServices analytics, string? accountId, string currency, Action close)
     {
         Card = card;
-        _service = service;
+        _analytics = analytics;
         _accountId = accountId;
+        _currency = currency;
         _close = close;
 
         Range = new(AnalyticsRange.Month, v => T($"Analytics.Range.{v}"));
@@ -84,11 +88,36 @@ public sealed partial class AnalyticsDetailViewModel : ObservableObject
     [ObservableProperty]
     private string _salesCaption = "";
 
+    /// <summary>Kazanç kartı: bugün, dün, bu ay, ay sonu tahmini.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<EarningsTile> _earningsTiles = [];
+
+    /// <summary>Seçili aralıkta brütten tahmini ödemeye.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<EarningsRow> _earningsRows = [];
+
+    [ObservableProperty]
+    private string _earningsCaption = "";
+
+    [ObservableProperty]
+    private string _earningsNote = "";
+
     public async Task LoadAsync()
     {
-        _history = await _service.GetHistoryAsync(Card.AppId, _accountId);
+        _history = await _analytics.Service.GetHistoryAsync(Card.AppId, _accountId);
+
+        // Kurlar ilk satış gününden; önbellekte yoksa tek istekte iniyor.
+        if (_history.Sales is { } sales)
+        {
+            var from = sales.Days.Count > 0 ? sales.Days[0].Date : sales.Today;
+            _rates = await _analytics.Rates.GetAsync(_currency, from);
+        }
+
         Rebuild();
     }
+
+    /// <summary>Tutarlar gizlenip gösterilince metinler yeniden yazılıyor.</summary>
+    public void Refresh() => Rebuild();
 
     partial void OnCompareChanged(bool value) => Rebuild();
 
@@ -133,6 +162,13 @@ public sealed partial class AnalyticsDetailViewModel : ObservableObject
                 AnalyticsFormat.Usd(chart.Totals.NetUsd / chart.Days));
             SalesCaption = AppLocalizer.Instance.Format("Analytics.Chart.DaysPacific", chart.Days) +
                            (sales.Pending.Count > 0 ? " · " + T("Analytics.Chart.SalesPending") : "");
+
+            var earnings = AnalyticsEarnings.Build(sales, range, _rates);
+            EarningsTiles = earnings.Tiles;
+            EarningsRows = earnings.Rows;
+            EarningsCaption = AppLocalizer.Instance.Format("Analytics.Earnings.Caption", earnings.RangeDays);
+            EarningsNote = T("Analytics.Earnings.Note") +
+                           (sales.UpgradingDays > 0 ? " " + AppLocalizer.Instance.Format("Analytics.Earnings.Upgrading", sales.UpgradingDays) : "");
         }
     }
 

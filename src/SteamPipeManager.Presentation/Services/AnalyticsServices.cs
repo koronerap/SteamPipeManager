@@ -23,9 +23,17 @@ public sealed class AnalyticsServices
         // Anahtarı denemek için ayrı istemci: yenileme döngüsü kendi istemcisine istek
         // sınırı koyuyor, ayarlardaki deneme ona takılmasın.
         KeyTester = new SteamFinancialClient(http);
+
+        Rates = new ExchangeRateService(Store, new ExchangeRateClient(http));
+        Preferences = new AnalyticsPreferencesStore(layout.AnalyticsSettingsFile);
     }
 
     public static AnalyticsServices Create(WorkspaceLayout layout) => new(layout);
+
+    /// <summary>Satış tutarlarının kullanıcının para birimindeki karşılığı için günlük kurlar.</summary>
+    public ExchangeRateService Rates { get; }
+
+    public AnalyticsPreferencesStore Preferences { get; }
 
     public SteamFinancialKeyStore Keys { get; }
 

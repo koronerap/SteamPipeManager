@@ -513,6 +513,27 @@
     "Analytics.Chart.NoData": "За этот период данных нет",
     "Analytics.Chart.Gaps": "Там, где линия прерывается, приложение и виджет были закрыты, поэтому данных за эти часы нет. Более старую или полную историю можно посмотреть на SteamDB.",
     "Analytics.OpenSteamDb": "История на SteamDB",
-    "Analytics.OpenStore": "Страница в магазине"
+    "Analytics.OpenStore": "Страница в магазине",
+    "Analytics.HideAmounts": "Скрыть суммы",
+    "Analytics.ShowAmounts": "Показать суммы",
+    "Analytics.Earnings.Title": "Доход",
+    "Analytics.Earnings.Month": "Этот месяц",
+    "Analytics.Earnings.Projection": "Конец месяца (оценка)",
+    "Analytics.Earnings.Payout": "Выплата ≈ {0}",
+    "Analytics.Earnings.Gross": "Валовые продажи",
+    "Analytics.Earnings.Returns": "Возвраты ({0})",
+    "Analytics.Earnings.Tax": "Налоги",
+    "Analytics.Earnings.Net": "Чистыми",
+    "Analytics.Earnings.SteamCut": "Доля Steam (оценка)",
+    "Analytics.Earnings.Share": "Ожидаемая выплата",
+    "Analytics.Earnings.Caption": "Выбранный период: последние {0} дн. · дни по тихоокеанскому времени",
+    "Analytics.Earnings.Note": "Это оценка: возвратные платежи и корректировки из ежемесячного отчёта Steam не учтены. Доля Steam определяется уровнем в каждой строке продаж (вам 70%, 75% или 80%); другие валюты пересчитываются по курсу того дня.",
+    "Analytics.Earnings.Upgrading": "Подробности за {0} более ранних дн. ещё загружаются; до тех пор в эти дни не видно возвратов и налогов, а доля считается равной 70%.",
+    "Analytics.SalesMode.Payout": "Выплата",
+    "Analytics.Chart.Payout": "Ожидаемая выплата",
+    "Settings.Currency": "Валюта",
+    "Settings.Currency.Hint": "Суммы продаж показываются и в этой валюте. Ежедневные курсы с frankfurter.dev; отправляются только код валюты и даты.",
+    "Settings.Currency.Auto": "Автоматически ({0})",
+    "Settings.Currency.UsdOnly": "Только доллары США (USD)"
   }
 }

@@ -57,6 +57,12 @@ public sealed class WorkspaceLayout(string rootDirectory)
     /// </summary>
     public string WidgetSettingsFile => Path.Combine(Root, "widget.json");
 
+    /// <summary>
+    /// Analitik tercihleri (para birimi, tutarları gizleme). Önbellek klasöründe değil:
+    /// önbellek silinip yeniden indirilebilir, tercihler kalmalı.
+    /// </summary>
+    public string AnalyticsSettingsFile => Path.Combine(Root, "analytics-settings.json");
+
     public string LogsDirectory => Path.Combine(Root, "logs");
 
     public string CoversDirectory => Path.Combine(Root, "covers");

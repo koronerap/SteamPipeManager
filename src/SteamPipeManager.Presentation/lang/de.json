@@ -513,6 +513,27 @@
     "Analytics.Chart.NoData": "Keine Daten in diesem Zeitraum",
     "Analytics.Chart.Gaps": "Wo die Linie unterbrochen ist, waren App und Widget geschlossen; für diese Stunden gibt es keine Daten. Ältere oder vollständige Verläufe findest du auf SteamDB.",
     "Analytics.OpenSteamDb": "Verlauf auf SteamDB",
-    "Analytics.OpenStore": "Store-Seite"
+    "Analytics.OpenStore": "Store-Seite",
+    "Analytics.HideAmounts": "Beträge ausblenden",
+    "Analytics.ShowAmounts": "Beträge anzeigen",
+    "Analytics.Earnings.Title": "Einnahmen",
+    "Analytics.Earnings.Month": "Dieser Monat",
+    "Analytics.Earnings.Projection": "Monatsende (Schätzung)",
+    "Analytics.Earnings.Payout": "Auszahlung ≈ {0}",
+    "Analytics.Earnings.Gross": "Bruttoumsatz",
+    "Analytics.Earnings.Returns": "Rückerstattungen ({0})",
+    "Analytics.Earnings.Tax": "Steuern",
+    "Analytics.Earnings.Net": "Netto",
+    "Analytics.Earnings.SteamCut": "Steam-Anteil (Schätzung)",
+    "Analytics.Earnings.Share": "Geschätzte Auszahlung",
+    "Analytics.Earnings.Caption": "Gewählter Zeitraum: letzte {0} Tage · pazifische Tage",
+    "Analytics.Earnings.Note": "Schätzungen: Rückbuchungen und Korrekturen aus Steams Monatsbericht sind nicht enthalten. Steams Anteil richtet sich nach der Stufe in jeder Verkaufszeile (70 %, 75 % oder 80 % für dich); andere Währungen mit dem Kurs des jeweiligen Tages.",
+    "Analytics.Earnings.Upgrading": "Details für {0} ältere Tage werden noch geladen; bis dahin zeigen diese Tage keine Rückerstattungen oder Steuern und rechnen mit 70 % Anteil.",
+    "Analytics.SalesMode.Payout": "Auszahlung",
+    "Analytics.Chart.Payout": "Geschätzte Auszahlung",
+    "Settings.Currency": "Währung",
+    "Settings.Currency.Hint": "Verkaufsbeträge werden zusätzlich in dieser Währung angezeigt. Tageskurse von frankfurter.dev; gesendet werden nur Währungscode und Datum.",
+    "Settings.Currency.Auto": "Automatisch ({0})",
+    "Settings.Currency.UsdOnly": "Nur US-Dollar (USD)"
   }
 }

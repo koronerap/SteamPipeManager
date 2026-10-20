@@ -273,7 +273,8 @@ public sealed class AnalyticsChartTests : IDisposable
         Assert.Single(history.PlayerHours);
         Assert.Equal([Today.AddDays(-1), Today], history.Wishlist!.Days.Select(d => d.Date));
         Assert.Equal(7, history.Wishlist.Total);
-        Assert.Equal(new SalesTotals(2, 20m, 25m), Assert.Single(history.Sales!.Days).Totals);
+        // Eski biçimdeki satırda pay yok: temel pay (%70) varsayılıyor.
+        Assert.Equal(new SalesTotals(2, 20m, 25m, ShareUsd: 14m), Assert.Single(history.Sales!.Days).Totals);
         Assert.Contains(Today.AddDays(-2), history.Sales.Pending);
 
         Assert.Null((await service.GetHistoryAsync(Game, accountId: null)).Sales);

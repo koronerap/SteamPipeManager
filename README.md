@@ -118,6 +118,18 @@ Player history is kept for two years (as hourly peaks and averages after the fir
 Where the app and the widget were both closed, the line breaks rather than guessing. For
 older history, **History on SteamDB** opens the game's SteamDB charts in your browser.
 
+The **Earnings** card at the top of a game's details shows today, yesterday, this month and
+an estimate for the month's end. For the chosen range it breaks the money down: gross sales,
+refunds, tax, net, Steam's share and the estimated payout. Steam's share follows the revenue
+tier on each sales row (70%, 75% or 80% to you). Chargebacks and other adjustments in
+Steam's monthly report are not included, so the payout is an estimate.
+
+Amounts also show in your own currency, converted at each day's rate. By default this is the
+currency of your country or region; change it in **Settings → Currency**. Daily rates come
+from [frankfurter.dev](https://frankfurter.dev); the app sends only the currency code and
+dates. **Hide amounts** on the Analytics page shows every amount as •••, in the widget too,
+for when you share your screen.
+
 Wishlists and sales need a **Steam financial key**. A key belongs to one Steamworks
 partner (company) and sees only that company's games, so it is entered per profile:
 
@@ -245,7 +257,8 @@ Logs you export for a bug report have account IDs and user paths masked.
 | `settings.json` | SteamCMD and BuildPatchTool paths, language, timeouts, update check |
 | `epic-secrets.json` | Windows: Epic client secrets, DPAPI-encrypted for your Windows user. Linux without a secret store: the secrets, readable only by you |
 | `steam-financial.json` | Windows: the Steam financial keys, one per profile, DPAPI-encrypted (elsewhere they are in the system's secret store) |
-| `analytics\` | Analytics cache: player samples, daily wishlists and sales |
+| `analytics\` | Analytics cache: player samples, daily wishlists, sales (daily totals and Steam's sales rows per month) and exchange rates |
+| `analytics-settings.json` | Analytics preferences: the currency shown next to dollars, hidden amounts |
 | `widget.json` | The widget's games, numbers, appearance and position |
 | `steamcmd-home/` | Linux and macOS: SteamCMD's own home folder (its logs and sign-in cache) |
 | `history.json` | Build history (most recent 500 entries) |

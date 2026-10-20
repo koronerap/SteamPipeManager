@@ -513,6 +513,27 @@
     "Analytics.Chart.NoData": "此范围内没有数据",
     "Analytics.Chart.Gaps": "线条中断处是应用和小组件关闭的时间，这些时段没有数据。更早或完整的历史可在 SteamDB 查看。",
     "Analytics.OpenSteamDb": "SteamDB 上的历史",
-    "Analytics.OpenStore": "商店页面"
+    "Analytics.OpenStore": "商店页面",
+    "Analytics.HideAmounts": "隐藏金额",
+    "Analytics.ShowAmounts": "显示金额",
+    "Analytics.Earnings.Title": "收益",
+    "Analytics.Earnings.Month": "本月",
+    "Analytics.Earnings.Projection": "月末（估算）",
+    "Analytics.Earnings.Payout": "付款 ≈ {0}",
+    "Analytics.Earnings.Gross": "总销售额",
+    "Analytics.Earnings.Returns": "退款（{0}）",
+    "Analytics.Earnings.Tax": "税费",
+    "Analytics.Earnings.Net": "净额",
+    "Analytics.Earnings.SteamCut": "Steam 分成（估算）",
+    "Analytics.Earnings.Share": "预计付款",
+    "Analytics.Earnings.Caption": "所选范围：最近 {0} 天 · 按太平洋时间日期",
+    "Analytics.Earnings.Note": "估算值：不含 Steam 月度报告中的拒付和调整。Steam 分成按每条销售记录的等级计算（你获得 70%、75% 或 80%）；其他货币按当天汇率换算。",
+    "Analytics.Earnings.Upgrading": "仍在下载较早 {0} 天的详细信息；在此之前，这些日期不显示退款和税费，并按 70% 分成计算。",
+    "Analytics.SalesMode.Payout": "付款",
+    "Analytics.Chart.Payout": "预计付款",
+    "Settings.Currency": "货币",
+    "Settings.Currency.Hint": "销售金额也会以此货币显示。每日汇率来自 frankfurter.dev；只发送货币代码和日期。",
+    "Settings.Currency.Auto": "自动（{0}）",
+    "Settings.Currency.UsdOnly": "仅美元（USD）"
   }
 }

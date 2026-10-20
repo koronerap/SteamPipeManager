@@ -513,6 +513,27 @@
     "Analytics.Chart.NoData": "이 기간에는 데이터가 없습니다",
     "Analytics.Chart.Gaps": "선이 끊긴 곳은 앱과 위젯이 닫혀 있던 시간이라 데이터가 없습니다. 더 오래되거나 완전한 기록은 SteamDB에서 볼 수 있습니다.",
     "Analytics.OpenSteamDb": "SteamDB 기록",
-    "Analytics.OpenStore": "상점 페이지"
+    "Analytics.OpenStore": "상점 페이지",
+    "Analytics.HideAmounts": "금액 숨기기",
+    "Analytics.ShowAmounts": "금액 표시",
+    "Analytics.Earnings.Title": "수익",
+    "Analytics.Earnings.Month": "이번 달",
+    "Analytics.Earnings.Projection": "월말 (예상)",
+    "Analytics.Earnings.Payout": "지급액 ≈ {0}",
+    "Analytics.Earnings.Gross": "총매출",
+    "Analytics.Earnings.Returns": "환불 ({0})",
+    "Analytics.Earnings.Tax": "세금",
+    "Analytics.Earnings.Net": "순액",
+    "Analytics.Earnings.SteamCut": "Steam 몫 (예상)",
+    "Analytics.Earnings.Share": "예상 지급액",
+    "Analytics.Earnings.Caption": "선택한 기간: 최근 {0}일 · 태평양 시간 기준",
+    "Analytics.Earnings.Note": "추정치입니다: Steam 월간 보고서의 지불 거절과 조정은 포함되지 않습니다. Steam 몫은 각 판매 행의 등급을 따릅니다(사용자 몫 70%, 75%, 80%). 다른 통화는 그날의 환율로 환산합니다.",
+    "Analytics.Earnings.Upgrading": "이전 {0}일의 세부 정보를 아직 다운로드 중입니다. 그때까지 해당 날짜에는 환불과 세금이 표시되지 않으며 몫을 70%로 가정합니다.",
+    "Analytics.SalesMode.Payout": "지급액",
+    "Analytics.Chart.Payout": "예상 지급액",
+    "Settings.Currency": "통화",
+    "Settings.Currency.Hint": "판매 금액을 이 통화로도 표시합니다. 일일 환율은 frankfurter.dev에서 가져오며 통화 코드와 날짜만 전송됩니다.",
+    "Settings.Currency.Auto": "자동 ({0})",
+    "Settings.Currency.UsdOnly": "미국 달러만 (USD)"
   }
 }

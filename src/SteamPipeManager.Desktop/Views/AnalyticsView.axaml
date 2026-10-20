@@ -48,6 +48,14 @@
             <Setter Property="FontSize" Value="14" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
+        <!-- Kazanç tablosunda ara toplamlar (net, tahmini ödeme) kalın. -->
+        <Style Selector="TextBlock.earnings">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="0,2" />
+        </Style>
+        <Style Selector="TextBlock.earnings.emphasis">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
         <!-- Birbirini dışlayan seçenekler (aralık, grafik türü): düğme görünümlü radyo düğmeleri. -->
         <Style Selector="RadioButton.choice">
             <Setter Property="Padding" Value="12,5" />
@@ -69,6 +77,13 @@
                 <Button Padding="14,8" Command="{Binding OpenWidgetCommand}" IsVisible="{Binding CanOpenWidget}"
                         ToolTip.Tip="{loc:T Analytics.OpenWidget.Tip}">
                     <c:IconLabel Symbol="DesktopPulse" Text="{loc:T Analytics.OpenWidget}" />
+                </Button>
+                <!-- Ekran paylaşırken: bütün tutarlar "•••" (widget'ta da). -->
+                <Button Padding="14,8" Command="{Binding ToggleHideAmountsCommand}" IsVisible="{Binding !HideAmounts}">
+                    <c:IconLabel Symbol="EyeOff" Text="{loc:T Analytics.HideAmounts}" />
+                </Button>
+                <Button Padding="14,8" Command="{Binding ToggleHideAmountsCommand}" IsVisible="{Binding HideAmounts}">
+                    <c:IconLabel Symbol="Eye" Text="{loc:T Analytics.ShowAmounts}" />
                 </Button>
                 <Button Padding="14,8" Command="{Binding RefreshCommand}">
                     <c:IconLabel Symbol="ArrowSync" Text="{loc:T Analytics.Refresh}" />
@@ -248,6 +263,50 @@
                         <CheckBox Grid.Column="1" VerticalAlignment="Center"
                                   Content="{loc:T Analytics.Compare}" IsChecked="{Binding Compare}" />
                     </Grid>
+
+                    <!-- Kazanç: bugün, dün, bu ay, ay sonu; seçili aralıkta brütten tahmini ödemeye -->
+                    <Border Classes="card" Padding="16" Margin="0,0,0,12" IsVisible="{Binding HasSales}">
+                        <StackPanel>
+                            <TextBlock Classes="chartTitle" Text="{loc:T Analytics.Earnings.Title}"
+                                       ToolTip.Tip="{loc:T Analytics.SalesNote}" />
+
+                            <ItemsControl ItemsSource="{Binding EarningsTiles}" Margin="0,10,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Rows="1" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,16,0">
+                                            <TextBlock Classes="statLabel" Text="{Binding Label}" />
+                                            <TextBlock Classes="statValue" Text="{Binding Net}" FontSize="20" />
+                                            <TextBlock Classes="statDetail" Text="{Binding Local}" />
+                                            <TextBlock Classes="statDetail" Text="{Binding Payout}" Opacity="0.55" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Classes="statDetail" Text="{Binding EarningsCaption}" Opacity="0.5" Margin="0,16,0,6" />
+
+                            <ItemsControl ItemsSource="{Binding EarningsRows}" MaxWidth="560" HorizontalAlignment="Left">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="220,140,160">
+                                            <TextBlock Classes="earnings" Classes.emphasis="{Binding Emphasis}" Text="{Binding Label}" Opacity="0.8" />
+                                            <TextBlock Grid.Column="1" Classes="earnings" Classes.emphasis="{Binding Emphasis}" Text="{Binding Value}"
+                                                       HorizontalAlignment="Right" />
+                                            <TextBlock Grid.Column="2" Classes="earnings" Classes.emphasis="{Binding Emphasis}" Text="{Binding Local}"
+                                                       HorizontalAlignment="Right" Opacity="0.7" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Classes="statDetail" Text="{Binding EarningsNote}" Opacity="0.55" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </Border>
 
                     <!-- Oyuncular -->
                     <Border Classes="card" Padding="16" Margin="0,0,0,12">

@@ -29,15 +29,48 @@ public static class AnalyticsFormat
         _ => value.ToString(CultureInfo.CurrentCulture),
     };
 
-    /// <summary>Şerit için kısa tutar: $227, $1.2K.</summary>
+    /// <summary>
+    /// Ekran paylaşırken tutarlar gizli ("$•••"). Tercih (<see cref="AnalyticsPreferences.HideAmounts"/>)
+    /// sayfa ve widget her yenilendiğinde buraya yazılıyor; grafikler de bunu okuyor.
+    /// </summary>
+    public static bool HideMoney { get; set; }
+
+    private const string Hidden = "•••";
+
+    /// <summary>Şerit için kısa tutar: $227, $1.2K, −$40.</summary>
     public static string CompactUsd(decimal value)
     {
-        var rounded = (int)Math.Round(value);
-        return "$" + (Math.Abs(rounded) < 1000 ? rounded.ToString(CultureInfo.CurrentCulture) : Compact(rounded));
+        if (HideMoney)
+        {
+            return "$" + Hidden;
+        }
+
+        var rounded = (int)Math.Round(Math.Abs(value));
+        return (value < 0 ? "−$" : "$") + (rounded < 1000 ? rounded.ToString(CultureInfo.CurrentCulture) : Compact(rounded));
     }
 
     /// <summary>Steam'in verdiği para birimi dolar; yerel biçimle ama dolar işaretiyle.</summary>
-    public static string Usd(decimal value) => "$" + value.ToString("N2", CultureInfo.CurrentCulture);
+    public static string Usd(decimal value) =>
+        HideMoney ? "$" + Hidden : (value < 0 ? "−$" : "$") + Math.Abs(value).ToString("N2", CultureInfo.CurrentCulture);
+
+    /// <summary>Kullanıcının para birimindeki yaklaşık karşılık: "≈ ₺11,270"; yoksa boş.</summary>
+    public static string Local(decimal? amount, string? currency)
+    {
+        if (amount is not { } value || currency is null)
+        {
+            return "";
+        }
+
+        var symbol = Currencies.SymbolOf(currency);
+
+        if (HideMoney)
+        {
+            return "≈ " + symbol + Hidden;
+        }
+
+        var abs = Math.Abs(value);
+        return "≈ " + (value < 0 ? "−" : "") + symbol + abs.ToString(abs >= 100 ? "N0" : "N2", CultureInfo.CurrentCulture);
+    }
 
     public static string Sales(SalesTotals totals) =>
         $"{Usd(totals.NetUsd)} · {AppLocalizer.Instance.Format("Analytics.Units", Count(totals.Units))}";
@@ -144,7 +177,8 @@ public sealed partial class AnalyticsCard(AnalyticsTarget target) : ObservableOb
     [ObservableProperty]
     private IReadOnlyList<double> _salesSeries = [];
 
-    public void Apply(AppAnalytics data, bool hasKey)
+    /// <param name="rates">Kullanıcının para birimi; bugünkü satışın yaklaşık karşılığı için. Null: dolar.</param>
+    public void Apply(AppAnalytics data, bool hasKey, ExchangeRates? rates = null)
     {
         var players = data.Players;
 
@@ -183,6 +217,11 @@ public sealed partial class AnalyticsCard(AnalyticsTarget target) : ObservableOb
             // Bugün büyük rakamla gösteriliyor; listede tekrar edilmiyor.
             SalesTodayText = AnalyticsFormat.Usd(sales.Today.NetUsd);
             SalesTodayDetail = AppLocalizer.Instance.Format("Analytics.Units", AnalyticsFormat.Count(sales.Today.Units));
+
+            if (rates?.Latest is { } rate && sales.Today.NetUsd != 0)
+            {
+                SalesTodayDetail += " · " + AnalyticsFormat.Local(sales.Today.NetUsd * rate, rates.Currency);
+            }
             SalesRows =
             [
                 new(AppLocalizer.Instance.Get("Analytics.Sales.Yesterday"), AnalyticsFormat.Sales(sales.Yesterday)),
@@ -216,6 +255,7 @@ public sealed partial class AnalyticsCard(AnalyticsTarget target) : ObservableOb
 /// </summary>
 public sealed partial class AnalyticsViewModel : ObservableObject
 {
+    private readonly AnalyticsServices _analytics;
     private readonly AnalyticsService _service;
     private readonly AnalyticsRefresher _refresher;
     private readonly ProfileRepository _profiles;
@@ -225,19 +265,19 @@ public sealed partial class AnalyticsViewModel : ObservableObject
 
     /// <param name="widgetLauncher">Widget'ın içinde gösterilirken null: düğme gizleniyor.</param>
     public AnalyticsViewModel(
-        AnalyticsService service,
+        AnalyticsServices analytics,
         AnalyticsRefresher refresher,
         ProfileRepository profiles,
         SteamImageService images,
-        SteamFinancialKeyStore keys,
         IWidgetLauncher? widgetLauncher = null)
     {
         _widgetLauncher = widgetLauncher;
-        _service = service;
+        _analytics = analytics;
+        _service = analytics.Service;
         _refresher = refresher;
         _profiles = profiles;
         _images = images;
-        _keys = keys;
+        _keys = analytics.Keys;
 
         refresher.Updated += async (_, _) =>
         {
@@ -284,6 +324,10 @@ public sealed partial class AnalyticsViewModel : ObservableObject
     [ObservableProperty]
     private string _updatedText = "";
 
+    /// <summary>Ekran paylaşırken tutarlar gizli; tercih kalıcı ve widget'la ortak.</summary>
+    [ObservableProperty]
+    private bool _hideAmounts;
+
     public async Task LoadAsync()
     {
         Detail = null;
@@ -328,10 +372,17 @@ public sealed partial class AnalyticsViewModel : ObservableObject
         _plan = plan;
         HasKey = plan.Scope.Accounts.Count > 0;
 
+        // Tercihler ayarlarda ya da widget'ta değişmiş olabilir.
+        var preferences = await _analytics.Preferences.LoadAsync();
+        HideAmounts = AnalyticsFormat.HideMoney = preferences.HideAmounts;
+
+        // Kartlarda bugünkü satışın karşılığı en son kurla; kur yoksa yalnızca dolar.
+        var rates = HasKey ? await _analytics.Rates.GetAsync(preferences.EffectiveCurrency, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)) : null;
+
         foreach (var card in Cards.ToList())
         {
             var account = plan.AccountOfApp.GetValueOrDefault(card.AppId);
-            card.Apply(await _service.GetAsync(card.AppId, account), hasKey: account is not null);
+            card.Apply(await _service.GetAsync(card.AppId, account), hasKey: account is not null, rates);
         }
 
         var state = await _service.GetStateAsync();
@@ -367,9 +418,18 @@ public sealed partial class AnalyticsViewModel : ObservableObject
     private async Task OpenDetailsAsync(AnalyticsCard card)
     {
         var account = _plan?.AccountOfApp.GetValueOrDefault(card.AppId);
-        var detail = new AnalyticsDetailViewModel(card, _service, account, () => Detail = null);
+        var detail = new AnalyticsDetailViewModel(card, _analytics, account, _analytics.Preferences.Current.EffectiveCurrency, () => Detail = null);
         Detail = detail;
         await detail.LoadAsync();
+    }
+
+    [RelayCommand]
+    private async Task ToggleHideAmountsAsync()
+    {
+        _analytics.Preferences.Current.HideAmounts = !HideAmounts;
+        await _analytics.Preferences.SaveAsync();
+        await ReloadAsync();
+        Detail?.Refresh();
     }
 
     public bool CanOpenWidget => _widgetLauncher is not null;

@@ -224,6 +224,9 @@ public sealed partial class WidgetViewModel(
 
     private readonly JsonFileStore<WidgetSettings> _store = new(layout.WidgetSettingsFile, () => new WidgetSettings());
 
+    /// <summary>Ana uygulamayla ortak tercihler: tutarları gizleme ana uygulamada açılıyor.</summary>
+    private readonly AnalyticsPreferencesStore _preferences = new(layout.AnalyticsSettingsFile);
+
     public ObservableCollection<WidgetItem> Items { get; } = [];
 
     public IReadOnlyList<AnalyticsTarget> Targets { get; private set; } = [];
@@ -268,6 +271,7 @@ public sealed partial class WidgetViewModel(
 
         Targets = AnalyticsTargets.From(profiles.Profiles);
         Plan = AnalyticsPlan.Build(Targets, keys.Read);
+        AnalyticsFormat.HideMoney = (await _preferences.LoadAsync()).HideAmounts;
 
         var pinned = PinnedTargets().ToList();
 

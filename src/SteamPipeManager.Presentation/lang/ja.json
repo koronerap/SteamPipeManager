@@ -513,6 +513,27 @@
     "Analytics.Chart.NoData": "この期間のデータはありません",
     "Analytics.Chart.Gaps": "線が途切れている部分は、アプリとウィジェットが閉じていたためデータがありません。より古い、または完全な履歴は SteamDB で確認できます。",
     "Analytics.OpenSteamDb": "SteamDB の履歴",
-    "Analytics.OpenStore": "ストアページ"
+    "Analytics.OpenStore": "ストアページ",
+    "Analytics.HideAmounts": "金額を隠す",
+    "Analytics.ShowAmounts": "金額を表示",
+    "Analytics.Earnings.Title": "収益",
+    "Analytics.Earnings.Month": "今月",
+    "Analytics.Earnings.Projection": "月末（推定）",
+    "Analytics.Earnings.Payout": "支払い ≈ {0}",
+    "Analytics.Earnings.Gross": "総売上",
+    "Analytics.Earnings.Returns": "返金（{0}）",
+    "Analytics.Earnings.Tax": "税金",
+    "Analytics.Earnings.Net": "純額",
+    "Analytics.Earnings.SteamCut": "Steam の取り分（推定）",
+    "Analytics.Earnings.Share": "推定支払額",
+    "Analytics.Earnings.Caption": "選択期間: 直近 {0} 日 · 太平洋時間の日付",
+    "Analytics.Earnings.Note": "推定値です: Steam の月次レポートのチャージバックや調整は含まれません。Steam の取り分は各売上行のティアに従います（あなたの取り分 70%、75%、80%）。他の通貨はその日のレートで換算します。",
+    "Analytics.Earnings.Upgrading": "以前の {0} 日分の詳細をまだダウンロード中です。それまでその日は返金・税金が表示されず、取り分 70% とみなします。",
+    "Analytics.SalesMode.Payout": "支払い",
+    "Analytics.Chart.Payout": "推定支払額",
+    "Settings.Currency": "通貨",
+    "Settings.Currency.Hint": "売上金額をこの通貨でも表示します。日次レートは frankfurter.dev から取得し、送信するのは通貨コードと日付のみです。",
+    "Settings.Currency.Auto": "自動（{0}）",
+    "Settings.Currency.UsdOnly": "米ドルのみ（USD）"
   }
 }

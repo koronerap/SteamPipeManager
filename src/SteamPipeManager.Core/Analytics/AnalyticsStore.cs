@@ -54,10 +54,26 @@ public sealed class WishlistLedger
     public DateTimeOffset? LastCheckedAt { get; set; }
 }
 
-/// <summary>Bir günün bir app'e ait satış satırı.</summary>
-public sealed record SalesRow(int Units, decimal NetUsd, decimal GrossUsd)
+/// <summary>
+/// Bir günün bir app'e ait satış toplamı (özet). Ayrıntılı satırlar ayrı, aylık dosyalarda
+/// (<see cref="SalesMonth"/>).
+/// </summary>
+/// <param name="ShareUsd">
+/// Tahmini ortak payı. Ayrıntılar inmeden önce kaydedilmiş günlerde yok; o günlerde
+/// temel pay (%70) varsayılıyor.
+/// </param>
+public sealed record SalesRow(int Units, decimal NetUsd, decimal GrossUsd, decimal ReturnsUsd = 0, decimal TaxUsd = 0, decimal? ShareUsd = null)
 {
-    public SalesTotals Totals => new(Units, NetUsd, GrossUsd);
+    public SalesTotals Totals => new(Units, NetUsd, GrossUsd, ReturnsUsd, TaxUsd, ShareUsd ?? Math.Round(NetUsd * SteamRevenueShare.Base, 4));
+
+    public static SalesRow Of(SalesTotals totals) =>
+        new(totals.Units, totals.NetUsd, totals.GrossUsd, totals.ReturnsUsd, totals.TaxUsd, totals.ShareUsd);
+}
+
+/// <summary>Bir hesabın bir ayının satış satırları, günlere (Pasifik, <c>yyyy-MM-dd</c>) göre.</summary>
+public sealed class SalesMonth
+{
+    public Dictionary<string, List<SalesLine>> Days { get; set; } = [];
 }
 
 /// <summary>
@@ -80,6 +96,18 @@ public sealed class SalesLedger
     public Dictionary<uint, string> AppNames { get; set; } = [];
 
     public DateTimeOffset? LastCheckedAt { get; set; }
+
+    /// <summary>
+    /// Dosyanın biçimi. 1: yalnızca özet (adet, net, brüt). 2: özetle birlikte Steam'in
+    /// satırları da saklanıyor (iade, vergi, gelir payı, ülke, platform…).
+    /// </summary>
+    public int Version { get; set; } = 1;
+
+    /// <summary>
+    /// Özeti olan ama satırları henüz inmemiş günler (sürüm 1'den geçiş). Özetleri
+    /// gösterilmeye devam ediyor; yalnızca ayrıntıları eksik.
+    /// </summary>
+    public List<string> UpgradeDates { get; set; } = [];
 }
 
 /// <summary>Bir finans hesabının (anahtarın) son durumu.</summary>
@@ -139,6 +167,34 @@ public sealed class AnalyticsStore(string directory)
 
     public Task SaveSalesAsync(string accountId, SalesLedger ledger, CancellationToken ct = default) =>
         Sales(accountId).SaveAsync(ledger, ct);
+
+    private JsonFileStore<SalesMonth> SalesMonthFile(string accountId, string month) =>
+        new(Path.Combine(Directory, "sales", accountId, $"{month}.json"), () => new SalesMonth(), JsonFileStore<SalesMonth>.CompactOptions);
+
+    private JsonFileStore<SalesLookups> SalesLookupsFile(string accountId) =>
+        new(Path.Combine(Directory, "sales", accountId, "lookups.json"), () => new SalesLookups());
+
+    /// <param name="month"><c>yyyy-MM</c>.</param>
+    public Task<SalesMonth> LoadSalesMonthAsync(string accountId, string month, CancellationToken ct = default) =>
+        LoadOrEmptyAsync(SalesMonthFile(accountId, month), () => new SalesMonth(), ct);
+
+    public Task SaveSalesMonthAsync(string accountId, string month, SalesMonth lines, CancellationToken ct = default) =>
+        SalesMonthFile(accountId, month).SaveAsync(lines, ct);
+
+    public Task<SalesLookups> LoadSalesLookupsAsync(string accountId, CancellationToken ct = default) =>
+        LoadOrEmptyAsync(SalesLookupsFile(accountId), () => new SalesLookups(), ct);
+
+    public Task SaveSalesLookupsAsync(string accountId, SalesLookups lookups, CancellationToken ct = default) =>
+        SalesLookupsFile(accountId).SaveAsync(lookups, ct);
+
+    private JsonFileStore<ExchangeRateLedger> Rates(string currency) =>
+        new(Path.Combine(Directory, "rates", $"{currency.ToUpperInvariant()}.json"), () => new ExchangeRateLedger(), JsonFileStore<ExchangeRateLedger>.CompactOptions);
+
+    public Task<ExchangeRateLedger> LoadRatesAsync(string currency, CancellationToken ct = default) =>
+        LoadOrEmptyAsync(Rates(currency), () => new ExchangeRateLedger(), ct);
+
+    public Task SaveRatesAsync(string currency, ExchangeRateLedger ledger, CancellationToken ct = default) =>
+        Rates(currency).SaveAsync(ledger, ct);
 
     public Task<AnalyticsState> LoadStateAsync(CancellationToken ct = default) =>
         LoadOrEmptyAsync(State, () => new AnalyticsState(), ct);

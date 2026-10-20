@@ -513,6 +513,27 @@
     "Analytics.Chart.NoData": "No data in this range",
     "Analytics.Chart.Gaps": "Where the line breaks, the app and the widget were closed, so those hours have no data. For older or complete history, look at SteamDB.",
     "Analytics.OpenSteamDb": "History on SteamDB",
-    "Analytics.OpenStore": "Store page"
+    "Analytics.OpenStore": "Store page",
+    "Analytics.HideAmounts": "Hide amounts",
+    "Analytics.ShowAmounts": "Show amounts",
+    "Analytics.Earnings.Title": "Earnings",
+    "Analytics.Earnings.Month": "This month",
+    "Analytics.Earnings.Projection": "Month end (estimate)",
+    "Analytics.Earnings.Payout": "Payout ≈ {0}",
+    "Analytics.Earnings.Gross": "Gross sales",
+    "Analytics.Earnings.Returns": "Refunds ({0})",
+    "Analytics.Earnings.Tax": "Tax",
+    "Analytics.Earnings.Net": "Net",
+    "Analytics.Earnings.SteamCut": "Steam's share (estimate)",
+    "Analytics.Earnings.Share": "Estimated payout",
+    "Analytics.Earnings.Caption": "Selected range: last {0} days · Pacific days",
+    "Analytics.Earnings.Note": "Estimates: chargebacks and adjustments in Steam's monthly report are not included. Steam's share follows the tier on each sales row (70%, 75% or 80% to you); other currencies use each day's rate.",
+    "Analytics.Earnings.Upgrading": "Details for {0} older days are still downloading; until then those days show no refunds or tax and assume a 70% share.",
+    "Analytics.SalesMode.Payout": "Payout",
+    "Analytics.Chart.Payout": "Estimated payout",
+    "Settings.Currency": "Currency",
+    "Settings.Currency.Hint": "Sales amounts also show in this currency. Daily rates come from frankfurter.dev; only the currency code and dates are sent.",
+    "Settings.Currency.Auto": "Automatic ({0})",
+    "Settings.Currency.UsdOnly": "US dollars only (USD)"
   }
 }

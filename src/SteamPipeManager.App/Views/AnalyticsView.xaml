@@ -49,6 +49,17 @@
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
+        <!-- Kazanç tablosunda ara toplamlar (net, tahmini ödeme) kalın. -->
+        <Style x:Key="EarningsCell" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Margin" Value="0,2" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Emphasis}" Value="True">
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Birbirini dışlayan seçenekler (aralık, grafik türü): düğme görünümlü radyo düğmeleri. -->
         <ItemsPanelTemplate x:Key="ChoicePanel">
             <StackPanel Orientation="Horizontal" />
@@ -84,6 +95,17 @@
                            ToolTip="{loc:T Analytics.OpenWidget.Tip}"
                            Command="{Binding OpenWidgetCommand}"
                            Visibility="{Binding CanOpenWidget, Converter={StaticResource BoolToVis}}" />
+                <!-- Ekran paylaşırken: bütün tutarlar "•••" (widget'ta da). -->
+                <ui:Button Padding="14,8" Margin="0,0,8,0"
+                           Icon="{ui:SymbolIcon EyeOff24}"
+                           Content="{loc:T Analytics.HideAmounts}"
+                           Command="{Binding ToggleHideAmountsCommand}"
+                           Visibility="{Binding HideAmounts, Converter={StaticResource BoolToVisInverted}}" />
+                <ui:Button Padding="14,8" Margin="0,0,8,0"
+                           Icon="{ui:SymbolIcon Eye24}"
+                           Content="{loc:T Analytics.ShowAmounts}"
+                           Command="{Binding ToggleHideAmountsCommand}"
+                           Visibility="{Binding HideAmounts, Converter={StaticResource BoolToVis}}" />
                 <ui:Button Padding="14,8"
                            Icon="{ui:SymbolIcon ArrowSync24}"
                            Content="{loc:T Analytics.Refresh}"
@@ -301,6 +323,53 @@
                     <CheckBox HorizontalAlignment="Right" VerticalAlignment="Center"
                               Content="{loc:T Analytics.Compare}" IsChecked="{Binding Compare}" />
                 </Grid>
+
+                <!-- Kazanç: bugün, dün, bu ay, ay sonu; seçili aralıkta brütten tahmini ödemeye -->
+                <ui:Card Padding="16" Margin="0,0,0,12" Visibility="{Binding HasSales, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="{loc:T Analytics.Earnings.Title}" Style="{StaticResource ChartTitle}"
+                                   ToolTip="{loc:T Analytics.SalesNote}" />
+
+                        <ItemsControl ItemsSource="{Binding EarningsTiles}" Margin="0,10,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Rows="1" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,16,0">
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource StatLabel}" />
+                                        <TextBlock Text="{Binding Net}" Style="{StaticResource StatValue}" FontSize="20" />
+                                        <TextBlock Text="{Binding Local}" Style="{StaticResource StatDetail}" />
+                                        <TextBlock Text="{Binding Payout}" Style="{StaticResource StatDetail}" Opacity="0.55" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="{Binding EarningsCaption}" Style="{StaticResource StatDetail}" Opacity="0.5" Margin="0,16,0,6" />
+
+                        <ItemsControl ItemsSource="{Binding EarningsRows}" MaxWidth="560" HorizontalAlignment="Left">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="220" />
+                                            <ColumnDefinition Width="140" />
+                                            <ColumnDefinition Width="160" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource EarningsCell}" Opacity="0.8" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Value}" Style="{StaticResource EarningsCell}" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Local}" Style="{StaticResource EarningsCell}" HorizontalAlignment="Right" Opacity="0.7" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="{Binding EarningsNote}" Style="{StaticResource StatDetail}" Opacity="0.55" Margin="0,10,0,0" />
+                    </StackPanel>
+                </ui:Card>
 
                 <!-- Oyuncular -->
                 <ui:Card Padding="16" Margin="0,0,0,12">

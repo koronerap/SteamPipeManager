@@ -58,6 +58,9 @@ public sealed class AnalyticsTests : IDisposable
         public Task<SalesStats?> GetPartnerSalesAsync() => service.GetPartnerSalesAsync(scope.Accounts[0].Id);
 
         public Task<AnalyticsState> GetStateAsync() => service.GetStateAsync();
+
+        public Task<AppHistory> GetHistoryAsync(uint appId) =>
+            service.GetHistoryAsync(appId, scope.Accounts.FirstOrDefault(a => a.AppIds.Contains(appId))?.Id);
     }
 
     // ---------------------------------------------------------------- oyuncu sayısı
@@ -222,6 +225,9 @@ public sealed class AnalyticsTests : IDisposable
 
     private DateOnly PacificToday => AnalyticsService.PacificDay(_clock.Now);
 
+    /// <summary>Adet, net ve brüt; tahmini pay ve iadeler ayrı testlerde.</summary>
+    private static (int, decimal, decimal) Basic(SalesTotals totals) => (totals.Units, totals.NetUsd, totals.GrossUsd);
+
     private void SomeSales()
     {
         var today = PacificToday;
@@ -253,13 +259,13 @@ public sealed class AnalyticsTests : IDisposable
         await Service().RefreshAsync();
         var sales = (await Service().GetAsync(Game)).Sales!;
 
-        Assert.Equal(new SalesTotals(2, 14.25m, 20m), sales.Today);
-        Assert.Equal(new SalesTotals(8, 72.5m, 100m), sales.Yesterday);
-        Assert.Equal(new SalesTotals(10, 86.75m, 120m), sales.Lifetime);
+        Assert.Equal((2, 14.25m, 20m), Basic(sales.Today));
+        Assert.Equal((8, 72.5m, 100m), Basic(sales.Yesterday));
+        Assert.Equal((10, 86.75m, 120m), Basic(sales.Lifetime));
         Assert.True(sales.IsComplete);
 
         // Ortak toplam oyun içi satışı da içeriyor.
-        Assert.Equal(new SalesTotals(13, 91.75m, 126m), (await Service().GetPartnerSalesAsync())!.Lifetime);
+        Assert.Equal((13, 91.75m, 126m), Basic((await Service().GetPartnerSalesAsync())!.Lifetime));
     }
 
     /// <summary>
@@ -282,8 +288,94 @@ public sealed class AnalyticsTests : IDisposable
         _clock.Advance(TimeSpan.FromHours(3));
         await Service().RefreshAsync();
 
-        Assert.Equal(new SalesTotals(7, 63m, 100m), (await Service().GetAsync(Game)).Sales!.Yesterday);
+        Assert.Equal((7, 63m, 100m), Basic((await Service().GetAsync(Game)).Sales!.Yesterday));
         Assert.Equal(["0", "101"], _steam.HighwatermarksSent);
+    }
+
+    /// <summary>
+    /// Steam'in satırları ayrıntısıyla saklanıyor: iade, vergi, ülke, platform, indirim, anahtar
+    /// isteği ve adları. Tahmini pay her satırın kendi kademesiyle (%70, %80).
+    /// </summary>
+    [Fact]
+    public async Task Sales_rows_are_kept_with_refunds_tax_and_the_revenue_share_tier()
+    {
+        var today = PacificToday;
+        _steam.Changes.Add((100, today));
+        _steam.Sales[today] =
+        [
+            """{"line_item_type":"Package","package_sale_type":"Steam","packageid":1,"primary_appid":4000,"country_code":"TR","platform":"Windows","currency":"TRY","base_price":"50000","sale_price":"40000","combined_discount_id":7,"gross_units_sold":10,"gross_units_returned":-1,"net_units_sold":9,"gross_sales_usd":"100.0000","gross_returns_usd":"-10.0000","net_tax_usd":"8.0000","net_sales_usd":"82.0000","additional_revenue_share_tier":0}""",
+            """{"line_item_type":"Package","package_sale_type":"Steam","packageid":1,"primary_appid":4000,"country_code":"US","platform":"Mac","gross_units_sold":2,"net_units_sold":2,"gross_sales_usd":"20.0000","net_sales_usd":"20.0000","additional_revenue_share_tier":2}""",
+            """{"line_item_type":"Package","package_sale_type":"Retail","packageid":2,"primary_appid":4000,"key_request_id":55,"gross_units_activated":30}""",
+        ];
+        _steam.SalesLookups =
+            ""","package_info":[{"packageid":1,"package_name":"Test Game"}],"country_info":[{"country_code":"TR","country_name":"Turkey","region":"Europe"}],"combined_discount_info":[{"combined_discount_id":7,"combined_discount_name":"Autumn Sale","total_discount_percentage":20}],"key_request_info":[{"key_request_id":55,"key_request_notes":"Press"}]""";
+
+        await Service().RefreshAsync();
+
+        var totals = (await Service().GetAsync(Game)).Sales!.Today;
+        Assert.Equal((11, 102m, 120m), Basic(totals));
+        Assert.Equal(10m, totals.ReturnsUsd);
+        Assert.Equal(8m, totals.TaxUsd);
+        Assert.Equal(82m * 0.70m + 20m * 0.80m, totals.ShareUsd);
+
+        var store = new AnalyticsStore(_dir);
+        var account = SteamFinancialKeyStore.Fingerprint(Key);
+        var lines = (await store.LoadSalesMonthAsync(account, today.ToString("yyyy-MM"))).Days[SteamWebApi.DateText(today)];
+
+        Assert.Equal(3, lines.Count);
+        Assert.Equal(("TR", "Windows", 7, 1, 10m), (lines[0].Country, lines[0].Platform, lines[0].Discount, lines[0].Returned, lines[0].Returns));
+        Assert.Equal((SalesLineKind.Retail, 30, 55u), (lines[2].Kind, lines[2].Activated, lines[2].KeyRequest));
+
+        var lookups = await store.LoadSalesLookupsAsync(account);
+        Assert.Equal(new SalesDiscountInfo("Autumn Sale", 20), lookups.Discounts[7]);
+        Assert.Equal("Turkey", lookups.Countries["TR"].Name);
+        Assert.Equal("Test Game", lookups.Packages[1]);
+        Assert.Equal("Press", lookups.KeyRequests[55]);
+    }
+
+    /// <summary>
+    /// Önceki sürümün dosyasında yalnızca özet var. Satırlar arka planda iniyor; bu sırada
+    /// özetler gösterilmeye devam ediyor (pay %70 varsayılıyor), sonra kesin kademeyle.
+    /// </summary>
+    [Fact]
+    public async Task An_old_sales_file_gets_its_rows_without_losing_its_totals()
+    {
+        var old = PacificToday.AddDays(-30);
+        var store = new AnalyticsStore(_dir);
+        var account = SteamFinancialKeyStore.Fingerprint(Key);
+
+        await store.SaveSalesAsync(account, new SalesLedger
+        {
+            Highwatermark = 500,
+            LastCheckedAt = _clock.Now,
+            Days = { [SteamWebApi.DateText(old)] = new() { [Game] = new SalesRow(5, 50m, 60m) } },
+        });
+
+        _steam.Sales[old] =
+        [
+            """{"line_item_type":"Package","packageid":1,"primary_appid":4000,"gross_units_sold":6,"gross_units_returned":-1,"net_units_sold":5,"gross_sales_usd":"60.0000","gross_returns_usd":"-6.0000","net_tax_usd":"4.0000","net_sales_usd":"50.0000","additional_revenue_share_tier":1}""",
+        ];
+
+        var service = Service();
+        var before = (await service.GetHistoryAsync(Game)).Sales!;
+
+        Assert.Equal(1, before.UpgradingDays);
+        Assert.Equal(35m, Assert.Single(before.Days).Totals.ShareUsd);
+
+        await service.RefreshAsync();
+
+        var after = (await service.GetHistoryAsync(Game)).Sales!;
+        var totals = Assert.Single(after.Days).Totals;
+
+        Assert.Equal(0, after.UpgradingDays);
+        Assert.Equal((5, 50m, 60m), Basic(totals));
+        Assert.Equal(6m, totals.ReturnsUsd);
+        Assert.Equal(37.5m, totals.ShareUsd);
+        Assert.Equal(2, (await store.LoadSalesAsync(account)).Version);
+        Assert.Single((await store.LoadSalesMonthAsync(account, old.ToString("yyyy-MM"))).Days);
+
+        // Değişen günler sorulmadı (aralık dolmadı): yalnızca eski günün satırları istendi.
+        Assert.Equal(0, _steam.Calls("GetChangedDatesForPartner"));
     }
 
     [Fact]
@@ -392,7 +484,7 @@ public sealed class AnalyticsTests : IDisposable
         var state = await service.GetStateAsync();
         Assert.Equal(AnalyticsFailure.InvalidKey, state.Accounts[bad.Id].Failure);
         Assert.Null(state.Accounts[good.Id].Failure);
-        Assert.Equal(new SalesTotals(2, 14.25m, 20m), (await service.GetAsync(Game, good.Id)).Sales!.Today);
+        Assert.Equal((2, 14.25m, 20m), Basic((await service.GetAsync(Game, good.Id)).Sales!.Today));
 
         // Satışlar anahtar başına ayrı dosyada; anahtarın kendisi dosya adında yok.
         Assert.True(File.Exists(Path.Combine(_dir, "sales", $"{good.Id}.json")));
@@ -478,6 +570,9 @@ internal sealed class FakeSteamApi : HttpMessageHandler
 
     public Dictionary<DateOnly, string[]> Sales { get; } = [];
 
+    /// <summary>Satış yanıtına eklenen ad tabloları (package_info, country_info…), JSON parçası olarak.</summary>
+    public string SalesLookups { get; set; } = "";
+
     public int PageSize { get; init; } = 2;
 
     public List<string> Requests { get; } = [];
@@ -546,7 +641,7 @@ internal sealed class FakeSteamApi : HttpMessageHandler
             var results = string.Join(",", page.Select(r => r.Row));
 
             return Task.FromResult(Json(
-                $$$"""{"response":{"results":[{{{results}}}],"app_info":[{"appid":4000,"app_name":"Test Game"}],"max_id":"{{{maxId}}}"}}"""));
+                $$$"""{"response":{"results":[{{{results}}}],"app_info":[{"appid":4000,"app_name":"Test Game"}]{{{SalesLookups}}},"max_id":"{{{maxId}}}"}}"""));
         }
 
         return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));

@@ -54,7 +54,11 @@ public sealed record SalesDayTotals(DateOnly Date, SalesTotals Totals);
 /// <param name="Days">Satışı olan günler, eskiden yeniye; listede olmayan gün satışsız.</param>
 /// <param name="Pending">Değiştiği bildirilip henüz inmemiş günler; bunların sayısı bilinmiyor.</param>
 /// <param name="Today">Satış günleri Pasifik saatine göre.</param>
-public sealed record SalesHistory(IReadOnlyList<SalesDayTotals> Days, IReadOnlySet<DateOnly> Pending, DateOnly Today);
+/// <param name="UpgradingDays">
+/// Eski biçimden kalan, ayrıntısı (iade, vergi, gelir payı) henüz inmemiş gün sayısı.
+/// Özetleri doğru; payları %70 varsayılıyor.
+/// </param>
+public sealed record SalesHistory(IReadOnlyList<SalesDayTotals> Days, IReadOnlySet<DateOnly> Pending, DateOnly Today, int UpgradingDays = 0);
 
 /// <summary>
 /// Bir app'in grafikler için bütün geçmişi, önbellekten. Oyuncu sayıları iki parça: son
@@ -429,25 +433,61 @@ public sealed class AnalyticsService(
         await store.SaveSalesAsync(account.Id, ledger, ct).ConfigureAwait(false);
     }
 
+    /// <summary>Satış dosyasının şimdiki biçimi (bkz. <see cref="SalesLedger.Version"/>).</summary>
+    internal const int SalesVersion = 2;
+
+    /// <summary>
+    /// Değişen günleri, sonra (eski biçimden geçişte) satırları henüz inmemiş günleri
+    /// indirir; ikisi de en yeniden geriye. Günün satırları aylık dosyasına, özeti ana
+    /// dosyaya; özet en son yazılıyor: gün ancak satırları kaydedilince bitmiş sayılıyor.
+    /// </summary>
     private async Task DownloadPendingSalesAsync(FinancialAccount account, CancellationToken ct)
     {
         var ledger = await store.LoadSalesAsync(account.Id, ct).ConfigureAwait(false);
 
-        if (ledger.PendingDates.Count == 0)
+        // Eski biçim: özeti olan günlerin satırları da indirilecek. Özetler bu sırada
+        // gösterilmeye devam ediyor (bekleyen değişen günlerden farklı olarak).
+        if (ledger.Version < SalesVersion)
+        {
+            ledger.UpgradeDates = [.. ledger.Days.Keys.Except(ledger.PendingDates).OrderByDescending(d => d, StringComparer.Ordinal)];
+            ledger.Version = SalesVersion;
+            await store.SaveSalesAsync(account.Id, ledger, ct).ConfigureAwait(false);
+        }
+
+        if (ledger.PendingDates.Count == 0 && ledger.UpgradeDates.Count == 0)
         {
             return;
         }
 
+        var months = new Dictionary<string, SalesMonth>();
+        var lookups = await store.LoadSalesLookupsAsync(account.Id, ct).ConfigureAwait(false);
         var written = 0;
+
+        async Task SaveAsync()
+        {
+            foreach (var (month, lines) in months)
+            {
+                await store.SaveSalesMonthAsync(account.Id, month, lines, ct).ConfigureAwait(false);
+            }
+
+            await store.SaveSalesLookupsAsync(account.Id, lookups, ct).ConfigureAwait(false);
+            await store.SaveSalesAsync(account.Id, ledger, ct).ConfigureAwait(false);
+        }
+
+        // En yeni günler önce: bugün ve dün hemen görünsün.
+        var queue = ledger.PendingDates.OrderByDescending(d => d, StringComparer.Ordinal)
+            .Concat(ledger.UpgradeDates.OrderByDescending(d => d, StringComparer.Ordinal))
+            .Distinct()
+            .ToList();
 
         try
         {
-            // En yeni günler önce: bugün ve dün hemen görünsün.
-            foreach (var text in ledger.PendingDates.OrderByDescending(d => d, StringComparer.Ordinal).ToList())
+            foreach (var text in queue)
             {
                 if (SteamWebApi.Date(text) is not { } date)
                 {
                     ledger.PendingDates.Remove(text);
+                    ledger.UpgradeDates.Remove(text);
                     continue;
                 }
 
@@ -455,24 +495,42 @@ public sealed class AnalyticsService(
 
                 // Değişen gün baştan okunuyor ve yerine yazılıyor (Valve: "re-query the
                 // entirety of that date"); üstüne eklenmiyor.
-                ledger.Days[text] = day.ByApp.ToDictionary(p => p.Key, p => new SalesRow(p.Value.Units, p.Value.NetUsd, p.Value.GrossUsd));
+                ledger.Days[text] = day.ByApp.ToDictionary(p => p.Key, p => SalesRow.Of(p.Value));
 
                 foreach (var (appId, name) in day.AppNames)
                 {
                     ledger.AppNames[appId] = name;
                 }
 
+                var monthKey = text[..7];
+
+                if (!months.TryGetValue(monthKey, out var month))
+                {
+                    months[monthKey] = month = await store.LoadSalesMonthAsync(account.Id, monthKey, ct).ConfigureAwait(false);
+                }
+
+                if (day.Lines.Count > 0)
+                {
+                    month.Days[text] = [.. day.Lines];
+                }
+                else
+                {
+                    month.Days.Remove(text);
+                }
+
+                lookups.Merge(day.Lookups);
                 ledger.PendingDates.Remove(text);
+                ledger.UpgradeDates.Remove(text);
 
                 if (++written % SaveEvery == 0)
                 {
-                    await store.SaveSalesAsync(account.Id, ledger, ct).ConfigureAwait(false);
+                    await SaveAsync().ConfigureAwait(false);
                 }
             }
         }
         finally
         {
-            await store.SaveSalesAsync(account.Id, ledger, ct).ConfigureAwait(false);
+            await SaveAsync().ConfigureAwait(false);
         }
     }
 
@@ -544,7 +602,7 @@ public sealed class AnalyticsService(
 
         var pending = ledger.PendingDates.Select(ParseDate).OfType<DateOnly>().ToHashSet();
 
-        return new SalesHistory(days, pending, PacificDay(now));
+        return new SalesHistory(days, pending, PacificDay(now), ledger.Version < SalesVersion ? ledger.Days.Count : ledger.UpgradeDates.Count);
     }
 
     private static DateOnly? ParseDate(string text) =>

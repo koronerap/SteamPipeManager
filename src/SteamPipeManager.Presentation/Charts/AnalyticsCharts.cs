@@ -22,7 +22,12 @@ public enum WishlistChartMode
 
 public enum SalesChartMode
 {
+    /// <summary>Net gelir (iade ve vergi düşülmüş, Steam payı düşülmemiş).</summary>
     Revenue,
+
+    /// <summary>Tahmini ödeme: net × gelir payı.</summary>
+    Payout,
+
     Units,
 }
 
@@ -257,7 +262,12 @@ public static class AnalyticsCharts
             history.Pending.Contains(date) ? null : known.GetValueOrDefault(date, SalesTotals.Zero);
 
         double? Value(DateOnly date) => TotalsOn(date) is { } t
-            ? mode == SalesChartMode.Units ? t.Units : (double)t.NetUsd
+            ? mode switch
+            {
+                SalesChartMode.Units => t.Units,
+                SalesChartMode.Payout => (double)t.ShareUsd,
+                _ => (double)t.NetUsd,
+            }
             : null;
 
         string? Detail(DateOnly date) => TotalsOn(date) is { Units: > 0 } t
@@ -271,7 +281,12 @@ public static class AnalyticsCharts
         var kind = mode == SalesChartMode.Units ? ChartValueKind.Count : ChartValueKind.Usd;
         var series = new List<ChartSeries>
         {
-            new(T(mode == SalesChartMode.Units ? "Analytics.Chart.Units" : "Analytics.Chart.Net"), ChartStyle.Bars, ChartTone.Sales, buckets),
+            new(T(mode switch
+            {
+                SalesChartMode.Units => "Analytics.Chart.Units",
+                SalesChartMode.Payout => "Analytics.Chart.Payout",
+                _ => "Analytics.Chart.Net",
+            }), ChartStyle.Bars, ChartTone.Sales, buckets),
         };
 
         if (compare && range != AnalyticsRange.All)

@@ -28,7 +28,8 @@ public interface ISettingsStore
 /// Saf dosya işi; arayüze dönmesi gereken bir şey yok, ve dönmeye çalışması arayüz
 /// iş parçacığı bir kaydı beklerken kilitlenmeye yol açıyordu.
 /// </summary>
-public sealed class JsonFileStore<T>(string filePath, Func<T> createDefault)
+/// <param name="options">Yoksa <see cref="Options"/>; büyük önbellek dosyaları <see cref="CompactOptions"/> kullanıyor.</param>
+public sealed class JsonFileStore<T>(string filePath, Func<T> createDefault, JsonSerializerOptions? options = null)
     where T : class
 {
     public static readonly JsonSerializerOptions Options = new()
@@ -40,6 +41,18 @@ public sealed class JsonFileStore<T>(string filePath, Func<T> createDefault)
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         Converters = { new JsonStringEnumConverter() },
     };
+
+    /// <summary>
+    /// Çok satırlı önbellekler (satış satırları) için: girintisiz, sıfır ve boş alanlar
+    /// yazılmıyor. Okurken eksik alan varsayılan değerini alıyor.
+    /// </summary>
+    public static readonly JsonSerializerOptions CompactOptions = new(Options)
+    {
+        WriteIndented = false,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+    };
+
+    private readonly JsonSerializerOptions _options = options ?? Options;
 
     public string FilePath { get; } = filePath;
 
@@ -55,7 +68,7 @@ public sealed class JsonFileStore<T>(string filePath, Func<T> createDefault)
 
         try
         {
-            return await JsonSerializer.DeserializeAsync<T>(stream, Options, ct).ConfigureAwait(false)
+            return await JsonSerializer.DeserializeAsync<T>(stream, _options, ct).ConfigureAwait(false)
                    ?? createDefault();
         }
         catch (JsonException ex)
@@ -70,7 +83,7 @@ public sealed class JsonFileStore<T>(string filePath, Func<T> createDefault)
         // JSON çağıranın iş parçacığında, tek seferde üretiliyor. Model arayüzden
         // düzenleniyor; serileştirme yazma ile iç içe ilerleseydi arka planda
         // okunurken arayüz aynı listeyi değiştirebilirdi.
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(value, Options);
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(value, _options);
 
         Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
 

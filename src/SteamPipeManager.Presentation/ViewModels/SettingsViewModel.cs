@@ -112,14 +112,42 @@ public sealed partial class SettingsViewModel(
 
     public bool IsFinancialKeyUnencrypted => !analytics.Keys.IsEncrypted;
 
+    /// <summary>
+    /// Satış tutarlarının yanında gösterilen para birimi. İlki otomatik: kullanıcının
+    /// bulunduğu ülkeninki (Windows'ta "Ülke veya bölge" ayarından).
+    /// </summary>
+    public IReadOnlyList<CurrencyOption> CurrencyOptions { get; } =
+    [
+        new(null, AppLocalizer.Instance.Format("Settings.Currency.Auto", Currencies.OfHomeRegion() ?? "USD")),
+        new("USD", AppLocalizer.Instance.Get("Settings.Currency.UsdOnly")),
+        .. Currencies.Offered.Where(c => c != "USD").Select(c => new CurrencyOption(c, $"{c} ({Currencies.SymbolOf(c).Trim()})")),
+    ];
+
+    [ObservableProperty]
+    private CurrencyOption? _selectedCurrency;
+
+    partial void OnSelectedCurrencyChanged(CurrencyOption? value)
+    {
+        if (_loading || value is null)
+        {
+            return;
+        }
+
+        analytics.Preferences.Current.Currency = value.Code;
+        _ = analytics.Preferences.SaveAsync();
+    }
+
     public string ProfilesFile => layout.ProfilesFile;
 
     public async Task LoadAsync()
     {
         _settings = await store.LoadAsync();
 
+        var preferences = await analytics.Preferences.LoadAsync();
+
         _loading = true;
         CheckForUpdates = _settings.CheckForUpdates;
+        SelectedCurrency = CurrencyOptions.FirstOrDefault(o => o.Code == preferences.Currency) ?? CurrencyOptions[0];
         _loading = false;
 
         SteamCmdPath = _settings.SteamCmdPath ?? "";
@@ -449,4 +477,10 @@ public sealed partial class FinancialKeyRow(
     private void MoveLegacy() => moveLegacy(this);
 
     public override string ToString() => ProfileName;
+}
+
+/// <summary>Ayarlardaki para birimi seçeneği; <see cref="Code"/> null ise otomatik.</summary>
+public sealed record CurrencyOption(string? Code, string Label)
+{
+    public override string ToString() => Label;
 }

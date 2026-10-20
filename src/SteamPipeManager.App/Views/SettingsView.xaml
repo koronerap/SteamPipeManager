@@ -201,6 +201,24 @@ ToolTip="{loc:T Settings.SteamCmd.Download.Tip}"
                                Icon="{ui:SymbolIcon Open24}"
                                Content="{loc:T Settings.Financial.OpenGroups}"
                                Command="{Binding OpenFinancialGroupsPageCommand}" />
+
+                    <!-- Satış tutarlarının yanında gösterilen para birimi -->
+                    <Border BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{loc:T Settings.Currency}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" MinWidth="220"
+                                          ItemsSource="{Binding CurrencyOptions}" DisplayMemberPath="Label"
+                                          SelectedItem="{Binding SelectedCurrency}"
+                                          AutomationProperties.Name="{loc:T Settings.Currency}" />
+                            </Grid>
+                            <TextBlock Text="{loc:T Settings.Currency.Hint}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ui:Card>
 

@@ -157,6 +157,25 @@
                     <Button Classes="subtle" HorizontalAlignment="Left" Margin="0,8,0,0" Command="{Binding OpenFinancialGroupsPageCommand}">
                         <c:IconLabel Symbol="Open" Text="{loc:T Settings.Financial.OpenGroups}" />
                     </Button>
+
+                    <!-- Satış tutarlarının yanında gösterilen para birimi -->
+                    <Border BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="{loc:T Settings.Currency}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" MinWidth="220"
+                                          ItemsSource="{Binding CurrencyOptions}" SelectedItem="{Binding SelectedCurrency}"
+                                          AutomationProperties.Name="{loc:T Settings.Currency}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </Grid>
+                            <TextBlock Text="{loc:T Settings.Currency.Hint}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
 

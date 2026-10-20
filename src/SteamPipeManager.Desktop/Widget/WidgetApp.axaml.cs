@@ -83,8 +83,7 @@ internal sealed class WidgetHost
         // anahtarıyla yenileniyor.
         _refresher = new AnalyticsRefresher(analytics.Service, () => _widget.Plan.Scope);
 
-        _analytics = new AnalyticsViewModel(
-            analytics.Service, _refresher, profiles, new SteamImageService(layout.CoversDirectory), analytics.Keys);
+        _analytics = new AnalyticsViewModel(analytics, _refresher, profiles, new SteamImageService(layout.CoversDirectory));
 
         _strip = new StripWindow { DataContext = _widget };
         _strip.DetailsRequested += (_, _) => _ = ShowDetailsAsync();

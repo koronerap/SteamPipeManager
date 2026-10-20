@@ -513,6 +513,27 @@
     "Analytics.Chart.NoData": "Bu aralıkta veri yok",
     "Analytics.Chart.Gaps": "Çizginin kesildiği yerlerde uygulama ve widget kapalıydı; o saatlerin verisi yok. Daha eski ya da eksiksiz geçmiş için SteamDB'ye bakabilirsin.",
     "Analytics.OpenSteamDb": "SteamDB'de geçmiş",
-    "Analytics.OpenStore": "Mağaza sayfası"
+    "Analytics.OpenStore": "Mağaza sayfası",
+    "Analytics.HideAmounts": "Tutarları gizle",
+    "Analytics.ShowAmounts": "Tutarları göster",
+    "Analytics.Earnings.Title": "Kazanç",
+    "Analytics.Earnings.Month": "Bu ay",
+    "Analytics.Earnings.Projection": "Ay sonu (tahmini)",
+    "Analytics.Earnings.Payout": "Ödeme ≈ {0}",
+    "Analytics.Earnings.Gross": "Brüt satış",
+    "Analytics.Earnings.Returns": "İadeler ({0})",
+    "Analytics.Earnings.Tax": "Vergi",
+    "Analytics.Earnings.Net": "Net",
+    "Analytics.Earnings.SteamCut": "Steam payı (tahmini)",
+    "Analytics.Earnings.Share": "Tahmini ödeme",
+    "Analytics.Earnings.Caption": "Seçili aralık: son {0} gün · Pasifik günleri",
+    "Analytics.Earnings.Note": "Tahmini: Steam'in aylık raporundaki chargeback ve düzeltmeler dahil değil. Steam payı her satış satırındaki kademeden (sana %70, %75 ya da %80); diğer para birimleri o günün kuruyla.",
+    "Analytics.Earnings.Upgrading": "Eski {0} günün ayrıntıları hâlâ iniyor; o günlerde iade ve vergi görünmüyor, pay %70 sayılıyor.",
+    "Analytics.SalesMode.Payout": "Ödeme",
+    "Analytics.Chart.Payout": "Tahmini ödeme",
+    "Settings.Currency": "Para birimi",
+    "Settings.Currency.Hint": "Satış tutarları bu para biriminde de gösterilir. Günlük kurlar frankfurter.dev'den; yalnızca para birimi kodu ve tarihler gönderilir.",
+    "Settings.Currency.Auto": "Otomatik ({0})",
+    "Settings.Currency.UsdOnly": "Yalnızca dolar (USD)"
   }
 }

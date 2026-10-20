@@ -79,7 +79,9 @@ public sealed record ChartModel(
     public string FormatAxis(double value, bool exact = false) => (ValueKind, exact) switch
     {
         (ChartValueKind.Usd, false) => AnalyticsFormat.CompactUsd((decimal)value),
-        (ChartValueKind.Usd, true) => (value < 0 ? "−$" : "$") + Math.Abs(value).ToString("N0", CultureInfo.CurrentCulture),
+        (ChartValueKind.Usd, true) => AnalyticsFormat.HideMoney
+            ? AnalyticsFormat.CompactUsd((decimal)value)
+            : (value < 0 ? "−$" : "$") + Math.Abs(value).ToString("N0", CultureInfo.CurrentCulture),
         (_, true) => AnalyticsFormat.Signed((int)Math.Round(value)).TrimStart('+'),
         _ => value < 0 ? "−" + AnalyticsFormat.Compact((int)Math.Round(-value)) : AnalyticsFormat.Compact((int)Math.Round(value)),
     };
