@@ -110,7 +110,7 @@
                     <TextBlock x:Name="Heading" Text="Pipe Manager Pulse" FontSize="12" Opacity="0.7" VerticalAlignment="Center"
                                Margin="8,0,0,0" IsVisible="False" />
 
-                    <Panel x:Name="Content" VerticalAlignment="Center">
+                    <Panel x:Name="ItemsArea" VerticalAlignment="Center">
                         <ItemsControl x:Name="ItemsList" ItemsSource="{Binding Items}" Grid.IsSharedSizeScope="True"
                                       ItemsPanel="{StaticResource RowPanel}" ItemTemplate="{StaticResource RowItem}" />
 

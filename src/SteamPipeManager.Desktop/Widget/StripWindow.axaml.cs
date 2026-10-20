@@ -35,7 +35,7 @@ public sealed partial class StripWindow : Window
     private readonly Border _body;
     private readonly Control _logo;
     private readonly Control _heading;
-    private readonly Control _content;
+    private readonly Control _itemsArea;
     private readonly Control _details;
     private readonly ItemsControl _items;
     private PixelPoint? _anchor;
@@ -60,7 +60,7 @@ public sealed partial class StripWindow : Window
         _body = this.FindControl<Border>("Body")!;
         _logo = this.FindControl<Control>("Logo")!;
         _heading = this.FindControl<Control>("Heading")!;
-        _content = this.FindControl<Control>("Content")!;
+        _itemsArea = this.FindControl<Control>("ItemsArea")!;
         _items = this.FindControl<ItemsControl>("ItemsList")!;
 
         var details = this.FindControl<Button>("DetailsButton")!;
@@ -171,7 +171,7 @@ public sealed partial class StripWindow : Window
             Put(_logo, row: 0, column: 0);
             Put(_heading, row: 0, column: 1);
             Put(_details, row: 0, column: 2);
-            Put(_content, row: vertical ? 1 : 0, column: vertical ? 0 : 1, span: vertical ? 3 : 1);
+            Put(_itemsArea, row: vertical ? 1 : 0, column: vertical ? 0 : 1, span: vertical ? 3 : 1);
 
             _heading.IsVisible = vertical;
             _details.HorizontalAlignment = vertical ? HorizontalAlignment.Right : HorizontalAlignment.Left;
@@ -179,7 +179,7 @@ public sealed partial class StripWindow : Window
         }
 
         // Dikeyde sayı sütunları soldan boşlukla başlıyor; ad gizliyse o boşluk kenara yapışmasın.
-        _content.Margin = vertical ? new Thickness(showTitles ? 0 : -14, 6, 0, 2) : new Thickness(14, 0);
+        _itemsArea.Margin = vertical ? new Thickness(showTitles ? 0 : -14, 6, 0, 2) : new Thickness(14, 0);
 
         // Paylaşılan sütun genişlikleri kendiliğinden küçülmüyor: ad ya da bir sayı gizlenince
         // sütun eski genişliğinde boş kalıyordu. Her değişiklikte sıfırdan ölçülsün.
