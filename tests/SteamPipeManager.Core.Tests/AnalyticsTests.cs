@@ -96,7 +96,7 @@ public sealed class AnalyticsTests : IDisposable
     }
 
     [Fact]
-    public async Task Old_player_samples_are_dropped_after_thirty_days()
+    public async Task Player_samples_older_than_thirty_days_become_hourly_summaries()
     {
         var service = Service(key: null);
         _steam.Players[Game] = 10;
@@ -108,6 +108,30 @@ public sealed class AnalyticsTests : IDisposable
         var history = await new AnalyticsStore(_dir).LoadPlayersAsync(Game);
 
         Assert.Single(history.Samples);
+        Assert.Equal(new PlayerHour(_clock.Now.AddDays(-31).ToUnixTimeSeconds() / 3600 * 3600, 10, 10, 1), Assert.Single(history.Hours));
+    }
+
+    /// <summary>
+    /// Saatin ortası sınıra düşebiliyor: o saatin ilk yarısı bir turda, kalanı sonrakinde
+    /// özetleniyor; ikisi tek satırda, ağırlıklı ortalamayla birleşiyor.
+    /// </summary>
+    [Fact]
+    public void A_partly_summarised_hour_is_merged_and_very_old_hours_are_dropped()
+    {
+        var now = new DateTimeOffset(2026, 10, 20, 12, 0, 0, TimeSpan.Zero);
+        var hour = now.AddDays(-31).ToUnixTimeSeconds() / 3600 * 3600;
+
+        var history = new PlayerHistory
+        {
+            Hours = [new PlayerHour(hour, 50, 40, 2), new PlayerHour(now.AddDays(-800).ToUnixTimeSeconds(), 1, 1, 1)],
+            Samples = [new PlayerSample(hour + 1800, 70), new PlayerSample(hour + 2400, 10), new PlayerSample(now.ToUnixTimeSeconds(), 5)],
+        };
+
+        AnalyticsService.RollUp(history, now);
+
+        // (40 × 2 + 70 + 10) / 4
+        Assert.Equal(new PlayerHour(hour, 70, 40, 4), Assert.Single(history.Hours));
+        Assert.Equal(5, Assert.Single(history.Samples).C);
     }
 
     [Fact]

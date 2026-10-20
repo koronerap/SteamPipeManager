@@ -8,10 +8,23 @@ public sealed record PlayerSample(long T, int C)
     public DateTimeOffset At => DateTimeOffset.FromUnixTimeSeconds(T);
 }
 
+/// <summary>
+/// Bir saatin oyuncu özeti: saatin başı (Unix saniyesi), en yüksek, ortalama ve örnek
+/// sayısı. Eski örnekler bu hâle getirilip saklanıyor; uzun aralıklı grafikler buradan.
+/// </summary>
+public sealed record PlayerHour(long T, int Max, int Avg, int N)
+{
+    public DateTimeOffset At => DateTimeOffset.FromUnixTimeSeconds(T);
+}
+
 /// <summary>Bir app'in kaydedilen oyuncu sayıları.</summary>
 public sealed class PlayerHistory
 {
+    /// <summary>Son <see cref="AnalyticsService.PlayerRetention"/> içindeki her örnek.</summary>
     public List<PlayerSample> Samples { get; set; } = [];
+
+    /// <summary>Daha eski örneklerin saatlik özetleri, eskiden yeniye.</summary>
+    public List<PlayerHour> Hours { get; set; } = [];
 
     /// <summary>Son sorgu; Steam'de verisi olmayan app'lerde de dolu, böylece her turda sorulmuyor.</summary>
     public DateTimeOffset? LastCheckedAt { get; set; }

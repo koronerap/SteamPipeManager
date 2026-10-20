@@ -244,11 +244,25 @@ public sealed partial class AnalyticsViewModel : ObservableObject
             if (IsActive)
             {
                 await ReloadAsync();
+
+                if (Detail is { } detail)
+                {
+                    await detail.LoadAsync();
+                }
             }
         };
     }
 
     public ObservableCollection<AnalyticsCard> Cards { get; } = [];
+
+    /// <summary>Açık olan oyun ayrıntısı; null ise kartların listesi görünüyor.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOverview))]
+    private AnalyticsDetailViewModel? _detail;
+
+    public bool IsOverview => Detail is null;
+
+    private AnalyticsPlan? _plan;
 
     public bool HasCards => Cards.Count > 0;
 
@@ -272,6 +286,7 @@ public sealed partial class AnalyticsViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
+        Detail = null;
         Cards.Clear();
 
         foreach (var target in AnalyticsTargets.From(_profiles.Profiles))
@@ -310,6 +325,7 @@ public sealed partial class AnalyticsViewModel : ObservableObject
     {
         // Anahtarlar profil başına; ayarlarda değişmiş olabilir, her seferinde yeniden.
         var plan = AnalyticsPlan.Build(AnalyticsTargets.From(_profiles.Profiles), _keys.Read);
+        _plan = plan;
         HasKey = plan.Scope.Accounts.Count > 0;
 
         foreach (var card in Cards.ToList())
@@ -346,6 +362,15 @@ public sealed partial class AnalyticsViewModel : ObservableObject
 
     [RelayCommand]
     private void Refresh() => _refresher.RefreshSoon(force: true);
+
+    [RelayCommand]
+    private async Task OpenDetailsAsync(AnalyticsCard card)
+    {
+        var account = _plan?.AccountOfApp.GetValueOrDefault(card.AppId);
+        var detail = new AnalyticsDetailViewModel(card, _service, account, () => Detail = null);
+        Detail = detail;
+        await detail.LoadAsync();
+    }
 
     public bool CanOpenWidget => _widgetLauncher is not null;
 

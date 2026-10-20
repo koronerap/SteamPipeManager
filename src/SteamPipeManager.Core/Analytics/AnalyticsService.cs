@@ -41,6 +41,32 @@ public sealed record SalesStats(
 
 public sealed record AppAnalytics(uint AppId, string? Name, PlayerStats Players, WishlistStats? Wishlist, SalesStats? Sales);
 
+/// <summary>Bir wishlist günü (GMT).</summary>
+public sealed record WishlistDayCounts(DateOnly Date, WishlistCounts Counts);
+
+/// <param name="Days">İndirilmiş günler, eskiden yeniye. Eksik gün geçmiş henüz inmemiş demek.</param>
+/// <param name="Today">Wishlist günleri GMT; "bugün" de GMT'ye göre.</param>
+public sealed record WishlistHistory(IReadOnlyList<WishlistDayCounts> Days, int Total, bool IsComplete, DateOnly? Since, DateOnly Today);
+
+/// <summary>Bir app'in bir satış günü (Pasifik).</summary>
+public sealed record SalesDayTotals(DateOnly Date, SalesTotals Totals);
+
+/// <param name="Days">Satışı olan günler, eskiden yeniye; listede olmayan gün satışsız.</param>
+/// <param name="Pending">Değiştiği bildirilip henüz inmemiş günler; bunların sayısı bilinmiyor.</param>
+/// <param name="Today">Satış günleri Pasifik saatine göre.</param>
+public sealed record SalesHistory(IReadOnlyList<SalesDayTotals> Days, IReadOnlySet<DateOnly> Pending, DateOnly Today);
+
+/// <summary>
+/// Bir app'in grafikler için bütün geçmişi, önbellekten. Oyuncu sayıları iki parça: son
+/// 30 günün her örneği ve daha eskilerin saatlik özetleri.
+/// </summary>
+public sealed record AppHistory(
+    DateTimeOffset Now,
+    IReadOnlyList<PlayerSample> PlayerSamples,
+    IReadOnlyList<PlayerHour> PlayerHours,
+    WishlistHistory? Wishlist,
+    SalesHistory? Sales);
+
 /// <summary>Bir finans anahtarı ve onunla sorgulanan app'ler (o şirketin oyunları).</summary>
 public sealed record FinancialAccount(string Key, IReadOnlyCollection<uint> AppIds)
 {
@@ -88,7 +114,11 @@ public sealed class AnalyticsService(
 {
     private readonly TimeProvider _time = time ?? TimeProvider.System;
 
+    /// <summary>Her örnek bu kadar saklanıyor; daha eskileri saatlik özete çevriliyor.</summary>
     public static readonly TimeSpan PlayerRetention = TimeSpan.FromDays(30);
+
+    /// <summary>Saatlik özetler bu kadar saklanıyor (dosya başına en çok ~17 bin satır).</summary>
+    public static readonly TimeSpan PlayerHourRetention = TimeSpan.FromDays(730);
 
     public TimeSpan PlayersInterval { get; init; } = TimeSpan.FromMinutes(5);
 
@@ -236,10 +266,46 @@ public sealed class AnalyticsService(
             history.Samples.Add(new PlayerSample(now.ToUnixTimeSeconds(), value));
         }
 
-        var oldest = (now - PlayerRetention).ToUnixTimeSeconds();
-        history.Samples.RemoveAll(s => s.T < oldest);
+        RollUp(history, now);
 
         await store.SavePlayersAsync(appId, history, ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Saklama süresini aşan örnekleri saatlik özetlere katar. Sınır bir saatin ortasına
+    /// düşebiliyor; o saatin geri kalanı sonraki turda aynı özete ekleniyor.
+    /// </summary>
+    internal static void RollUp(PlayerHistory history, DateTimeOffset now)
+    {
+        var oldest = (now - PlayerRetention).ToUnixTimeSeconds();
+        var expired = history.Samples.Where(s => s.T < oldest).ToList();
+
+        if (expired.Count > 0)
+        {
+            var hours = history.Hours.ToDictionary(h => h.T);
+
+            foreach (var group in expired.GroupBy(s => s.T - s.T % 3600))
+            {
+                var max = group.Max(s => s.C);
+                var sum = group.Sum(s => (long)s.C);
+                var count = group.Count();
+
+                if (hours.TryGetValue(group.Key, out var known))
+                {
+                    max = Math.Max(max, known.Max);
+                    sum += (long)known.Avg * known.N;
+                    count += known.N;
+                }
+
+                hours[group.Key] = new PlayerHour(group.Key, max, (int)Math.Round((double)sum / count), count);
+            }
+
+            history.Hours = [.. hours.Values.OrderBy(h => h.T)];
+            history.Samples.RemoveAll(s => s.T < oldest);
+        }
+
+        var oldestHour = (now - PlayerHourRetention).ToUnixTimeSeconds();
+        history.Hours.RemoveAll(h => h.T < oldestHour);
     }
 
     private async Task RefreshRecentWishlistAsync(string key, uint appId, DateTimeOffset now, bool force, CancellationToken ct)
@@ -428,6 +494,63 @@ public sealed class AnalyticsService(
             SummarizeWishlist(wishlist, now),
             sales is null ? null : SummarizeSales(sales, now, appId));
     }
+
+    /// <summary>Bir app'in grafikler için geçmişi; ağa çıkmıyor. Hesap yoksa satış yok.</summary>
+    public async Task<AppHistory> GetHistoryAsync(uint appId, string? accountId, CancellationToken ct = default)
+    {
+        var now = _time.GetUtcNow();
+        var players = await store.LoadPlayersAsync(appId, ct).ConfigureAwait(false);
+        var wishlist = await store.LoadWishlistAsync(appId, ct).ConfigureAwait(false);
+        var sales = accountId is null ? null : await store.LoadSalesAsync(accountId, ct).ConfigureAwait(false);
+
+        return new AppHistory(
+            now,
+            [.. players.Samples.OrderBy(s => s.T)],
+            [.. players.Hours.OrderBy(h => h.T)],
+            WishlistHistoryOf(wishlist, now),
+            sales is { LastCheckedAt: not null } ? SalesHistoryOf(sales, appId, now) : null);
+    }
+
+    private static WishlistHistory? WishlistHistoryOf(WishlistLedger ledger, DateTimeOffset now)
+    {
+        if (ledger.Days.Count == 0)
+        {
+            return null;
+        }
+
+        var today = UtcDay(now);
+
+        var days = ledger.Days
+            .Select(pair => (Date: ParseDate(pair.Key), Row: pair.Value))
+            .Where(day => day.Date is not null)
+            .Select(day => new WishlistDayCounts(day.Date!.Value, new WishlistCounts(day.Row.A, day.Row.D, day.Row.P, day.Row.G)))
+            .OrderBy(day => day.Date)
+            .ToList();
+
+        var complete = ledger.AppMinDate is { } first && !MissingWishlistDays(ledger, first, today).Any();
+
+        return new WishlistHistory(days, ledger.Days.Values.Sum(r => r.Net), complete, ledger.AppMinDate, today);
+    }
+
+    private static SalesHistory SalesHistoryOf(SalesLedger ledger, uint appId, DateTimeOffset now)
+    {
+        var days = ledger.Days
+            .Where(pair => pair.Value.ContainsKey(appId))
+            .Select(pair => (Date: ParseDate(pair.Key), Row: pair.Value[appId]))
+            .Where(day => day.Date is not null)
+            .Select(day => new SalesDayTotals(day.Date!.Value, day.Row.Totals))
+            .OrderBy(day => day.Date)
+            .ToList();
+
+        var pending = ledger.PendingDates.Select(ParseDate).OfType<DateOnly>().ToHashSet();
+
+        return new SalesHistory(days, pending, PacificDay(now));
+    }
+
+    private static DateOnly? ParseDate(string text) =>
+        DateOnly.TryParseExact(text, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var date)
+            ? date
+            : null;
 
     /// <summary>Bir ortağın bütün app'lerinin satış toplamı; finans verisi yoksa null.</summary>
     public async Task<SalesStats?> GetPartnerSalesAsync(string accountId, CancellationToken ct = default) =>

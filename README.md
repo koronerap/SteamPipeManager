@@ -106,6 +106,18 @@ profiles:
   Revenue is net of returns and taxes, before Steam's share. Days are Pacific time, and
   the most recent days can still change.
 
+**Details** on a game's card opens its charts: players, wishlists and sales over 24 hours,
+7, 30 or 90 days, a year or all time. Hovering over one chart shows the same moment on all
+three. Other options:
+
+- compare with the previous period;
+- show wishlists as a running total or as each day's change;
+- show sales as revenue (with a 7-day average) or as units.
+
+Player history is kept for two years (as hourly peaks and averages after the first 30 days).
+Where the app and the widget were both closed, the line breaks rather than guessing. For
+older history, **History on SteamDB** opens the game's SteamDB charts in your browser.
+
 Wishlists and sales need a **Steam financial key**. A key belongs to one Steamworks
 partner (company) and sees only that company's games, so it is entered per profile:
 

@@ -159,7 +159,7 @@ public sealed class LanguageFileTests
             .. Enum.GetValues<WidgetTheme>().Select(v => $"Widget.Theme.{v}"),
         ];
 
-        Assert.Empty(keys.Where(k => !English.Strings.ContainsKey(k)));
+        Assert.DoesNotContain(keys, k => !English.Strings.ContainsKey(k));
     }
 
     private static HashSet<string> Placeholders(string text) =>

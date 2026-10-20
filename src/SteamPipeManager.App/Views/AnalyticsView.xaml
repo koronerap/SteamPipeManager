@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:loc="clr-namespace:SteamPipeManager.App.Localization">
+             xmlns:loc="clr-namespace:SteamPipeManager.App.Localization"
+             xmlns:controls="clr-namespace:SteamPipeManager.App.Controls">
 
     <UserControl.Resources>
         <!-- Küçük çubuk grafik: değerler görünüm modelinde 0..1'e çekiliyor. -->
@@ -41,6 +42,23 @@
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Opacity" Value="0.7" />
             <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+
+        <Style x:Key="ChartTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <!-- Birbirini dışlayan seçenekler (aralık, grafik türü): düğme görünümlü radyo düğmeleri. -->
+        <ItemsPanelTemplate x:Key="ChoicePanel">
+            <StackPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+
+        <Style x:Key="Choice" TargetType="RadioButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+            <Setter Property="Content" Value="{Binding Label}" />
+            <Setter Property="IsChecked" Value="{Binding IsSelected, Mode=TwoWay}" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Margin" Value="0,0,4,0" />
         </Style>
     </UserControl.Resources>
 
@@ -94,123 +112,271 @@
             </Grid>
         </Border>
 
-        <TextBlock Grid.Row="2" Text="{loc:T Analytics.Empty}" Opacity="0.6" TextWrapping="Wrap"
-                   HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420" TextAlignment="Center"
-                   Visibility="{Binding HasCards, Converter={StaticResource BoolToVisInverted}}" />
+        <!-- Oyun kartları; bir oyunun ayrıntısı açıkken gizli. -->
+        <Grid Grid.Row="2" Visibility="{Binding IsOverview, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{loc:T Analytics.Empty}" Opacity="0.6" TextWrapping="Wrap"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="420" TextAlignment="Center"
+                       Visibility="{Binding HasCards, Converter={StaticResource BoolToVisInverted}}" />
 
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
-                      Visibility="{Binding HasCards, Converter={StaticResource BoolToVis}}">
-            <ItemsControl ItemsSource="{Binding Cards}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ui:Card Padding="16" Margin="0,0,0,12">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="64" />
-                                    <ColumnDefinition Width="16" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding HasCards, Converter={StaticResource BoolToVis}}">
+                <ItemsControl ItemsSource="{Binding Cards}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:Card Padding="16" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="64" />
+                                        <ColumnDefinition Width="16" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
 
-                                <!-- Kütüphane kapsülü; yoksa baş harf -->
-                                <Border Width="64" Height="96" CornerRadius="6" VerticalAlignment="Top" Background="#2A2F6FEB">
-                                    <Grid>
-                                        <TextBlock Text="{Binding Initial}" FontSize="22" FontWeight="SemiBold" Opacity="0.7"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        <Border CornerRadius="6"
-                                                Visibility="{Binding HasCapsule, Converter={StaticResource BoolToVis}}">
-                                            <Border.Background>
-                                                <ImageBrush ImageSource="{Binding CapsulePath, Converter={StaticResource PathToImage}}"
-                                                            Stretch="UniformToFill" />
-                                            </Border.Background>
-                                        </Border>
-                                    </Grid>
-                                </Border>
+                                    <!-- Kütüphane kapsülü; yoksa baş harf -->
+                                    <Border Width="64" Height="96" CornerRadius="6" VerticalAlignment="Top" Background="#2A2F6FEB">
+                                        <Grid>
+                                            <TextBlock Text="{Binding Initial}" FontSize="22" FontWeight="SemiBold" Opacity="0.7"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            <Border CornerRadius="6"
+                                                    Visibility="{Binding HasCapsule, Converter={StaticResource BoolToVis}}">
+                                                <Border.Background>
+                                                    <ImageBrush ImageSource="{Binding CapsulePath, Converter={StaticResource PathToImage}}"
+                                                                Stretch="UniformToFill" />
+                                                </Border.Background>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
 
-                                <Grid Grid.Column="2">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
+                                    <Grid Grid.Column="2">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
 
-                                    <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                                        <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" />
-                                        <TextBlock Text="{Binding Subtitle}" FontSize="12" Opacity="0.6" />
-                                    </StackPanel>
+                                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Subtitle}" FontSize="12" Opacity="0.6" />
+                                            </StackPanel>
 
-                                    <Grid Grid.Row="1">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="20" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="20" />
-                                            <ColumnDefinition Width="*" />
-                                        </Grid.ColumnDefinitions>
+                                            <ui:Button HorizontalAlignment="Right" VerticalAlignment="Top" Padding="12,6"
+                                                       Icon="{ui:SymbolIcon ChartMultiple24}"
+                                                       Content="{loc:T Analytics.Details}"
+                                                       Command="{Binding DataContext.OpenDetailsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       CommandParameter="{Binding}" />
+                                        </Grid>
 
-                                        <!-- Anlık oyuncu -->
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{loc:T Analytics.Players}" Style="{StaticResource StatLabel}" />
-                                            <TextBlock Text="{Binding PlayersText}" Style="{StaticResource StatValue}" />
-                                            <TextBlock Text="{Binding PlayersDetail}" Style="{StaticResource StatDetail}" />
-                                            <ItemsControl ItemsSource="{Binding PlayersSeries}" Height="36" Margin="0,8,0,0"
-                                                          ItemsPanel="{StaticResource BarsPanel}"
-                                                          ItemTemplate="{StaticResource PlayerBar}" />
-                                        </StackPanel>
+                                        <Grid Grid.Row="1">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="20" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="20" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- Wishlist -->
-                                        <StackPanel Grid.Column="2">
-                                            <TextBlock Text="{loc:T Analytics.Wishlists}" Style="{StaticResource StatLabel}" />
-                                            <StackPanel Visibility="{Binding HasWishlist, Converter={StaticResource BoolToVis}}">
-                                                <TextBlock Text="{Binding WishlistText}" Style="{StaticResource StatValue}" />
-                                                <TextBlock Text="{Binding WishlistDetail}" Style="{StaticResource StatDetail}" />
-                                                <ItemsControl ItemsSource="{Binding WishlistSeries}" Height="36" Margin="0,8,0,0"
+                                            <!-- Anlık oyuncu -->
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{loc:T Analytics.Players}" Style="{StaticResource StatLabel}" />
+                                                <TextBlock Text="{Binding PlayersText}" Style="{StaticResource StatValue}" />
+                                                <TextBlock Text="{Binding PlayersDetail}" Style="{StaticResource StatDetail}" />
+                                                <ItemsControl ItemsSource="{Binding PlayersSeries}" Height="36" Margin="0,8,0,0"
                                                               ItemsPanel="{StaticResource BarsPanel}"
-                                                              ItemTemplate="{StaticResource WishlistBar}" />
+                                                              ItemTemplate="{StaticResource PlayerBar}" />
                                             </StackPanel>
-                                            <StackPanel Visibility="{Binding HasWishlist, Converter={StaticResource BoolToVisInverted}}">
-                                                <TextBlock Text="—" Style="{StaticResource StatValue}" Opacity="0.5" />
-                                                <TextBlock Text="{Binding FinancialPlaceholder}" Style="{StaticResource StatDetail}" />
-                                            </StackPanel>
-                                        </StackPanel>
 
-                                        <!-- Satışlar -->
-                                        <StackPanel Grid.Column="4">
-                                            <!-- Gelirin neyi gösterdiği: iade ve vergi düşülmüş, Steam payı düşülmemiş -->
-                                            <TextBlock Text="{loc:T Analytics.SalesToday}" Style="{StaticResource StatLabel}"
-                                                       ToolTip="{loc:T Analytics.SalesNote}" />
-                                            <StackPanel Visibility="{Binding HasSales, Converter={StaticResource BoolToVis}}">
-                                                <TextBlock Text="{Binding SalesTodayText}" Style="{StaticResource StatValue}" />
-                                                <TextBlock Text="{Binding SalesTodayDetail}" Style="{StaticResource StatDetail}" />
-                                                <ItemsControl ItemsSource="{Binding SalesRows}" Margin="0,6,0,0">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <Grid>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="Auto" />
-                                                                    <ColumnDefinition Width="*" />
-                                                                </Grid.ColumnDefinitions>
-                                                                <TextBlock Text="{Binding Label}" FontSize="12" Opacity="0.6" Margin="0,0,8,0" />
-                                                                <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12"
-                                                                           HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
-                                                            </Grid>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                                <ItemsControl ItemsSource="{Binding SalesSeries}" Height="36" Margin="0,8,0,0"
-                                                              ItemsPanel="{StaticResource BarsPanel}"
-                                                              ItemTemplate="{StaticResource SalesBar}" />
+                                            <!-- Wishlist -->
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="{loc:T Analytics.Wishlists}" Style="{StaticResource StatLabel}" />
+                                                <StackPanel Visibility="{Binding HasWishlist, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="{Binding WishlistText}" Style="{StaticResource StatValue}" />
+                                                    <TextBlock Text="{Binding WishlistDetail}" Style="{StaticResource StatDetail}" />
+                                                    <ItemsControl ItemsSource="{Binding WishlistSeries}" Height="36" Margin="0,8,0,0"
+                                                                  ItemsPanel="{StaticResource BarsPanel}"
+                                                                  ItemTemplate="{StaticResource WishlistBar}" />
+                                                </StackPanel>
+                                                <StackPanel Visibility="{Binding HasWishlist, Converter={StaticResource BoolToVisInverted}}">
+                                                    <TextBlock Text="—" Style="{StaticResource StatValue}" Opacity="0.5" />
+                                                    <TextBlock Text="{Binding FinancialPlaceholder}" Style="{StaticResource StatDetail}" />
+                                                </StackPanel>
                                             </StackPanel>
-                                            <StackPanel Visibility="{Binding HasSales, Converter={StaticResource BoolToVisInverted}}">
-                                                <TextBlock Text="—" Style="{StaticResource StatValue}" Opacity="0.5" />
-                                                <TextBlock Text="{Binding FinancialPlaceholder}" Style="{StaticResource StatDetail}" />
+
+                                            <!-- Satışlar -->
+                                            <StackPanel Grid.Column="4">
+                                                <!-- Gelirin neyi gösterdiği: iade ve vergi düşülmüş, Steam payı düşülmemiş -->
+                                                <TextBlock Text="{loc:T Analytics.SalesToday}" Style="{StaticResource StatLabel}"
+                                                           ToolTip="{loc:T Analytics.SalesNote}" />
+                                                <StackPanel Visibility="{Binding HasSales, Converter={StaticResource BoolToVis}}">
+                                                    <TextBlock Text="{Binding SalesTodayText}" Style="{StaticResource StatValue}" />
+                                                    <TextBlock Text="{Binding SalesTodayDetail}" Style="{StaticResource StatDetail}" />
+                                                    <ItemsControl ItemsSource="{Binding SalesRows}" Margin="0,6,0,0">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                        <ColumnDefinition Width="*" />
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBlock Text="{Binding Label}" FontSize="12" Opacity="0.6" Margin="0,0,8,0" />
+                                                                    <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="12"
+                                                                               HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+                                                                </Grid>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <ItemsControl ItemsSource="{Binding SalesSeries}" Height="36" Margin="0,8,0,0"
+                                                                  ItemsPanel="{StaticResource BarsPanel}"
+                                                                  ItemTemplate="{StaticResource SalesBar}" />
+                                                </StackPanel>
+                                                <StackPanel Visibility="{Binding HasSales, Converter={StaticResource BoolToVisInverted}}">
+                                                    <TextBlock Text="—" Style="{StaticResource StatValue}" Opacity="0.5" />
+                                                    <TextBlock Text="{Binding FinancialPlaceholder}" Style="{StaticResource StatDetail}" />
+                                                </StackPanel>
                                             </StackPanel>
-                                        </StackPanel>
+                                        </Grid>
                                     </Grid>
                                 </Grid>
-                            </Grid>
-                        </ui:Card>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                            </ui:Card>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Bir oyunun ayrıntısı: aralık seçimi ve üç grafik; imleç üçünde de aynı günü gösteriyor. -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" DataContext="{Binding Detail}"
+                      Visibility="{Binding DataContext.IsOverview, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVisInverted}}">
+            <StackPanel Margin="0,0,16,12">
+
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ui:Button Padding="12,6" VerticalAlignment="Center"
+                               Icon="{ui:SymbolIcon ArrowLeft24}"
+                               Content="{loc:T Nav.Back}"
+                               Command="{Binding CloseCommand}" />
+
+                    <Border Grid.Column="1" Width="32" Height="48" CornerRadius="4" Margin="16,0,12,0" Background="#2A2F6FEB">
+                        <Grid>
+                            <TextBlock Text="{Binding Card.Initial}" FontWeight="SemiBold" Opacity="0.7"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border CornerRadius="4" Visibility="{Binding Card.HasCapsule, Converter={StaticResource BoolToVis}}">
+                                <Border.Background>
+                                    <ImageBrush ImageSource="{Binding Card.CapsulePath, Converter={StaticResource PathToImage}}" Stretch="UniformToFill" />
+                                </Border.Background>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Card.Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Card.Subtitle}" FontSize="12" Opacity="0.6" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:Button Padding="12,6" Margin="0,0,8,0"
+                                   Icon="{ui:SymbolIcon History24}"
+                                   Content="{loc:T Analytics.OpenSteamDb}"
+                                   Command="{Binding OpenSteamDbCommand}" />
+                        <ui:Button Padding="12,6"
+                                   Icon="{ui:SymbolIcon Open24}"
+                                   Content="{loc:T Analytics.OpenStore}"
+                                   Command="{Binding OpenStoreCommand}" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Margin="0,0,0,12">
+                    <ItemsControl ItemsSource="{Binding Range.Options}" ItemsPanel="{StaticResource ChoicePanel}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <RadioButton GroupName="AnalyticsRange" Style="{StaticResource Choice}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <CheckBox HorizontalAlignment="Right" VerticalAlignment="Center"
+                              Content="{loc:T Analytics.Compare}" IsChecked="{Binding Compare}" />
+                </Grid>
+
+                <!-- Oyuncular -->
+                <ui:Card Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="{loc:T Analytics.Chart.PlayersTitle}" Style="{StaticResource ChartTitle}" />
+                        <TextBlock Text="{Binding PlayersSummary}" Style="{StaticResource StatDetail}" />
+                        <controls:ChartView Height="200" Margin="0,10,0,0"
+                                            Model="{Binding PlayersChart}" HoverTime="{Binding HoverTime}" />
+                        <TextBlock Text="{loc:T Analytics.Chart.Gaps}" Style="{StaticResource StatDetail}" Opacity="0.55" Margin="0,8,0,0"
+                                   Visibility="{Binding HasPlayerGaps, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </ui:Card>
+
+                <!-- Wishlist -->
+                <ui:Card Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Text="{loc:T Analytics.Wishlists}" Style="{StaticResource ChartTitle}" />
+                                <TextBlock Text="{Binding WishlistSummary}" Style="{StaticResource StatDetail}"
+                                           Visibility="{Binding HasWishlist, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="{Binding WishlistCaption}" Style="{StaticResource StatDetail}" Opacity="0.5"
+                                           Visibility="{Binding HasWishlist, Converter={StaticResource BoolToVis}}" />
+                            </StackPanel>
+
+                            <ItemsControl HorizontalAlignment="Right" VerticalAlignment="Top"
+                                          ItemsSource="{Binding WishlistMode.Options}" ItemsPanel="{StaticResource ChoicePanel}"
+                                          Visibility="{Binding HasWishlist, Converter={StaticResource BoolToVis}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <RadioButton GroupName="WishlistMode" Style="{StaticResource Choice}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+
+                        <controls:ChartView Height="200" Margin="0,10,0,0"
+                                            Model="{Binding WishlistChart}" HoverTime="{Binding HoverTime}"
+                                            Visibility="{Binding HasWishlist, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="{Binding Card.FinancialPlaceholder}" Style="{StaticResource StatDetail}" Margin="0,6,0,0"
+                                   Visibility="{Binding HasWishlist, Converter={StaticResource BoolToVisInverted}}" />
+                    </StackPanel>
+                </ui:Card>
+
+                <!-- Satışlar: gelir iade ve vergi düşülmüş, Steam payı düşülmemiş -->
+                <ui:Card Padding="16" Margin="0,0,0,12">
+                    <StackPanel>
+                        <Grid>
+                            <StackPanel>
+                                <TextBlock Text="{loc:T Analytics.Chart.SalesTitle}" Style="{StaticResource ChartTitle}"
+                                           ToolTip="{loc:T Analytics.SalesNote}" />
+                                <TextBlock Text="{Binding SalesSummary}" Style="{StaticResource StatDetail}"
+                                           Visibility="{Binding HasSales, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="{Binding SalesCaption}" Style="{StaticResource StatDetail}" Opacity="0.5"
+                                           Visibility="{Binding HasSales, Converter={StaticResource BoolToVis}}" />
+                            </StackPanel>
+
+                            <ItemsControl HorizontalAlignment="Right" VerticalAlignment="Top"
+                                          ItemsSource="{Binding SalesMode.Options}" ItemsPanel="{StaticResource ChoicePanel}"
+                                          Visibility="{Binding HasSales, Converter={StaticResource BoolToVis}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <RadioButton GroupName="SalesMode" Style="{StaticResource Choice}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+
+                        <controls:ChartView Height="200" Margin="0,10,0,0"
+                                            Model="{Binding SalesChart}" HoverTime="{Binding HoverTime}"
+                                            Visibility="{Binding HasSales, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="{Binding Card.FinancialPlaceholder}" Style="{StaticResource StatDetail}" Margin="0,6,0,0"
+                                   Visibility="{Binding HasSales, Converter={StaticResource BoolToVisInverted}}" />
+                    </StackPanel>
+                </ui:Card>
+            </StackPanel>
         </ScrollViewer>
     </Grid>
 </UserControl>
