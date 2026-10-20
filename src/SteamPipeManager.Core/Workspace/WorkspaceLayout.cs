@@ -42,6 +42,15 @@ public sealed class WorkspaceLayout(string rootDirectory)
     /// </summary>
     public string EpicSecretsFile => Path.Combine(Root, "epic-secrets.json");
 
+    /// <summary>
+    /// Steam finans anahtarının dosya tabanlı deposu (Windows'ta DPAPI). macOS ve
+    /// Linux'ta anahtar sistemin deposunda duruyor, bu dosya kullanılmıyor.
+    /// </summary>
+    public string SteamFinancialKeyFile => Path.Combine(Root, "steam-financial.json");
+
+    /// <summary>Analitik önbelleği: oyuncu örnekleri, günlük wishlist ve satış kayıtları.</summary>
+    public string AnalyticsDirectory => Path.Combine(Root, "analytics");
+
     public string LogsDirectory => Path.Combine(Root, "logs");
 
     public string CoversDirectory => Path.Combine(Root, "covers");

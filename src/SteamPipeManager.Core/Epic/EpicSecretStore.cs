@@ -33,22 +33,8 @@ public sealed class EpicSecretStore
     /// <summary>Secret şifreli mi duruyor; değilse arayüz kullanıcıyı uyarıyor.</summary>
     public bool IsEncrypted => Kind != SecretStorageKind.OwnerOnlyFile;
 
-    public static ISecretBackend CreateDefault(string filePath, HostPlatform platform)
-    {
-        if (platform.IsWindows && OperatingSystem.IsWindows())
-        {
-            return new DpapiFileBackend(filePath);
-        }
-
-        if (platform.IsMac)
-        {
-            return new MacKeychainBackend();
-        }
-
-        return LinuxSecretServiceBackend.IsAvailable()
-            ? new LinuxSecretServiceBackend()
-            : new OwnerOnlyFileBackend(filePath);
-    }
+    public static ISecretBackend CreateDefault(string filePath, HostPlatform platform) =>
+        SecretStorage.CreateDefault(filePath, platform, SecretScope.Epic);
 
     private static string Key(Guid profileId) => profileId.ToString("N");
 

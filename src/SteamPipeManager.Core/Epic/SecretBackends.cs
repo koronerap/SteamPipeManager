@@ -26,6 +26,45 @@ public enum SecretStorageKind
     OwnerOnlyFile,
 }
 
+/// <summary>
+/// Bir secret türünün sistem depolarındaki adı. Anahtar Zinciri'nde ve Linux gizli
+/// bilgi servisinde kullanıcı kayıtları bu adlarla görüyor; Epic secret'ları ile Steam
+/// finans anahtarı birbirine karışmasın diye ayrı.
+/// </summary>
+/// <param name="MacService">Anahtar Zinciri'ndeki servis adı.</param>
+/// <param name="Label">Kaydın kullanıcıya görünen adı.</param>
+/// <param name="LinuxAttribute">Linux'ta anahtarın yazıldığı öznitelik adı.</param>
+public sealed record SecretScope(string MacService, string Label, string LinuxAttribute)
+{
+    /// <summary>Epic client secret'ları; ilk sürümden beri bu adlarla kayıtlı.</summary>
+    public static readonly SecretScope Epic = new(
+        "SteamPipeManager.Epic.ClientSecret", "Steam Pipe Manager — Epic", "profile");
+}
+
+public static class SecretStorage
+{
+    /// <summary>
+    /// Platformun deposu: Windows'ta DPAPI ile şifreli dosya, macOS'ta Anahtar Zinciri,
+    /// Linux'ta gizli bilgi servisi; o da yoksa yalnızca sahibinin okuyabildiği dosya.
+    /// </summary>
+    public static ISecretBackend CreateDefault(string filePath, HostPlatform platform, SecretScope scope)
+    {
+        if (platform.IsWindows && OperatingSystem.IsWindows())
+        {
+            return new DpapiFileBackend(filePath);
+        }
+
+        if (platform.IsMac)
+        {
+            return new MacKeychainBackend(scope: scope);
+        }
+
+        return LinuxSecretServiceBackend.IsAvailable()
+            ? new LinuxSecretServiceBackend(scope: scope)
+            : new OwnerOnlyFileBackend(filePath);
+    }
+}
+
 /// <summary>Bir secret deposu. Anahtar profil kimliği.</summary>
 public interface ISecretBackend
 {
@@ -168,20 +207,23 @@ public sealed class DpapiFileBackend(string filePath) : ISecretBackend
 /// milisaniye çalıştığı için bu sürede aynı kullanıcının süreç listesinde görünebilir.
 /// BuildPatchTool'a ise hâlâ yalnızca ortam değişkeniyle veriliyor.
 /// </summary>
-public sealed class MacKeychainBackend(ICommandRunner? runner = null) : ISecretBackend
+public sealed class MacKeychainBackend(ICommandRunner? runner = null, SecretScope? scope = null) : ISecretBackend
 {
+    /// <summary>Epic secret'larının servis adı (<see cref="SecretScope.Epic"/>).</summary>
     public const string Service = "SteamPipeManager.Epic.ClientSecret";
 
     private readonly ICommandRunner _runner = runner ?? ProcessCommandRunner.Instance;
 
+    private readonly SecretScope _scope = scope ?? SecretScope.Epic;
+
     public SecretStorageKind Kind => SecretStorageKind.MacKeychain;
 
     public bool Has(string key) =>
-        _runner.Run("security", ["find-generic-password", "-s", Service, "-a", key]).ExitCode == 0;
+        _runner.Run("security", ["find-generic-password", "-s", _scope.MacService, "-a", key]).ExitCode == 0;
 
     public string? Read(string key)
     {
-        var result = _runner.Run("security", ["find-generic-password", "-s", Service, "-a", key, "-w"]);
+        var result = _runner.Run("security", ["find-generic-password", "-s", _scope.MacService, "-a", key, "-w"]);
 
         return result.ExitCode == 0 && result.Output.TrimEnd('\n', '\r') is { Length: > 0 } secret
             ? secret
@@ -192,7 +234,7 @@ public sealed class MacKeychainBackend(ICommandRunner? runner = null) : ISecretB
     {
         // -U: varsa güncelle.
         var result = _runner.Run(
-            "security", ["add-generic-password", "-U", "-s", Service, "-a", key, "-l", "Steam Pipe Manager — Epic", "-w", secret]);
+            "security", ["add-generic-password", "-U", "-s", _scope.MacService, "-a", key, "-l", _scope.Label, "-w", secret]);
 
         if (result.ExitCode != 0)
         {
@@ -201,22 +243,24 @@ public sealed class MacKeychainBackend(ICommandRunner? runner = null) : ISecretB
     }
 
     public void Delete(string key) =>
-        _runner.Run("security", ["delete-generic-password", "-s", Service, "-a", key]);
+        _runner.Run("security", ["delete-generic-password", "-s", _scope.MacService, "-a", key]);
 }
 
 /// <summary>
 /// Linux masaüstünün gizli bilgi servisi (Secret Service: GNOME Keyring, KWallet),
 /// <c>secret-tool</c> ile. Secret araca stdin'den veriliyor, argümanda görünmüyor.
 /// </summary>
-public sealed class LinuxSecretServiceBackend(ICommandRunner? runner = null) : ISecretBackend
+public sealed class LinuxSecretServiceBackend(ICommandRunner? runner = null, SecretScope? scope = null) : ISecretBackend
 {
     public const string Application = "SteamPipeManager";
 
     private readonly ICommandRunner _runner = runner ?? ProcessCommandRunner.Instance;
 
+    private readonly SecretScope _scope = scope ?? SecretScope.Epic;
+
     public SecretStorageKind Kind => SecretStorageKind.LinuxSecretService;
 
-    private static string[] Attributes(string key) => ["application", Application, "profile", key];
+    private string[] Attributes(string key) => ["application", Application, _scope.LinuxAttribute, key];
 
     public bool Has(string key) => Read(key) is not null;
 
@@ -232,7 +276,7 @@ public sealed class LinuxSecretServiceBackend(ICommandRunner? runner = null) : I
     public void Write(string key, string secret)
     {
         var result = _runner.Run(
-            "secret-tool", ["store", "--label=Steam Pipe Manager — Epic", .. Attributes(key)], secret);
+            "secret-tool", ["store", $"--label={_scope.Label}", .. Attributes(key)], secret);
 
         if (result.ExitCode != 0)
         {
