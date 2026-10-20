@@ -431,6 +431,23 @@
     "Settings.Financial.Rejected": "Steam bu anahtarı reddetti, kaydedilmedi. Bir Financial API Group'un anahtarı olduğundan emin ol.",
     "Settings.Financial.Untested": "Anahtarı denemek için Steam'e ulaşılamadı; yine de kaydedildi.",
     "Settings.Financial.SaveFailed": "Anahtar kaydedilemedi: {0}",
-    "Settings.Financial.Removed": "Anahtar kaldırıldı."
+    "Settings.Financial.Removed": "Anahtar kaldırıldı.",
+    "Analytics.OpenWidget": "Widget'ı aç",
+    "Analytics.OpenWidget.Tip": "Pipe Manager Pulse: bu sayıları gösteren, her zaman üstte duran küçük bir şerit ve tepsi simgesi",
+    "Analytics.WidgetMissing": "Widget uygulamanın yanında bulunamadı; yayın paketleriyle birlikte geliyor.",
+    "Widget.NoGames": "Henüz Steam oyunu yok",
+    "Widget.OpenDetails": "Ayrıntıları aç",
+    "Widget.ShowStrip": "Şeridi göster",
+    "Widget.Games": "Oyunlar",
+    "Widget.Show": "Göster",
+    "Widget.Metric.Players": "Oyuncu",
+    "Widget.Metric.Wishlists": "Wishlist",
+    "Widget.Metric.Sales": "Bugünkü satış",
+    "Widget.OpenApp": "{0} uygulamasını aç",
+    "Widget.StartWithSystem": "Sistemle başlat",
+    "Widget.Quit": "Çık",
+    "Widget.Summary.Players": "{0} oyuncu",
+    "Widget.Summary.Wishlists": "{0} wishlist",
+    "Widget.Summary.Sales": "bugün {0}"
   }
 }

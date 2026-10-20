@@ -59,10 +59,18 @@
                            Visibility="{Binding UpdatedText, Converter={StaticResource TextToVis}}" />
             </StackPanel>
 
-            <ui:Button HorizontalAlignment="Right" VerticalAlignment="Center" Padding="14,8"
-                       Icon="{ui:SymbolIcon ArrowSync24}"
-                       Content="{loc:T Analytics.Refresh}"
-                       Command="{Binding RefreshCommand}" />
+            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                <ui:Button Padding="14,8" Margin="0,0,8,0"
+                           Icon="{ui:SymbolIcon PanelBottom24}"
+                           Content="{loc:T Analytics.OpenWidget}"
+                           ToolTip="{loc:T Analytics.OpenWidget.Tip}"
+                           Command="{Binding OpenWidgetCommand}"
+                           Visibility="{Binding CanOpenWidget, Converter={StaticResource BoolToVis}}" />
+                <ui:Button Padding="14,8"
+                           Icon="{ui:SymbolIcon ArrowSync24}"
+                           Content="{loc:T Analytics.Refresh}"
+                           Command="{Binding RefreshCommand}" />
+            </StackPanel>
         </Grid>
 
         <!-- Anahtar yok / reddedildi / geçmiş iniyor -->

@@ -431,6 +431,23 @@
     "Settings.Financial.Rejected": "Steam がこのキーを拒否したため、保存しませんでした。Financial API Group のキーであることを確認してください。",
     "Settings.Financial.Untested": "キーをテストするために Steam に接続できませんでしたが、保存しました。",
     "Settings.Financial.SaveFailed": "キーを保存できませんでした: {0}",
-    "Settings.Financial.Removed": "キーを削除しました。"
+    "Settings.Financial.Removed": "キーを削除しました。",
+    "Analytics.OpenWidget": "ウィジェットを開く",
+    "Analytics.OpenWidget.Tip": "Pipe Manager Pulse: これらの数値を常に最前面の小さなバーとトレイアイコンで表示します",
+    "Analytics.WidgetMissing": "アプリの横にウィジェットが見つかりません。リリースパッケージに含まれています。",
+    "Widget.NoGames": "Steam のゲームはまだありません",
+    "Widget.OpenDetails": "詳細を開く",
+    "Widget.ShowStrip": "バーを表示",
+    "Widget.Games": "ゲーム",
+    "Widget.Show": "表示",
+    "Widget.Metric.Players": "プレイヤー",
+    "Widget.Metric.Wishlists": "ウィッシュリスト",
+    "Widget.Metric.Sales": "今日の売上",
+    "Widget.OpenApp": "{0} を開く",
+    "Widget.StartWithSystem": "システムと同時に起動",
+    "Widget.Quit": "終了",
+    "Widget.Summary.Players": "プレイヤー {0}",
+    "Widget.Summary.Wishlists": "ウィッシュリスト {0}",
+    "Widget.Summary.Sales": "今日 {0}"
   }
 }

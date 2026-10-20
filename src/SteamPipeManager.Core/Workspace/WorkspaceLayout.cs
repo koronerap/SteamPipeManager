@@ -51,6 +51,12 @@ public sealed class WorkspaceLayout(string rootDirectory)
     /// <summary>Analitik önbelleği: oyuncu örnekleri, günlük wishlist ve satış kayıtları.</summary>
     public string AnalyticsDirectory => Path.Combine(Root, "analytics");
 
+    /// <summary>
+    /// Widget'ın kendi ayarları. <c>settings.json</c>'dan ayrı: ana uygulama ayar dosyasını
+    /// bütün olarak yazıyor, ikisi aynı dosyayı tutsa birbirinin değişikliğini ezerdi.
+    /// </summary>
+    public string WidgetSettingsFile => Path.Combine(Root, "widget.json");
+
     public string LogsDirectory => Path.Combine(Root, "logs");
 
     public string CoversDirectory => Path.Combine(Root, "covers");

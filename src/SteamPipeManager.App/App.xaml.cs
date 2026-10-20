@@ -143,6 +143,7 @@ public partial class App : Application
         services.AddSingleton(p => new AnalyticsRefresher(
             analytics.Service,
             () => AnalyticsTargets.From(p.GetRequiredService<ProfileRepository>().Profiles).Select(t => t.AppId).ToList()));
+        services.AddSingleton<IWidgetLauncher, WpfWidgetLauncher>();
         services.AddSingleton<AnalyticsViewModel>();
 
         services.AddSingleton<BuildCoordinator>();

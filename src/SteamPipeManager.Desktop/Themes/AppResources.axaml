@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:conv="using:SteamPipeManager.Desktop.Converters">
+    <!-- Ana uygulama ve widget ortak: dönüştürücüler. -->
+    <conv:ToneToBrush x:Key="ToneBrush" />
+    <conv:ProviderToBrush x:Key="ProviderBrush" />
+    <conv:PathToBitmap x:Key="PathToBitmap" />
+    <conv:SeverityToBrush x:Key="SeverityBrush" />
+    <conv:OutcomeToText x:Key="OutcomeText" />
+    <conv:CountToBool x:Key="HasItems" />
+    <conv:CountToBool x:Key="HasNoItems" Invert="True" />
+    <conv:LocalizeKey x:Key="Localize" />
+    <conv:FractionToHeight x:Key="FractionToHeight" />
+</ResourceDictionary>

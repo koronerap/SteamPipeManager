@@ -431,6 +431,23 @@
     "Settings.Financial.Rejected": "Steam отклонил этот ключ, он не сохранён. Убедитесь, что это ключ Financial API Group.",
     "Settings.Financial.Untested": "Не удалось связаться со Steam для проверки ключа; он всё равно сохранён.",
     "Settings.Financial.SaveFailed": "Не удалось сохранить ключ: {0}",
-    "Settings.Financial.Removed": "Ключ удалён."
+    "Settings.Financial.Removed": "Ключ удалён.",
+    "Analytics.OpenWidget": "Открыть виджет",
+    "Analytics.OpenWidget.Tip": "Pipe Manager Pulse: небольшая панель поверх окон и значок в трее с этими показателями",
+    "Analytics.WidgetMissing": "Виджет не найден рядом с приложением. Он входит в пакеты выпуска.",
+    "Widget.NoGames": "Пока нет игр Steam",
+    "Widget.OpenDetails": "Открыть подробности",
+    "Widget.ShowStrip": "Показывать панель",
+    "Widget.Games": "Игры",
+    "Widget.Show": "Показывать",
+    "Widget.Metric.Players": "Игроки",
+    "Widget.Metric.Wishlists": "Список желаемого",
+    "Widget.Metric.Sales": "Продажи сегодня",
+    "Widget.OpenApp": "Открыть {0}",
+    "Widget.StartWithSystem": "Запускать вместе с системой",
+    "Widget.Quit": "Выход",
+    "Widget.Summary.Players": "{0} игроков",
+    "Widget.Summary.Wishlists": "{0} в желаемом",
+    "Widget.Summary.Sales": "сегодня {0}"
   }
 }

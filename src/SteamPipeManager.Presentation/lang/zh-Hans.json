@@ -431,6 +431,23 @@
     "Settings.Financial.Rejected": "Steam 拒绝了此密钥，未保存。请确认它是 Financial API Group 的密钥。",
     "Settings.Financial.Untested": "无法连接 Steam 测试密钥，但已保存。",
     "Settings.Financial.SaveFailed": "无法保存密钥：{0}",
-    "Settings.Financial.Removed": "密钥已移除。"
+    "Settings.Financial.Removed": "密钥已移除。",
+    "Analytics.OpenWidget": "打开小组件",
+    "Analytics.OpenWidget.Tip": "Pipe Manager Pulse：以始终置顶的小条和托盘图标显示这些数据",
+    "Analytics.WidgetMissing": "在应用旁边找不到小组件，它随发布包一起提供。",
+    "Widget.NoGames": "还没有 Steam 游戏",
+    "Widget.OpenDetails": "打开详情",
+    "Widget.ShowStrip": "显示小条",
+    "Widget.Games": "游戏",
+    "Widget.Show": "显示",
+    "Widget.Metric.Players": "玩家",
+    "Widget.Metric.Wishlists": "愿望单",
+    "Widget.Metric.Sales": "今日销售",
+    "Widget.OpenApp": "打开 {0}",
+    "Widget.StartWithSystem": "随系统启动",
+    "Widget.Quit": "退出",
+    "Widget.Summary.Players": "{0} 名玩家",
+    "Widget.Summary.Wishlists": "愿望单 {0}",
+    "Widget.Summary.Sales": "今天 {0}"
   }
 }

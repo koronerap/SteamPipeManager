@@ -29,6 +29,13 @@ public static class AnalyticsFormat
         _ => value.ToString(CultureInfo.CurrentCulture),
     };
 
+    /// <summary>Şerit için kısa tutar: $227, $1.2K.</summary>
+    public static string CompactUsd(decimal value)
+    {
+        var rounded = (int)Math.Round(value);
+        return "$" + (Math.Abs(rounded) < 1000 ? rounded.ToString(CultureInfo.CurrentCulture) : Compact(rounded));
+    }
+
     /// <summary>Steam'in verdiği para birimi dolar; yerel biçimle ama dolar işaretiyle.</summary>
     public static string Usd(decimal value) => "$" + value.ToString("N2", CultureInfo.CurrentCulture);
 
@@ -214,14 +221,18 @@ public sealed partial class AnalyticsViewModel : ObservableObject
     private readonly ProfileRepository _profiles;
     private readonly SteamImageService _images;
     private readonly SteamFinancialKeyStore _keys;
+    private readonly IWidgetLauncher? _widgetLauncher;
 
+    /// <param name="widgetLauncher">Widget'ın içinde gösterilirken null: düğme gizleniyor.</param>
     public AnalyticsViewModel(
         AnalyticsService service,
         AnalyticsRefresher refresher,
         ProfileRepository profiles,
         SteamImageService images,
-        SteamFinancialKeyStore keys)
+        SteamFinancialKeyStore keys,
+        IWidgetLauncher? widgetLauncher = null)
     {
+        _widgetLauncher = widgetLauncher;
         _service = service;
         _refresher = refresher;
         _profiles = profiles;
@@ -323,4 +334,15 @@ public sealed partial class AnalyticsViewModel : ObservableObject
 
     [RelayCommand]
     private void Refresh() => _refresher.RefreshSoon(force: true);
+
+    public bool CanOpenWidget => _widgetLauncher is not null;
+
+    [RelayCommand]
+    private void OpenWidget()
+    {
+        if (_widgetLauncher?.Launch() == false)
+        {
+            (Notice, NoticeTone) = (AppLocalizer.Instance.Get("Analytics.WidgetMissing"), StatusTone.Warning);
+        }
+    }
 }

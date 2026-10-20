@@ -431,6 +431,23 @@
     "Settings.Financial.Rejected": "Steam rejected this key, so it was not saved. Make sure it is the key of a Financial API Group.",
     "Settings.Financial.Untested": "Steam could not be reached to test the key; it was saved anyway.",
     "Settings.Financial.SaveFailed": "The key could not be saved: {0}",
-    "Settings.Financial.Removed": "The key was removed."
+    "Settings.Financial.Removed": "The key was removed.",
+    "Analytics.OpenWidget": "Open widget",
+    "Analytics.OpenWidget.Tip": "Pipe Manager Pulse: a small always-on-top strip and a tray icon with these numbers",
+    "Analytics.WidgetMissing": "The widget was not found next to the app. It comes with the release packages.",
+    "Widget.NoGames": "No Steam games yet",
+    "Widget.OpenDetails": "Open details",
+    "Widget.ShowStrip": "Show strip",
+    "Widget.Games": "Games",
+    "Widget.Show": "Show",
+    "Widget.Metric.Players": "Players",
+    "Widget.Metric.Wishlists": "Wishlists",
+    "Widget.Metric.Sales": "Today's sales",
+    "Widget.OpenApp": "Open {0}",
+    "Widget.StartWithSystem": "Start with the system",
+    "Widget.Quit": "Quit",
+    "Widget.Summary.Players": "{0} players",
+    "Widget.Summary.Wishlists": "{0} wishlists",
+    "Widget.Summary.Sales": "{0} today"
   }
 }

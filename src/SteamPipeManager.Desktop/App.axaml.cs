@@ -29,7 +29,7 @@ public sealed class App : Application
     private WorkspaceLayout _layout = null!;
 
     /// <summary>Hangi ürün çalışıyor: derleme sırasında assembly meta verisine yazılıyor.</summary>
-    private static ProductProfile CurrentProduct { get; } = ProductProfile.Parse(
+    internal static ProductProfile CurrentProduct { get; } = ProductProfile.Parse(
         Assembly.GetExecutingAssembly()
             .GetCustomAttributes<AssemblyMetadataAttribute>()
             .FirstOrDefault(a => a.Key == "SpmProduct")?.Value);
@@ -131,7 +131,7 @@ public sealed class App : Application
     /// Dil dosyalarını hazırlar. İlk çalıştırmada (ayarda dil yoksa) sistem diline göre
     /// seçilir; eşleşme yoksa İngilizce kullanılır ve seçim ayarlara yazılır.
     /// </summary>
-    private static void InitializeLanguage(WorkspaceLayout layout)
+    internal static void InitializeLanguage(WorkspaceLayout layout)
     {
         AppLocalizer.Instance.Initialize(EmbeddedLanguages.Read(), layout.LanguageDirectory);
 
@@ -204,6 +204,7 @@ public sealed class App : Application
         services.AddSingleton(p => new AnalyticsRefresher(
             analytics.Service,
             () => AnalyticsTargets.From(p.GetRequiredService<ProfileRepository>().Profiles).Select(t => t.AppId).ToList()));
+        services.AddSingleton<IWidgetLauncher, Widget.AvaloniaWidgetLauncher>();
         services.AddSingleton<AnalyticsViewModel>();
 
         services.AddSingleton<BuildCoordinator>();

@@ -431,6 +431,23 @@
     "Settings.Financial.Rejected": "Steam hat diesen Schlüssel abgelehnt; er wurde nicht gespeichert. Stelle sicher, dass es der Schlüssel einer Financial API Group ist.",
     "Settings.Financial.Untested": "Steam war zum Testen nicht erreichbar; der Schlüssel wurde trotzdem gespeichert.",
     "Settings.Financial.SaveFailed": "Der Schlüssel konnte nicht gespeichert werden: {0}",
-    "Settings.Financial.Removed": "Der Schlüssel wurde entfernt."
+    "Settings.Financial.Removed": "Der Schlüssel wurde entfernt.",
+    "Analytics.OpenWidget": "Widget öffnen",
+    "Analytics.OpenWidget.Tip": "Pipe Manager Pulse: eine kleine, immer sichtbare Leiste und ein Infobereich-Symbol mit diesen Zahlen",
+    "Analytics.WidgetMissing": "Das Widget wurde neben der App nicht gefunden. Es ist in den Release-Paketen enthalten.",
+    "Widget.NoGames": "Noch keine Steam-Spiele",
+    "Widget.OpenDetails": "Details öffnen",
+    "Widget.ShowStrip": "Leiste anzeigen",
+    "Widget.Games": "Spiele",
+    "Widget.Show": "Anzeigen",
+    "Widget.Metric.Players": "Spieler",
+    "Widget.Metric.Wishlists": "Wunschlisten",
+    "Widget.Metric.Sales": "Verkäufe heute",
+    "Widget.OpenApp": "{0} öffnen",
+    "Widget.StartWithSystem": "Mit dem System starten",
+    "Widget.Quit": "Beenden",
+    "Widget.Summary.Players": "{0} Spieler",
+    "Widget.Summary.Wishlists": "{0} Wunschlisten",
+    "Widget.Summary.Sales": "heute {0}"
   }
 }

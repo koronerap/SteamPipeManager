@@ -1,0 +1,64 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="using:SteamPipeManager.Desktop.Localization"
+        xmlns:ic="using:FluentIcons.Avalonia"
+        x:Class="SteamPipeManager.Desktop.Widget.StripWindow"
+        Title="Pipe Manager Pulse"
+        SystemDecorations="None"
+        Topmost="True"
+        ShowInTaskbar="False"
+        CanResize="False"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent">
+
+    <!-- Her yerinden sürüklenebilen ince şerit; ayrıntılar sağdaki düğmeyle ya da çift tıkla. -->
+    <Border x:Name="Body" Background="#EB1E1E22" BorderBrush="#40FFFFFF" BorderThickness="1"
+            CornerRadius="10" Padding="12,7" Cursor="SizeAll">
+        <StackPanel Orientation="Horizontal" Spacing="14">
+            <ic:SymbolIcon Symbol="DataTrending" FontSize="16" Foreground="#4C9AFF" VerticalAlignment="Center" />
+
+            <ItemsControl ItemsSource="{Binding Items}" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="18" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="10" ToolTip.Tip="{Binding Summary}">
+                            <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" VerticalAlignment="Center" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowPlayers}">
+                                <ic:SymbolIcon Symbol="People" FontSize="14" Foreground="#4C9AFF" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding PlayersText}" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowWishlist}">
+                                <ic:SymbolIcon Symbol="Heart" FontSize="14" Foreground="#E06C9F" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding WishlistText}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding WishlistDelta}" FontSize="12" VerticalAlignment="Center"
+                                           Foreground="{Binding WishlistDeltaTone, Converter={StaticResource ToneBrush}}" />
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowSales}">
+                                <ic:SymbolIcon Symbol="Money" FontSize="14" Foreground="#3FB950" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding SalesText}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Text="{loc:T Widget.NoGames}" Opacity="0.7" VerticalAlignment="Center"
+                       IsVisible="{Binding Items.Count, Converter={StaticResource HasNoItems}}" />
+
+            <Button x:Name="DetailsButton" Classes="subtle" Padding="4" Cursor="Hand" VerticalAlignment="Center"
+                    AutomationProperties.Name="{loc:T Widget.OpenDetails}"
+                    ToolTip.Tip="{loc:T Widget.OpenDetails}">
+                <ic:SymbolIcon Symbol="ChevronUp" FontSize="14" />
+            </Button>
+        </StackPanel>
+    </Border>
+</Window>

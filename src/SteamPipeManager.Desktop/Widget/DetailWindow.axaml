@@ -1,0 +1,14 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:SteamPipeManager.Desktop.Views"
+        x:Class="SteamPipeManager.Desktop.Widget.DetailWindow"
+        Title="Pipe Manager Pulse"
+        Icon="/Assets/app.ico"
+        Width="1060" Height="720"
+        MinWidth="760" MinHeight="480"
+        WindowStartupLocation="CenterScreen"
+        Background="#1C1C1F">
+
+    <!-- Ana uygulamadaki analitik sayfasının aynısı. -->
+    <views:AnalyticsView x:Name="Analytics" Margin="24" />
+</Window>

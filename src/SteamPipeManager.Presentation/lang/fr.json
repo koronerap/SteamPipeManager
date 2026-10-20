@@ -431,6 +431,23 @@
     "Settings.Financial.Rejected": "Steam a refusé cette clé ; elle n'a pas été enregistrée. Vérifiez qu'il s'agit bien de la clé d'un Financial API Group.",
     "Settings.Financial.Untested": "Steam était injoignable pour tester la clé ; elle a tout de même été enregistrée.",
     "Settings.Financial.SaveFailed": "La clé n'a pas pu être enregistrée : {0}",
-    "Settings.Financial.Removed": "La clé a été supprimée."
+    "Settings.Financial.Removed": "La clé a été supprimée.",
+    "Analytics.OpenWidget": "Ouvrir le widget",
+    "Analytics.OpenWidget.Tip": "Pipe Manager Pulse : une petite barre toujours visible et une icône de notification avec ces chiffres",
+    "Analytics.WidgetMissing": "Le widget est introuvable à côté de l'application. Il est fourni avec les paquets de version.",
+    "Widget.NoGames": "Aucun jeu Steam pour l'instant",
+    "Widget.OpenDetails": "Ouvrir les détails",
+    "Widget.ShowStrip": "Afficher la barre",
+    "Widget.Games": "Jeux",
+    "Widget.Show": "Afficher",
+    "Widget.Metric.Players": "Joueurs",
+    "Widget.Metric.Wishlists": "Listes de souhaits",
+    "Widget.Metric.Sales": "Ventes du jour",
+    "Widget.OpenApp": "Ouvrir {0}",
+    "Widget.StartWithSystem": "Démarrer avec le système",
+    "Widget.Quit": "Quitter",
+    "Widget.Summary.Players": "{0} joueurs",
+    "Widget.Summary.Wishlists": "{0} souhaits",
+    "Widget.Summary.Sales": "{0} aujourd'hui"
   }
 }

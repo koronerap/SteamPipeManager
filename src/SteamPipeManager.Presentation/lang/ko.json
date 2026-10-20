@@ -431,6 +431,23 @@
     "Settings.Financial.Rejected": "Steam이 이 키를 거부해 저장하지 않았습니다. Financial API Group의 키인지 확인하세요.",
     "Settings.Financial.Untested": "키를 테스트할 Steam에 연결하지 못했지만 저장했습니다.",
     "Settings.Financial.SaveFailed": "키를 저장하지 못했습니다: {0}",
-    "Settings.Financial.Removed": "키를 제거했습니다."
+    "Settings.Financial.Removed": "키를 제거했습니다.",
+    "Analytics.OpenWidget": "위젯 열기",
+    "Analytics.OpenWidget.Tip": "Pipe Manager Pulse: 이 수치를 항상 위에 표시되는 작은 막대와 트레이 아이콘으로 보여 줍니다",
+    "Analytics.WidgetMissing": "앱 옆에서 위젯을 찾지 못했습니다. 릴리스 패키지에 포함되어 있습니다.",
+    "Widget.NoGames": "아직 Steam 게임이 없습니다",
+    "Widget.OpenDetails": "자세히 열기",
+    "Widget.ShowStrip": "막대 표시",
+    "Widget.Games": "게임",
+    "Widget.Show": "표시",
+    "Widget.Metric.Players": "플레이어",
+    "Widget.Metric.Wishlists": "위시리스트",
+    "Widget.Metric.Sales": "오늘 판매",
+    "Widget.OpenApp": "{0} 열기",
+    "Widget.StartWithSystem": "시스템과 함께 시작",
+    "Widget.Quit": "종료",
+    "Widget.Summary.Players": "플레이어 {0}",
+    "Widget.Summary.Wishlists": "위시리스트 {0}",
+    "Widget.Summary.Sales": "오늘 {0}"
   }
 }

@@ -33,8 +33,18 @@
     <DebugType>embedded</DebugType>
     <!-- Kullanıcının çalıştıracağı dosya ürünün adını taşıyor. -->
     <AssemblyName>$(SpmProduct)</AssemblyName>
+    <!--
+      Windows'ta widget ayrı bir dosya: -p:SpmWidget=true ile aynı proje PipeManagerPulse
+      adıyla derleniyor ve varsayılan olarak widget açılıyor. Linux ve macOS'ta gerekmiyor,
+      ana uygulama widget bağımsız değişkeniyle açılıyor.
+    -->
+    <AssemblyName Condition="'$(SpmWidget)' == 'true'">PipeManagerPulse</AssemblyName>
     <RootNamespace>SteamPipeManager.Desktop</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(SpmWidget)' == 'true'">
+    <AssemblyMetadata Include="SpmWidget" Value="true" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SteamPipeManager.Presentation\SteamPipeManager.Presentation.csproj" />
