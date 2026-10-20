@@ -13,6 +13,7 @@ public enum ShellPage
     SubAppWorkspace,
     Settings,
     Setup,
+    Analytics,
 }
 
 /// <summary>
@@ -24,6 +25,8 @@ public sealed partial class ShellViewModel : ObservableObject
     private readonly ProfileRepository _repository;
 
     private readonly IConfirmationService _confirmation;
+
+    private readonly AnalyticsRefresher _analyticsRefresher;
 
     /// <summary>
     /// Kapanışta kaydın bekleneceği en uzun süre. Disk takılırsa pencere sonsuza kadar
@@ -43,8 +46,11 @@ public sealed partial class ShellViewModel : ObservableObject
         SetupViewModel setup,
         UpdateViewModel updates,
         IConfirmationService confirmation,
-        ProductProfile product)
+        ProductProfile product,
+        AnalyticsViewModel analytics,
+        AnalyticsRefresher analyticsRefresher)
     {
+        _analyticsRefresher = analyticsRefresher;
         _repository = repository;
         _confirmation = confirmation;
         Navigation = navigation;
@@ -57,6 +63,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Setup = setup;
         Updates = updates;
         Product = product;
+        Analytics = analytics;
 
         // Sihirbaz bitince normal gezinmeye dönülür.
         setup.Completed += (_, _) => OnNavigationChanged();
@@ -108,6 +115,11 @@ public sealed partial class ShellViewModel : ObservableObject
     /// <summary>Pencerenin üstündeki güncelleme şeridi ve ayarlardaki kart.</summary>
     public UpdateViewModel Updates { get; }
 
+    public AnalyticsViewModel Analytics { get; }
+
+    /// <summary>Analitik Steam'e özgü; Epic tarafında herkese açık bir karşılığı yok.</summary>
+    public bool SupportsAnalytics => Product.Supports(PublishProviderId.Steam);
+
     /// <summary>
     /// Çalışan ürün. Pencere başlığı buradan geliyor — ürün adları çevrilmiyor,
     /// "Epic Build Manager" her dilde aynı.
@@ -142,6 +154,13 @@ public sealed partial class ShellViewModel : ObservableObject
     public bool IsSettings => CurrentPage == ShellPage.Settings;
 
     public bool IsSetup => CurrentPage == ShellPage.Setup;
+
+    public bool IsAnalytics => CurrentPage == ShellPage.Analytics;
+
+    /// <summary>Ayarlar ve analitik gezinmenin dışında; geri düğmesi onlarda görünüyor.</summary>
+    public bool IsSidePage => IsSettings || IsAnalytics;
+
+    public bool CanOpenAnalytics => SupportsAnalytics && !IsAnalytics;
 
     /// <summary>Kurulum sırasında breadcrumb ve ayarlar butonu gizlenir.</summary>
     public bool IsChromeVisible => CurrentPage != ShellPage.Setup;
@@ -190,6 +209,12 @@ public sealed partial class ShellViewModel : ObservableObject
         // İkisi de ağ/süreç işi olduğu için beklenmez; kartlar sonuç geldikçe güncellenir.
         _ = ProfilePicker.RefreshAvatarsAsync();
         _ = ProfilePicker.AutoCheckSessionsAsync();
+
+        // Oyuncu sayısı geçmişi uygulama açıkken birikiyor; sayfa açılmasa da.
+        if (SupportsAnalytics)
+        {
+            _analyticsRefresher.Start();
+        }
     }
 
     private void NotifyBreadcrumb()
@@ -243,6 +268,11 @@ public sealed partial class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(IsSettings));
         OnPropertyChanged(nameof(IsSetup));
         OnPropertyChanged(nameof(IsChromeVisible));
+        OnPropertyChanged(nameof(IsAnalytics));
+        OnPropertyChanged(nameof(IsSidePage));
+        OnPropertyChanged(nameof(CanOpenAnalytics));
+
+        Analytics.IsActive = newValue == ShellPage.Analytics;
     }
 
     public bool HasUnsavedChanges => Workspace.HasUnsavedChanges || EpicWorkspace.HasUnsavedChanges;
@@ -279,7 +309,14 @@ public sealed partial class ShellViewModel : ObservableObject
         CurrentPage = ShellPage.Settings;
     }
 
-    /// <summary>Ayarlardan çıkınca gezinme durumuna uygun sayfaya dönülür.</summary>
+    [RelayCommand]
+    private async Task OpenAnalyticsAsync()
+    {
+        CurrentPage = ShellPage.Analytics;
+        await Analytics.LoadAsync();
+    }
+
+    /// <summary>Ayarlardan ya da analitikten çıkınca gezinme durumuna uygun sayfaya dönülür.</summary>
     [RelayCommand]
     private void CloseSettings() => OnNavigationChanged();
 

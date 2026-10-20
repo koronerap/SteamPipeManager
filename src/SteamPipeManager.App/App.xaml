@@ -23,6 +23,7 @@
             <conv:OutcomeToText x:Key="OutcomeText" />
             <conv:ToneToBrush x:Key="ToneBrush" />
             <conv:ProviderToBrush x:Key="ProviderBrush" />
+            <conv:FractionToHeight x:Key="FractionToHeight" />
 
             <Thickness x:Key="CardPadding">16</Thickness>
 

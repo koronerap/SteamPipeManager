@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.Presentation.Localization;
 using SteamPipeManager.Presentation.Services;
+using SteamPipeManager.Core.Analytics;
 using SteamPipeManager.Core.Localization;
 using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Models;
@@ -21,8 +22,13 @@ public sealed partial class SettingsViewModel(
     BuildCoordinator coordinator,
     IDialogService dialogs,
     UpdateViewModel updates,
-    ProductProfile product) : ObservableObject
+    ProductProfile product,
+    AnalyticsServices analytics,
+    AnalyticsRefresher analyticsRefresher) : ObservableObject
 {
+    /// <summary>Steamworks'te Financial API Group'un oluşturulduğu sayfa.</summary>
+    public const string FinancialGroupsUrl = "https://partner.steamgames.com/pub/groups/";
+
     private AppSettings _settings = new();
 
     private bool _loading;
@@ -81,6 +87,33 @@ public sealed partial class SettingsViewModel(
 
     public string WorkspaceRoot => layout.Root;
 
+    /// <summary>
+    /// Yapıştırılan finans anahtarı. Yalnızca kaydedilene kadar bellekte; kayıtlı anahtar
+    /// geri okunup gösterilmiyor.
+    /// </summary>
+    [ObservableProperty]
+    private string _financialKeyInput = "";
+
+    [ObservableProperty]
+    private bool _hasFinancialKey;
+
+    [ObservableProperty]
+    private string _financialMessage = "";
+
+    [ObservableProperty]
+    private bool _isTestingFinancialKey;
+
+    /// <summary>Anahtarın nerede durduğu; dosyada şifresiz duruyorsa açıkça söyleniyor.</summary>
+    public string FinancialStorageText => AppLocalizer.Instance.Get(analytics.Keys.Kind switch
+    {
+        SecretStorageKind.MacKeychain => "Settings.Financial.Storage.Keychain",
+        SecretStorageKind.LinuxSecretService => "Settings.Financial.Storage.SecretService",
+        SecretStorageKind.OwnerOnlyFile => "Settings.Financial.Storage.File",
+        _ => "Settings.Financial.Storage.Dpapi",
+    });
+
+    public bool IsFinancialKeyUnencrypted => !analytics.Keys.IsEncrypted;
+
     public string ProfilesFile => layout.ProfilesFile;
 
     public async Task LoadAsync()
@@ -100,7 +133,81 @@ public sealed partial class SettingsViewModel(
         StallWarningSeconds = _settings.StallWarningSeconds;
         SessionCheckTimeoutSeconds = _settings.SessionCheckTimeoutSeconds;
         StatusMessage = "";
+
+        FinancialKeyInput = "";
+        FinancialMessage = "";
+        HasFinancialKey = SupportsSteam && analytics.Keys.HasKey;
     }
+
+    /// <summary>
+    /// Anahtarı Steam'e karşı dener, çalışıyorsa kaydeder. Steam reddederse kaydedilmiyor;
+    /// Steam'e ulaşılamazsa kaydediliyor ama denenemediği söyleniyor.
+    /// </summary>
+    [RelayCommand]
+    private async Task SaveFinancialKeyAsync()
+    {
+        var key = FinancialKeyInput.Trim();
+
+        if (key.Length == 0)
+        {
+            FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Empty");
+            return;
+        }
+
+        IsTestingFinancialKey = true;
+        FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Testing");
+
+        try
+        {
+            await analytics.KeyTester.GetChangedDatesAsync(key, highwatermark: ulong.MaxValue);
+            FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Saved");
+        }
+        catch (AnalyticsException ex) when (ex.Failure == AnalyticsFailure.InvalidKey)
+        {
+            FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Rejected");
+            return;
+        }
+        catch (AnalyticsException)
+        {
+            FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Untested");
+        }
+        finally
+        {
+            IsTestingFinancialKey = false;
+        }
+
+        try
+        {
+            analytics.Keys.Write(key);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            FinancialMessage = AppLocalizer.Instance.Format("Settings.Financial.SaveFailed", ex.Message);
+            return;
+        }
+
+        FinancialKeyInput = "";
+        HasFinancialKey = true;
+
+        // Wishlist ve satış geçmişi hemen inmeye başlasın.
+        analyticsRefresher.RefreshSoon(force: true);
+    }
+
+    [RelayCommand]
+    private void RemoveFinancialKey()
+    {
+        analytics.Keys.Write(null);
+        HasFinancialKey = false;
+        FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Removed");
+    }
+
+    [RelayCommand]
+    private void OpenFinancialGroupsPage() =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = FinancialGroupsUrl,
+            UseShellExecute = true,
+        });
 
     /// <summary>
     /// Dil seçimi anında uygulanır ve kaydedilir — "Kaydet"e basmayı beklemek,

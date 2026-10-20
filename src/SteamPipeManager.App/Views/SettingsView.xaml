@@ -110,6 +110,47 @@ ToolTip="{loc:T Settings.SteamCmd.Download.Tip}"
 
             <!-- BuildPatchTool: Epic tarafının aracı. SteamCMD'den ayrı bir kart,
                  çünkü akışı da farklı — indirme seçeneği yok. -->
+            <!-- Steam finans anahtarı: analitikteki wishlist ve satışlar için -->
+            <ui:Card Padding="20" Margin="0,0,0,16"
+                     Visibility="{Binding SupportsSteam, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="{loc:T Settings.Financial}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,4" />
+                    <TextBlock Text="{loc:T Settings.Financial.Body}" TextWrapping="Wrap" Opacity="0.75" Margin="0,0,0,8" />
+                    <TextBlock Text="{Binding FinancialStorageText}" TextWrapping="Wrap" FontSize="12" Opacity="0.75" Margin="0,0,0,12" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10"
+                                Visibility="{Binding HasFinancialKey, Converter={StaticResource BoolToVis}}">
+                        <ui:SymbolIcon Symbol="CheckmarkCircle24" FontSize="16" Foreground="#3FB950" VerticalAlignment="Center" />
+                        <TextBlock Text="{loc:T Settings.Financial.Present}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- PasswordBox.Password güvenlik gereği bağlanamıyor; kod tarafında aktarılıyor. -->
+                    <PasswordBox x:Name="FinancialKeyInput" PasswordChanged="OnFinancialKeyChanged"
+                                 AutomationProperties.Name="{loc:T Settings.Financial.Placeholder}"
+                                 ToolTip="{loc:T Settings.Financial.Placeholder}" />
+
+                    <WrapPanel Margin="0,12,0,0">
+                        <ui:Button Appearance="Primary" Margin="0,0,8,8"
+                                   Icon="{ui:SymbolIcon Key24}"
+                                   Content="{loc:T Settings.Financial.Save}"
+                                   Command="{Binding SaveFinancialKeyCommand}"
+                                   IsEnabled="{Binding IsTestingFinancialKey, Converter={StaticResource InverseBool}}" />
+                        <ui:Button Margin="0,0,8,8"
+                                   Icon="{ui:SymbolIcon Delete24}"
+                                   Content="{loc:T Settings.Financial.Remove}"
+                                   Command="{Binding RemoveFinancialKeyCommand}"
+                                   Visibility="{Binding HasFinancialKey, Converter={StaticResource BoolToVis}}" />
+                        <ui:Button Margin="0,0,8,8" Appearance="Transparent"
+                                   Icon="{ui:SymbolIcon Open24}"
+                                   Content="{loc:T Settings.Financial.OpenGroups}"
+                                   Command="{Binding OpenFinancialGroupsPageCommand}" />
+                    </WrapPanel>
+
+                    <TextBlock Text="{Binding FinancialMessage}" TextWrapping="Wrap" Opacity="0.85"
+                               Visibility="{Binding FinancialMessage, Converter={StaticResource TextToVis}}" />
+                </StackPanel>
+            </ui:Card>
+
             <ui:Card Padding="20" Margin="0,0,0,16"
                      Visibility="{Binding SupportsEpic, Converter={StaticResource BoolToVis}}">
                 <StackPanel>

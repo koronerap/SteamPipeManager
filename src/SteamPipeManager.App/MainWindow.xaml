@@ -91,6 +91,13 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,8,24,16"
                     HorizontalAlignment="Right" VerticalAlignment="Center"
                     Visibility="{Binding IsChromeVisible, Converter={StaticResource BoolToVisibility}}">
+            <!-- Analitik: yalnızca Steam'i destekleyen ürünlerde -->
+            <ui:Button Appearance="Transparent" Padding="9,6"
+                       Icon="{ui:SymbolIcon DataTrending24}"
+                       AutomationProperties.Name="{loc:T Nav.Analytics}"
+                       ToolTip="{loc:T Nav.Analytics}"
+                       Command="{Binding OpenAnalyticsCommand}"
+                       Visibility="{Binding CanOpenAnalytics, Converter={StaticResource BoolToVisibility}}" />
             <ui:Button Appearance="Transparent" Padding="9,6"
                        Icon="{ui:SymbolIcon Settings24}"
                        AutomationProperties.Name="{loc:T Nav.Settings}"
@@ -102,7 +109,7 @@
                        AutomationProperties.Name="{loc:T Nav.Back}"
                                    ToolTip="{loc:T Nav.Back}"
                        Command="{Binding CloseSettingsCommand}"
-                       Visibility="{Binding IsSettings, Converter={StaticResource BoolToVisibility}}" />
+                       Visibility="{Binding IsSidePage, Converter={StaticResource BoolToVisibility}}" />
         </StackPanel>
 
         <DockPanel Grid.Row="2" Margin="24,0,24,24">
@@ -189,6 +196,11 @@
                                 Visibility="{Binding DataContext.IsSettings,
                                              RelativeSource={RelativeSource AncestorType=Window},
                                              Converter={StaticResource BoolToVisibility}}" />
+
+            <views:AnalyticsView DataContext="{Binding Analytics}"
+                                 Visibility="{Binding DataContext.IsAnalytics,
+                                              RelativeSource={RelativeSource AncestorType=Window},
+                                              Converter={StaticResource BoolToVisibility}}" />
         </Grid>
         </DockPanel>
 

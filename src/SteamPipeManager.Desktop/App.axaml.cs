@@ -196,6 +196,16 @@ public sealed class App : Application
         services.AddSingleton<IAppLifetime>(_ => new AvaloniaAppLifetime(desktop));
         services.AddSingleton(_ => new BuildHistoryStore(layout));
 
+        // Analitik: oyuncu sayısı, wishlist ve satışlar. Widget da aynı parçaları kuruyor.
+        var analytics = AnalyticsServices.Create(layout);
+        services.AddSingleton(analytics);
+        services.AddSingleton(analytics.Service);
+        services.AddSingleton(analytics.Keys);
+        services.AddSingleton(p => new AnalyticsRefresher(
+            analytics.Service,
+            () => AnalyticsTargets.From(p.GetRequiredService<ProfileRepository>().Profiles).Select(t => t.AppId).ToList()));
+        services.AddSingleton<AnalyticsViewModel>();
+
         services.AddSingleton<BuildCoordinator>();
 
         services.AddSingleton<LoginViewModel>();

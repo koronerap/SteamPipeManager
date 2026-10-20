@@ -13,6 +13,7 @@
         <conv:CountToBool x:Key="HasItems" />
         <conv:CountToBool x:Key="HasNoItems" Invert="True" />
         <conv:LocalizeKey x:Key="Localize" />
+        <conv:FractionToHeight x:Key="FractionToHeight" />
     </Application.Resources>
 
     <Application.Styles>

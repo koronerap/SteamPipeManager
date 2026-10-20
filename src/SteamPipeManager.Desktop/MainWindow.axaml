@@ -69,6 +69,14 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Analitik: yalnızca Steam'i destekleyen ürünlerde -->
+                <Button Classes="subtle" Padding="9,6"
+                        AutomationProperties.Name="{loc:T Nav.Analytics}"
+                        ToolTip.Tip="{loc:T Nav.Analytics}"
+                        Command="{Binding OpenAnalyticsCommand}"
+                        IsVisible="{Binding CanOpenAnalytics}">
+                    <ic:SymbolIcon Symbol="DataTrending" FontSize="18" />
+                </Button>
                 <Button Classes="subtle" Padding="9,6"
                         AutomationProperties.Name="{loc:T Nav.Settings}"
                         ToolTip.Tip="{loc:T Nav.Settings}"
@@ -80,7 +88,7 @@
                         AutomationProperties.Name="{loc:T Nav.Back}"
                         ToolTip.Tip="{loc:T Nav.Back}"
                         Command="{Binding CloseSettingsCommand}"
-                        IsVisible="{Binding IsSettings}">
+                        IsVisible="{Binding IsSidePage}">
                     <ic:SymbolIcon Symbol="ArrowLeft" FontSize="18" />
                 </Button>
             </StackPanel>
@@ -154,6 +162,9 @@
                 </Panel>
                 <Panel IsVisible="{Binding IsSettings}">
                     <views:SettingsView DataContext="{Binding Settings}" />
+                </Panel>
+                <Panel IsVisible="{Binding IsAnalytics}">
+                    <views:AnalyticsView DataContext="{Binding Analytics}" />
                 </Panel>
             </Panel>
         </DockPanel>

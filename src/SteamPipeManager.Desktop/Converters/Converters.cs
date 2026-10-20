@@ -123,3 +123,19 @@ public sealed class LocalizeKey : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }
+
+/// <summary>
+/// Analitik çubuklarının yüksekliği: 0..1 kesir, parametre en büyük yükseklik
+/// (piksel). Değerler görünüm modelinde hazırlanıyor; burada yalnızca ölçekleniyor.
+/// </summary>
+public sealed class FractionToHeight : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var max = double.TryParse(parameter as string, NumberStyles.Float, CultureInfo.InvariantCulture, out var m) ? m : 32d;
+        return value is double fraction ? Math.Clamp(fraction, 0d, 1d) * max : 0d;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

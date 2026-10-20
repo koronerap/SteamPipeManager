@@ -89,6 +89,40 @@
                 </StackPanel>
             </Border>
 
+            <!-- Steam finans anahtarı: analitikteki wishlist ve satışlar için -->
+            <Border Classes="card" IsVisible="{Binding SupportsSteam}">
+                <StackPanel>
+                    <TextBlock Classes="title" Text="{loc:T Settings.Financial}" />
+                    <TextBlock Classes="body" Text="{loc:T Settings.Financial.Body}" />
+                    <TextBlock Text="{Binding FinancialStorageText}" TextWrapping="Wrap" FontSize="12" Opacity="0.75" Margin="0,0,0,12" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,10" IsVisible="{Binding HasFinancialKey}">
+                        <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="16" Foreground="#3FB950" VerticalAlignment="Center" />
+                        <TextBlock Text="{loc:T Settings.Financial.Present}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <TextBox PasswordChar="•" Text="{Binding FinancialKeyInput}"
+                             Watermark="{loc:T Settings.Financial.Placeholder}"
+                             AutomationProperties.Name="{loc:T Settings.Financial.Placeholder}" />
+
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button Classes="accent" Margin="0,0,8,8" Command="{Binding SaveFinancialKeyCommand}"
+                                IsEnabled="{Binding !IsTestingFinancialKey}">
+                            <c:IconLabel Symbol="Key" Text="{loc:T Settings.Financial.Save}" />
+                        </Button>
+                        <Button Margin="0,0,8,8" Command="{Binding RemoveFinancialKeyCommand}" IsVisible="{Binding HasFinancialKey}">
+                            <c:IconLabel Symbol="Delete" Text="{loc:T Settings.Financial.Remove}" />
+                        </Button>
+                        <Button Classes="subtle" Margin="0,0,8,8" Command="{Binding OpenFinancialGroupsPageCommand}">
+                            <c:IconLabel Symbol="Open" Text="{loc:T Settings.Financial.OpenGroups}" />
+                        </Button>
+                    </WrapPanel>
+
+                    <TextBlock Text="{Binding FinancialMessage}" TextWrapping="Wrap" Opacity="0.85"
+                               IsVisible="{Binding FinancialMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+
             <!-- BuildPatchTool: Epic tarafının aracı; indirme seçeneği yok -->
             <Border Classes="card" IsVisible="{Binding SupportsEpic}">
                 <StackPanel>
