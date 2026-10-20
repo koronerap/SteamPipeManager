@@ -29,20 +29,35 @@ public sealed class AnalyticsTests : IDisposable
 
     private DateOnly Today => DateOnly.FromDateTime(_clock.Now.UtcDateTime);
 
-    private AnalyticsService Service(string? key = Key, int budget = 1000)
+    /// <summary>Tek oyunlu kurulum: <paramref name="key"/> o oyunun profilinin anahtarı.</summary>
+    private Harness Service(string? key = Key, int budget = 1000)
     {
         var http = new HttpClient(_steam);
 
-        return new AnalyticsService(
+        var service = new AnalyticsService(
             new AnalyticsStore(_dir),
             new SteamPlayerCountClient(http),
             new SteamFinancialClient(http),
-            () => key,
             _clock)
         {
             FinancialRequestBudget = budget,
             FinancialRequestSpacing = TimeSpan.Zero,
         };
+
+        return new Harness(service, new AnalyticsScope([Game], key is null ? [] : [new FinancialAccount(key, [Game])]));
+    }
+
+    /// <summary>Servis ve kapsamı birlikte; testler oyunun hangi hesapta olduğunu tekrar yazmasın.</summary>
+    private sealed class Harness(AnalyticsService service, AnalyticsScope scope)
+    {
+        public Task<RefreshResult> RefreshAsync(bool force = false) => service.RefreshAsync(scope, force);
+
+        public Task<AppAnalytics> GetAsync(uint appId) =>
+            service.GetAsync(appId, scope.Accounts.FirstOrDefault(a => a.AppIds.Contains(appId))?.Id);
+
+        public Task<SalesStats?> GetPartnerSalesAsync() => service.GetPartnerSalesAsync(scope.Accounts[0].Id);
+
+        public Task<AnalyticsState> GetStateAsync() => service.GetStateAsync();
     }
 
     // ---------------------------------------------------------------- oyuncu sayısı
@@ -65,10 +80,10 @@ public sealed class AnalyticsTests : IDisposable
         foreach (var count in new[] { 100, 250, 180 })
         {
             _steam.Players[Game] = count;
-            await service.RefreshAsync([Game]);
+            await service.RefreshAsync();
 
             // Aralık dolmadan yeniden sorulmuyor.
-            await service.RefreshAsync([Game]);
+            await service.RefreshAsync();
             _clock.Advance(TimeSpan.FromMinutes(5));
         }
 
@@ -86,9 +101,9 @@ public sealed class AnalyticsTests : IDisposable
         var service = Service(key: null);
         _steam.Players[Game] = 10;
 
-        await service.RefreshAsync([Game]);
+        await service.RefreshAsync();
         _clock.Advance(TimeSpan.FromDays(31));
-        await service.RefreshAsync([Game]);
+        await service.RefreshAsync();
 
         var history = await new AnalyticsStore(_dir).LoadPlayersAsync(Game);
 
@@ -100,7 +115,7 @@ public sealed class AnalyticsTests : IDisposable
     {
         var service = Service(key: null);
 
-        await service.RefreshAsync([Game]);
+        await service.RefreshAsync();
         var players = (await service.GetAsync(Game)).Players;
 
         Assert.False(players.Available);
@@ -125,7 +140,7 @@ public sealed class AnalyticsTests : IDisposable
     {
         TenDaysOfWishlists();
 
-        var result = await Service().RefreshAsync([Game]);
+        var result = await Service().RefreshAsync();
         var wishlist = (await Service().GetAsync(Game)).Wishlist!;
 
         Assert.Equal(RefreshResult.Done, result);
@@ -149,7 +164,7 @@ public sealed class AnalyticsTests : IDisposable
         do
         {
             // Satış için bir de değişen günler isteği var.
-            results.Add(await Service(budget: 4).RefreshAsync([Game]));
+            results.Add(await Service(budget: 4).RefreshAsync());
         }
         while (results[^1] != RefreshResult.Done && results.Count < 10);
 
@@ -169,12 +184,12 @@ public sealed class AnalyticsTests : IDisposable
         _steam.Wishlists[(Game, Today)] = (5, 0, 0, 0);
         var day = Today;
 
-        await Service().RefreshAsync([Game]);
+        await Service().RefreshAsync();
 
         // Gün bitti; o günün son hali daha yüksek.
         _steam.Wishlists[(Game, day)] = (12, 1, 0, 0);
         _clock.Advance(TimeSpan.FromDays(2));
-        await Service().RefreshAsync([Game]);
+        await Service().RefreshAsync();
 
         Assert.Equal(11, (await Service().GetAsync(Game)).Wishlist!.Total);
     }
@@ -211,7 +226,7 @@ public sealed class AnalyticsTests : IDisposable
     {
         SomeSales();
 
-        await Service().RefreshAsync([Game]);
+        await Service().RefreshAsync();
         var sales = (await Service().GetAsync(Game)).Sales!;
 
         Assert.Equal(new SalesTotals(2, 14.25m, 20m), sales.Today);
@@ -231,7 +246,7 @@ public sealed class AnalyticsTests : IDisposable
     public async Task A_changed_day_replaces_its_sales_and_the_highwatermark_is_kept()
     {
         SomeSales();
-        await Service().RefreshAsync([Game]);
+        await Service().RefreshAsync();
 
         var yesterday = PacificToday.AddDays(-1);
         _steam.Sales[yesterday] =
@@ -241,7 +256,7 @@ public sealed class AnalyticsTests : IDisposable
         _steam.Changes.Add((102, yesterday));
 
         _clock.Advance(TimeSpan.FromHours(3));
-        await Service().RefreshAsync([Game]);
+        await Service().RefreshAsync();
 
         Assert.Equal(new SalesTotals(7, 63m, 100m), (await Service().GetAsync(Game)).Sales!.Yesterday);
         Assert.Equal(["0", "101"], _steam.HighwatermarksSent);
@@ -253,7 +268,7 @@ public sealed class AnalyticsTests : IDisposable
         SomeSales();
         TenDaysOfWishlists();
 
-        await Service(key: null).RefreshAsync([Game]);
+        await Service(key: null).RefreshAsync();
         var analytics = await Service(key: null).GetAsync(Game);
 
         Assert.Null(analytics.Wishlist);
@@ -271,10 +286,10 @@ public sealed class AnalyticsTests : IDisposable
         _steam.Players[Game] = 42;
         var service = Service(key: "WRONG-KEY-999");
 
-        await service.RefreshAsync([Game]);
+        await service.RefreshAsync();
 
         var state = await service.GetStateAsync();
-        Assert.Equal(AnalyticsFailure.InvalidKey, state.FinancialFailure);
+        Assert.Equal(AnalyticsFailure.InvalidKey, Assert.Single(state.Accounts).Value.Failure);
         Assert.Equal(42, (await service.GetAsync(Game)).Players.Current);
 
         var ex = await Assert.ThrowsAsync<AnalyticsException>(() =>
@@ -290,23 +305,74 @@ public sealed class AnalyticsTests : IDisposable
         using var held = new AnalyticsStore(_dir).TryLock();
 
         Assert.NotNull(held);
-        Assert.Equal(RefreshResult.Busy, await Service().RefreshAsync([Game]));
+        Assert.Equal(RefreshResult.Busy, await Service().RefreshAsync());
         Assert.Equal(0, _steam.Calls(""));
     }
 
     // ---------------------------------------------------------------- anahtar deposu
 
     [Fact]
-    public void The_key_is_stored_trimmed_and_an_empty_value_removes_it()
+    public void Each_profile_has_its_own_key_stored_trimmed()
     {
         var keys = new SteamFinancialKeyStore("unused", new MemoryBackend());
+        var (first, second) = (Guid.NewGuid(), Guid.NewGuid());
 
-        keys.Write("  ABC123\n");
-        Assert.Equal("ABC123", keys.Read());
-        Assert.True(keys.HasKey);
+        keys.Write(first, "  ABC123\n");
+        keys.Write(second, "XYZ");
 
-        keys.Write("");
-        Assert.False(keys.HasKey);
+        Assert.Equal("ABC123", keys.Read(first));
+        Assert.Equal("XYZ", keys.Read(second));
+
+        keys.Write(first, "");
+        Assert.False(keys.Has(first));
+        Assert.True(keys.Has(second));
+    }
+
+    /// <summary>İlk sürümün profile bağlı olmayan anahtarı, sahibi olan profile taşınabiliyor.</summary>
+    [Fact]
+    public void The_key_from_the_first_version_moves_to_the_profile_it_belongs_to()
+    {
+        var backend = new MemoryBackend();
+        backend.Write("steam-financial-api-key", "OLD-KEY");
+        var keys = new SteamFinancialKeyStore("unused", backend);
+        var profile = Guid.NewGuid();
+
+        Assert.True(keys.HasLegacy);
+        Assert.False(keys.Has(profile));
+
+        keys.MoveLegacyTo(profile);
+
+        Assert.Equal("OLD-KEY", keys.Read(profile));
+        Assert.False(keys.HasLegacy);
+    }
+
+    /// <summary>
+    /// İki şirketin anahtarı: biri reddedilince yalnızca o hesap hatalı, diğerinin satışları
+    /// yine geliyor. Tek anahtarlı sürümde reddedilen anahtar her şeyi durduruyordu.
+    /// </summary>
+    [Fact]
+    public async Task A_rejected_key_only_affects_its_own_profiles_games()
+    {
+        SomeSales();
+        var http = new HttpClient(_steam);
+        var service = new AnalyticsService(new AnalyticsStore(_dir), new SteamPlayerCountClient(http), new SteamFinancialClient(http), _clock)
+        {
+            FinancialRequestSpacing = TimeSpan.Zero,
+        };
+
+        var good = new FinancialAccount(Key, [Game]);
+        var bad = new FinancialAccount("OTHER-COMPANY-KEY", [5000]);
+
+        await service.RefreshAsync(new AnalyticsScope([Game, 5000], [bad, good]));
+
+        var state = await service.GetStateAsync();
+        Assert.Equal(AnalyticsFailure.InvalidKey, state.Accounts[bad.Id].Failure);
+        Assert.Null(state.Accounts[good.Id].Failure);
+        Assert.Equal(new SalesTotals(2, 14.25m, 20m), (await service.GetAsync(Game, good.Id)).Sales!.Today);
+
+        // Satışlar anahtar başına ayrı dosyada; anahtarın kendisi dosya adında yok.
+        Assert.True(File.Exists(Path.Combine(_dir, "sales", $"{good.Id}.json")));
+        Assert.DoesNotContain(Key, string.Join(" ", Directory.EnumerateFiles(_dir, "*", SearchOption.AllDirectories)));
     }
 
     /// <summary>Anahtar Zinciri'nde Epic secret'larından ayrı, kendi adıyla duruyor.</summary>
@@ -343,7 +409,7 @@ internal sealed class ManualClock(DateTimeOffset start) : TimeProvider
     public override DateTimeOffset GetUtcNow() => Now;
 }
 
-file sealed class MemoryBackend : ISecretBackend
+internal sealed class MemoryBackend : ISecretBackend
 {
     private readonly Dictionary<string, string> _items = [];
 

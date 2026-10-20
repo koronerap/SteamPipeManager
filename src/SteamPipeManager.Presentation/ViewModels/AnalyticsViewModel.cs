@@ -308,22 +308,34 @@ public sealed partial class AnalyticsViewModel : ObservableObject
 
     private async Task ReloadAsync()
     {
-        HasKey = _keys.HasKey;
+        // Anahtarlar profil başına; ayarlarda değişmiş olabilir, her seferinde yeniden.
+        var plan = AnalyticsPlan.Build(AnalyticsTargets.From(_profiles.Profiles), _keys.Read);
+        HasKey = plan.Scope.Accounts.Count > 0;
 
         foreach (var card in Cards.ToList())
         {
-            card.Apply(await _service.GetAsync(card.AppId), HasKey);
+            var account = plan.AccountOfApp.GetValueOrDefault(card.AppId);
+            card.Apply(await _service.GetAsync(card.AppId, account), hasKey: account is not null);
         }
 
         var state = await _service.GetStateAsync();
 
-        (Notice, NoticeTone) = (HasKey, state.FinancialFailure) switch
+        var failures = state.Accounts
+            .Where(a => a.Value.Failure is not null && plan.ProfilesOfAccount.ContainsKey(a.Key))
+            .ToList();
+
+        var rejected = failures
+            .Where(a => a.Value.Failure == AnalyticsFailure.InvalidKey)
+            .SelectMany(a => plan.ProfilesOfAccount[a.Key])
+            .ToList();
+
+        (Notice, NoticeTone) = true switch
         {
-            (false, _) => (AppLocalizer.Instance.Get("Analytics.NoKey"), StatusTone.Info),
-            (true, AnalyticsFailure.InvalidKey) => (AppLocalizer.Instance.Get("Analytics.KeyRejected"), StatusTone.Danger),
-            (true, AnalyticsFailure.RateLimited) => (AppLocalizer.Instance.Get("Analytics.RateLimited"), StatusTone.Warning),
-            (true, { }) => (AppLocalizer.Instance.Get("Analytics.Offline"), StatusTone.Warning),
-            (true, null) when state.FinancialBackfillPending => (AppLocalizer.Instance.Get("Analytics.Backfilling"), StatusTone.Info),
+            _ when !HasKey => (AppLocalizer.Instance.Get("Analytics.NoKey"), StatusTone.Info),
+            _ when rejected.Count > 0 => (AppLocalizer.Instance.Format("Analytics.KeyRejected", string.Join(", ", rejected)), StatusTone.Danger),
+            _ when failures.Any(a => a.Value.Failure == AnalyticsFailure.RateLimited) => (AppLocalizer.Instance.Get("Analytics.RateLimited"), StatusTone.Warning),
+            _ when failures.Count > 0 => (AppLocalizer.Instance.Get("Analytics.Offline"), StatusTone.Warning),
+            _ when state.FinancialBackfillPending => (AppLocalizer.Instance.Get("Analytics.Backfilling"), StatusTone.Info),
             _ => (null, StatusTone.Neutral),
         };
 

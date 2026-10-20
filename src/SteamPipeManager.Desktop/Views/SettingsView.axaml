@@ -89,37 +89,74 @@
                 </StackPanel>
             </Border>
 
-            <!-- Steam finans anahtarı: analitikteki wishlist ve satışlar için -->
+            <!-- Steam finans anahtarları: profil başına, her Steamworks şirketinin kendi anahtarı -->
             <Border Classes="card" IsVisible="{Binding SupportsSteam}">
                 <StackPanel>
                     <TextBlock Classes="title" Text="{loc:T Settings.Financial}" />
                     <TextBlock Classes="body" Text="{loc:T Settings.Financial.Body}" />
                     <TextBlock Text="{Binding FinancialStorageText}" TextWrapping="Wrap" FontSize="12" Opacity="0.75" Margin="0,0,0,12" />
 
-                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,10" IsVisible="{Binding HasFinancialKey}">
-                        <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="16" Foreground="#3FB950" VerticalAlignment="Center" />
-                        <TextBlock Text="{loc:T Settings.Financial.Present}" VerticalAlignment="Center" />
-                    </StackPanel>
+                    <!-- İlk sürümden kalan, profile bağlı olmayan anahtar -->
+                    <Border Classes="note" Margin="0,0,0,12" IsVisible="{Binding HasLegacyFinancialKey}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{loc:T Settings.Financial.Legacy}" TextWrapping="Wrap" />
+                            <Button HorizontalAlignment="Left" Command="{Binding DeleteLegacyFinancialKeyCommand}">
+                                <c:IconLabel Symbol="Delete" Text="{loc:T Settings.Financial.RemoveLegacy}" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
 
-                    <TextBox PasswordChar="•" Text="{Binding FinancialKeyInput}"
-                             Watermark="{loc:T Settings.Financial.Placeholder}"
-                             AutomationProperties.Name="{loc:T Settings.Financial.Placeholder}" />
+                    <TextBlock Text="{loc:T Settings.Financial.NoProfiles}" Opacity="0.7" IsVisible="{Binding !HasFinancialProfiles}" />
 
-                    <WrapPanel Margin="0,12,0,0">
-                        <Button Classes="accent" Margin="0,0,8,8" Command="{Binding SaveFinancialKeyCommand}"
-                                IsEnabled="{Binding !IsTestingFinancialKey}">
-                            <c:IconLabel Symbol="Key" Text="{loc:T Settings.Financial.Save}" />
-                        </Button>
-                        <Button Margin="0,0,8,8" Command="{Binding RemoveFinancialKeyCommand}" IsVisible="{Binding HasFinancialKey}">
-                            <c:IconLabel Symbol="Delete" Text="{loc:T Settings.Financial.Remove}" />
-                        </Button>
-                        <Button Classes="subtle" Margin="0,0,8,8" Command="{Binding OpenFinancialGroupsPageCommand}">
-                            <c:IconLabel Symbol="Open" Text="{loc:T Settings.Financial.OpenGroups}" />
-                        </Button>
-                    </WrapPanel>
+                    <ItemsControl ItemsSource="{Binding FinancialKeys}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Padding="0,10">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ProfileName}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding StatusText}" FontSize="12" Opacity="0.7" />
+                                            </StackPanel>
 
-                    <TextBlock Text="{Binding FinancialMessage}" TextWrapping="Wrap" Opacity="0.85"
-                               IsVisible="{Binding FinancialMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                                                        IsVisible="{Binding !IsEditing}">
+                                                <Button Command="{Binding MoveLegacyCommand}"
+                                                        IsVisible="{Binding $parent[UserControl].DataContext.HasLegacyFinancialKey}">
+                                                    <c:IconLabel Symbol="ArrowImport" Text="{loc:T Settings.Financial.UseLegacy}" />
+                                                </Button>
+                                                <Button Command="{Binding EditCommand}">
+                                                    <c:IconLabel Symbol="Key" Text="{Binding EditText}" />
+                                                </Button>
+                                                <Button Command="{Binding RemoveCommand}" IsVisible="{Binding HasKey}">
+                                                    <c:IconLabel Symbol="Delete" Text="{loc:T Settings.Financial.Remove}" />
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <Grid ColumnDefinitions="*,Auto,Auto" IsVisible="{Binding IsEditing}">
+                                            <TextBox PasswordChar="•" Text="{Binding Input}"
+                                                     Watermark="{loc:T Settings.Financial.Placeholder}"
+                                                     AutomationProperties.Name="{loc:T Settings.Financial.Placeholder}" />
+                                            <Button Grid.Column="1" Classes="accent" Margin="8,0,0,0"
+                                                    Command="{Binding SaveCommand}" IsEnabled="{Binding !IsTesting}">
+                                                <c:IconLabel Symbol="Key" Text="{loc:T Settings.Financial.Save}" />
+                                            </Button>
+                                            <Button Grid.Column="2" Margin="8,0,0,0" Content="{loc:T Common.Cancel}"
+                                                    Command="{Binding CancelCommand}" />
+                                        </Grid>
+
+                                        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="12" Opacity="0.85"
+                                                   IsVisible="{Binding Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Classes="subtle" HorizontalAlignment="Left" Margin="0,8,0,0" Command="{Binding OpenFinancialGroupsPageCommand}">
+                        <c:IconLabel Symbol="Open" Text="{loc:T Settings.Financial.OpenGroups}" />
+                    </Button>
                 </StackPanel>
             </Border>
 

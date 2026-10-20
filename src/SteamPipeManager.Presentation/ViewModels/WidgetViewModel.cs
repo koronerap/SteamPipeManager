@@ -136,6 +136,7 @@ public sealed partial class WidgetItem(AnalyticsTarget target) : ObservableObjec
 public sealed partial class WidgetViewModel(
     AnalyticsService service,
     ProfileRepository profiles,
+    SteamFinancialKeyStore keys,
     WorkspaceLayout layout)
 {
     /// <summary>Şeritte en fazla bu kadar oyun varsayılan olarak gösteriliyor.</summary>
@@ -146,6 +147,9 @@ public sealed partial class WidgetViewModel(
     public ObservableCollection<WidgetItem> Items { get; } = [];
 
     public IReadOnlyList<AnalyticsTarget> Targets { get; private set; } = [];
+
+    /// <summary>Yenileme planı: hangi anahtar hangi oyunları sorguluyor (profil başına anahtar).</summary>
+    public AnalyticsPlan Plan { get; private set; } = AnalyticsPlan.Build([], _ => null);
 
     public WidgetSettings Settings { get; private set; } = new();
 
@@ -183,6 +187,7 @@ public sealed partial class WidgetViewModel(
         }
 
         Targets = AnalyticsTargets.From(profiles.Profiles);
+        Plan = AnalyticsPlan.Build(Targets, keys.Read);
 
         var pinned = PinnedTargets().ToList();
 
@@ -198,7 +203,7 @@ public sealed partial class WidgetViewModel(
 
         foreach (var item in Items)
         {
-            item.Apply(await service.GetAsync(item.AppId), Settings);
+            item.Apply(await service.GetAsync(item.AppId, Plan.AccountOfApp.GetValueOrDefault(item.AppId)), Settings);
         }
 
         var tooltip = new StringBuilder("Pipe Manager Pulse");

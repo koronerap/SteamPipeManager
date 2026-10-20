@@ -43,10 +43,10 @@ public sealed class WidgetTests : IDisposable
         var service = new AnalyticsService(
             new AnalyticsStore(Layout.AnalyticsDirectory),
             new SteamPlayerCountClient(http),
-            new SteamFinancialClient(http),
-            () => null);
+            new SteamFinancialClient(http));
 
-        var widget = new WidgetViewModel(service, new ProfileRepository(new JsonProfileStore(Layout)), Layout);
+        var keys = new SteamFinancialKeyStore("unused", new MemoryBackend());
+        var widget = new WidgetViewModel(service, new ProfileRepository(new JsonProfileStore(Layout)), keys, Layout);
         await widget.LoadAsync();
         return widget;
     }

@@ -31,6 +31,44 @@ public sealed class AnalyticsPresentationTests
         Assert.Equal("Zeta — Zeta Demo", targets[2].Title);
     }
 
+    /// <summary>
+    /// Anahtar profil başına: her oyun kendi profilinin anahtarıyla sorgulanıyor; aynı
+    /// anahtar iki profilde (aynı şirket) tek hesap; anahtarı olmayan profilin oyununa
+    /// finans sorgusu yapılmıyor.
+    /// </summary>
+    [Fact]
+    public void Each_game_is_queried_with_its_own_profiles_key()
+    {
+        var (companyA, companyB, teammate, noKey) = (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+
+        AnalyticsTarget Game(uint appId, params (Guid Id, string Name)[] owners) =>
+            new(appId, $"Game {appId}", $"Game {appId}", SubAppKind.Main, [.. owners.Select(o => new AnalyticsOwner(o.Id, o.Name))]);
+
+        var keys = new Dictionary<Guid, string> { [companyA] = "KEY-A", [companyB] = "KEY-B", [teammate] = "KEY-A" };
+
+        var plan = AnalyticsPlan.Build(
+            [
+                Game(1, (companyA, "A")),
+                Game(2, (companyB, "B")),
+                Game(3, (teammate, "A2")),
+                Game(4, (noKey, "Solo")),
+                // Önce anahtarsız profilde, sonra B'de: B'nin anahtarıyla.
+                Game(5, (noKey, "Solo"), (companyB, "B")),
+            ],
+            id => keys.GetValueOrDefault(id));
+
+        Assert.Equal([1u, 2u, 3u, 4u, 5u], plan.Scope.AppIds);
+        Assert.Equal(2, plan.Scope.Accounts.Count);
+
+        var a = plan.Scope.Accounts.Single(x => x.Key == "KEY-A");
+        var b = plan.Scope.Accounts.Single(x => x.Key == "KEY-B");
+
+        Assert.Equal([1u, 3u], a.AppIds);
+        Assert.Equal([2u, 5u], b.AppIds);
+        Assert.False(plan.AccountOfApp.ContainsKey(4));
+        Assert.Equal(["A", "A2"], plan.ProfilesOfAccount[a.Id]);
+    }
+
     [Fact]
     public void Bars_scale_sales_from_zero_and_wishlists_from_their_lowest_point()
     {

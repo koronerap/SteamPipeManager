@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.Presentation.Localization;
@@ -24,7 +25,8 @@ public sealed partial class SettingsViewModel(
     UpdateViewModel updates,
     ProductProfile product,
     AnalyticsServices analytics,
-    AnalyticsRefresher analyticsRefresher) : ObservableObject
+    AnalyticsRefresher analyticsRefresher,
+    ProfileRepository profiles) : ObservableObject
 {
     /// <summary>Steamworks'te Financial API Group'un oluşturulduğu sayfa.</summary>
     public const string FinancialGroupsUrl = "https://partner.steamgames.com/pub/groups/";
@@ -88,20 +90,16 @@ public sealed partial class SettingsViewModel(
     public string WorkspaceRoot => layout.Root;
 
     /// <summary>
-    /// Yapıştırılan finans anahtarı. Yalnızca kaydedilene kadar bellekte; kayıtlı anahtar
-    /// geri okunup gösterilmiyor.
+    /// Steam profilleri ve finans anahtarları. Anahtar bir Steamworks ortağının (şirketin)
+    /// verisini görüyor; farklı şirketlerin profilleri kendi anahtarını istiyor.
     /// </summary>
-    [ObservableProperty]
-    private string _financialKeyInput = "";
+    public ObservableCollection<FinancialKeyRow> FinancialKeys { get; } = [];
 
-    [ObservableProperty]
-    private bool _hasFinancialKey;
+    public bool HasFinancialProfiles => FinancialKeys.Count > 0;
 
+    /// <summary>İlk sürümde profile bağlı olmadan girilmiş anahtar; bir profile taşınabiliyor.</summary>
     [ObservableProperty]
-    private string _financialMessage = "";
-
-    [ObservableProperty]
-    private bool _isTestingFinancialKey;
+    private bool _hasLegacyFinancialKey;
 
     /// <summary>Anahtarın nerede durduğu; dosyada şifresiz duruyorsa açıkça söyleniyor.</summary>
     public string FinancialStorageText => AppLocalizer.Instance.Get(analytics.Keys.Kind switch
@@ -134,71 +132,102 @@ public sealed partial class SettingsViewModel(
         SessionCheckTimeoutSeconds = _settings.SessionCheckTimeoutSeconds;
         StatusMessage = "";
 
-        FinancialKeyInput = "";
-        FinancialMessage = "";
-        HasFinancialKey = SupportsSteam && analytics.Keys.HasKey;
+        LoadFinancialKeys();
+    }
+
+    private void LoadFinancialKeys()
+    {
+        FinancialKeys.Clear();
+
+        if (SupportsSteam)
+        {
+            foreach (var profile in profiles.Profiles.Where(p => p.Provider == PublishProviderId.Steam))
+            {
+                FinancialKeys.Add(new FinancialKeyRow(profile.Id, profile.DisplayName, analytics.Keys.Has(profile.Id), SaveFinancialKeyAsync, RemoveFinancialKey, MoveLegacyFinancialKey));
+            }
+        }
+
+        OnPropertyChanged(nameof(HasFinancialProfiles));
+        HasLegacyFinancialKey = SupportsSteam && analytics.Keys.HasLegacy;
     }
 
     /// <summary>
-    /// Anahtarı Steam'e karşı dener, çalışıyorsa kaydeder. Steam reddederse kaydedilmiyor;
-    /// Steam'e ulaşılamazsa kaydediliyor ama denenemediği söyleniyor.
+    /// Anahtarı Steam'e karşı dener, çalışıyorsa profile kaydeder. Steam reddederse
+    /// kaydedilmiyor; Steam'e ulaşılamazsa kaydediliyor ama denenemediği söyleniyor.
     /// </summary>
-    [RelayCommand]
-    private async Task SaveFinancialKeyAsync()
+    private async Task SaveFinancialKeyAsync(FinancialKeyRow row)
     {
-        var key = FinancialKeyInput.Trim();
+        var key = row.Input.Trim();
 
         if (key.Length == 0)
         {
-            FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Empty");
+            row.Message = AppLocalizer.Instance.Get("Settings.Financial.Empty");
             return;
         }
 
-        IsTestingFinancialKey = true;
-        FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Testing");
+        row.IsTesting = true;
+        row.Message = AppLocalizer.Instance.Get("Settings.Financial.Testing");
 
         try
         {
             await analytics.KeyTester.GetChangedDatesAsync(key, highwatermark: ulong.MaxValue);
-            FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Saved");
+            row.Message = AppLocalizer.Instance.Get("Settings.Financial.Saved");
         }
         catch (AnalyticsException ex) when (ex.Failure == AnalyticsFailure.InvalidKey)
         {
-            FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Rejected");
+            row.Message = AppLocalizer.Instance.Get("Settings.Financial.Rejected");
             return;
         }
         catch (AnalyticsException)
         {
-            FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Untested");
+            row.Message = AppLocalizer.Instance.Get("Settings.Financial.Untested");
         }
         finally
         {
-            IsTestingFinancialKey = false;
+            row.IsTesting = false;
         }
 
         try
         {
-            analytics.Keys.Write(key);
+            analytics.Keys.Write(row.ProfileId, key);
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            FinancialMessage = AppLocalizer.Instance.Format("Settings.Financial.SaveFailed", ex.Message);
+            row.Message = AppLocalizer.Instance.Format("Settings.Financial.SaveFailed", ex.Message);
             return;
         }
 
-        FinancialKeyInput = "";
-        HasFinancialKey = true;
+        row.Input = "";
+        row.IsEditing = false;
+        row.HasKey = true;
 
         // Wishlist ve satış geçmişi hemen inmeye başlasın.
         analyticsRefresher.RefreshSoon(force: true);
     }
 
-    [RelayCommand]
-    private void RemoveFinancialKey()
+    private void RemoveFinancialKey(FinancialKeyRow row)
     {
-        analytics.Keys.Write(null);
-        HasFinancialKey = false;
-        FinancialMessage = AppLocalizer.Instance.Get("Settings.Financial.Removed");
+        analytics.Keys.Remove(row.ProfileId);
+        row.HasKey = false;
+        row.IsEditing = false;
+        row.Message = AppLocalizer.Instance.Get("Settings.Financial.Removed");
+    }
+
+    /// <summary>İlk sürümden kalan anahtarı, hangi şirkete aitse o profile taşır.</summary>
+    private void MoveLegacyFinancialKey(FinancialKeyRow row)
+    {
+        analytics.Keys.MoveLegacyTo(row.ProfileId);
+        HasLegacyFinancialKey = false;
+        row.HasKey = analytics.Keys.Has(row.ProfileId);
+        row.Message = AppLocalizer.Instance.Get("Settings.Financial.Moved");
+        analyticsRefresher.RefreshSoon(force: true);
+    }
+
+    [RelayCommand]
+    private void DeleteLegacyFinancialKey()
+    {
+        analytics.Keys.DeleteLegacy();
+        HasLegacyFinancialKey = false;
     }
 
     [RelayCommand]
@@ -356,4 +385,68 @@ public sealed partial class SettingsViewModel(
             UseShellExecute = true,
         });
     }
+}
+
+/// <summary>Ayarlarda bir Steam profilinin finans anahtarı satırı.</summary>
+public sealed partial class FinancialKeyRow(
+    Guid profileId,
+    string profileName,
+    bool hasKey,
+    Func<FinancialKeyRow, Task> save,
+    Action<FinancialKeyRow> remove,
+    Action<FinancialKeyRow> moveLegacy) : ObservableObject
+{
+    public Guid ProfileId { get; } = profileId;
+
+    public string ProfileName { get; } = profileName;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StatusText))]
+    private bool _hasKey = hasKey;
+
+    /// <summary>Anahtar giriliyor mu; kayıtlı anahtar geri okunup gösterilmiyor.</summary>
+    [ObservableProperty]
+    private bool _isEditing;
+
+    /// <summary>Yapıştırılan anahtar; yalnızca kaydedilene kadar bellekte.</summary>
+    [ObservableProperty]
+    private string _input = "";
+
+    [ObservableProperty]
+    private string _message = "";
+
+    [ObservableProperty]
+    private bool _isTesting;
+
+    public string StatusText => AppLocalizer.Instance.Get(HasKey ? "Settings.Financial.Present" : "Settings.Financial.Missing");
+
+    public string EditText => AppLocalizer.Instance.Get(HasKey ? "Settings.Financial.Change" : "Settings.Financial.Add");
+
+    partial void OnHasKeyChanged(bool value) => OnPropertyChanged(nameof(EditText));
+
+    [RelayCommand]
+    private void Edit()
+    {
+        Input = "";
+        Message = "";
+        IsEditing = true;
+    }
+
+    [RelayCommand]
+    private void Cancel()
+    {
+        Input = "";
+        IsEditing = false;
+    }
+
+    [RelayCommand]
+    private Task SaveAsync() => save(this);
+
+    [RelayCommand]
+    private void Remove() => remove(this);
+
+    [RelayCommand]
+    private void MoveLegacy() => moveLegacy(this);
+
+    public override string ToString() => ProfileName;
 }

@@ -41,6 +41,22 @@ public sealed record SalesStats(
 
 public sealed record AppAnalytics(uint AppId, string? Name, PlayerStats Players, WishlistStats? Wishlist, SalesStats? Sales);
 
+/// <summary>Bir finans anahtarı ve onunla sorgulanan app'ler (o şirketin oyunları).</summary>
+public sealed record FinancialAccount(string Key, IReadOnlyCollection<uint> AppIds)
+{
+    /// <summary>Anahtarın kimliği; dosya adlarında ve durumda anahtarın kendisi yerine.</summary>
+    public string Id { get; } = SteamFinancialKeyStore.Fingerprint(Key);
+}
+
+/// <summary>
+/// Neyin yenileneceği: oyuncu sayısı bütün app'ler için, finans verisi her app için
+/// sahibinin anahtarıyla. Anahtar başka bir şirketin oyununu göremiyor.
+/// </summary>
+public sealed record AnalyticsScope(IReadOnlyCollection<uint> AppIds, IReadOnlyList<FinancialAccount> Accounts)
+{
+    public static AnalyticsScope PlayersOnly(IReadOnlyCollection<uint> appIds) => new(appIds, []);
+}
+
 public enum RefreshResult
 {
     /// <summary>Gereken her şey yenilendi.</summary>
@@ -60,12 +76,14 @@ public enum RefreshResult
 /// Sıklıklar: oyuncu sayısı 5 dakikada bir, wishlist ve satış 3 saatte bir (Valve
 /// finans verisini günde en az bir kez tazeliyor). Finans geçmişinin ilk indirmesi
 /// (ilk günden bugüne) her yenilemede sınırlı sayıda istekle, yavaşça ilerliyor.
+///
+/// Her finans anahtarı ayrı bir hesap: satışları kendi dosyasında, hatası kendi
+/// durumunda. Bir profilin anahtarı reddedilirse diğerlerininki etkilenmiyor.
 /// </summary>
 public sealed class AnalyticsService(
     AnalyticsStore store,
     SteamPlayerCountClient players,
     SteamFinancialClient financial,
-    Func<string?> readKey,
     TimeProvider? time = null)
 {
     private readonly TimeProvider _time = time ?? TimeProvider.System;
@@ -85,8 +103,7 @@ public sealed class AnalyticsService(
     /// <summary>Kaydedilen her 25 günde bir önbelleğe yazılıyor; yarıda kalan ilerleme kaybolmasın.</summary>
     private const int SaveEvery = 25;
 
-    public async Task<RefreshResult> RefreshAsync(
-        IReadOnlyCollection<uint> appIds, bool force = false, CancellationToken ct = default)
+    public async Task<RefreshResult> RefreshAsync(AnalyticsScope scope, bool force = false, CancellationToken ct = default)
     {
         using var refreshLock = store.TryLock();
 
@@ -97,7 +114,7 @@ public sealed class AnalyticsService(
 
         var now = _time.GetUtcNow();
 
-        foreach (var appId in appIds.Distinct())
+        foreach (var appId in scope.AppIds.Distinct())
         {
             await RefreshPlayersAsync(appId, now, force, ct).ConfigureAwait(false);
         }
@@ -105,59 +122,89 @@ public sealed class AnalyticsService(
         var state = await store.LoadStateAsync(ct).ConfigureAwait(false);
         state.LastRefreshAt = now;
 
+        // Artık kullanılmayan anahtarların durumu (profil silindi, anahtar değişti) kalmasın.
+        foreach (var gone in state.Accounts.Keys.Except(scope.Accounts.Select(a => a.Id)).ToList())
+        {
+            state.Accounts.Remove(gone);
+        }
+
+        // Bütçe bütün hesaplar için tek: anahtar sayısı arttıkça istek patlamasın.
+        var budget = new RequestBudget(FinancialRequestBudget, FinancialRequestSpacing, _time);
+        financial.BeforeRequest = budget.TakeAsync;
         var pending = false;
 
-        if (readKey() is { Length: > 0 } key)
+        try
         {
-            var budget = new RequestBudget(FinancialRequestBudget, FinancialRequestSpacing, _time);
-            financial.BeforeRequest = budget.TakeAsync;
+            // Önce her hesabın güncel verisi (bugün, dün, değişen satış günleri), sonra
+            // geçmiş: ilk açılışta da ekrandaki sayılar hemen dolsun.
+            var reachable = new List<FinancialAccount>();
 
-            try
+            foreach (var account in scope.Accounts)
             {
-                // Önce güncel veri (bugün, dün, değişen satış günleri), sonra geçmiş: ilk
-                // açılışta da ekrandaki sayılar hemen dolsun.
-                foreach (var appId in appIds.Distinct())
+                if (await TryAsync(account, state, now, () => RefreshRecentAsync(account, now, force, ct)).ConfigureAwait(false))
                 {
-                    await RefreshRecentWishlistAsync(key, appId, now, force, ct).ConfigureAwait(false);
+                    reachable.Add(account);
                 }
-
-                var sales = await RefreshChangedSalesAsync(key, now, force, ct).ConfigureAwait(false);
-
-                // Bütçe biterse BudgetExhaustedException ile çıkılıyor: iş kaldı demek.
-                await DownloadPendingSalesAsync(key, sales, ct).ConfigureAwait(false);
-
-                foreach (var appId in appIds.Distinct())
-                {
-                    await BackfillWishlistAsync(key, appId, now, ct).ConfigureAwait(false);
-                }
-
-                state.FinancialFailure = null;
-                state.FinancialFailureAt = null;
             }
-            catch (BudgetExhaustedException)
+
+            foreach (var account in reachable)
             {
-                pending = true;
-                state.FinancialFailure = null;
-            }
-            catch (AnalyticsException ex)
-            {
-                state.FinancialFailure = ex.Failure;
-                state.FinancialFailureAt = now;
-            }
-            finally
-            {
-                financial.BeforeRequest = null;
+                await TryAsync(account, state, now, () => BackfillAsync(account, now, ct)).ConfigureAwait(false);
             }
         }
-        else
+        catch (BudgetExhaustedException)
         {
-            state.FinancialFailure = null;
+            // İş kaldı; kısa süre sonra yeniden çağrılınca kaldığı yerden devam ediyor.
+            pending = true;
+        }
+        finally
+        {
+            financial.BeforeRequest = null;
         }
 
         state.FinancialBackfillPending = pending;
         await store.SaveStateAsync(state, ct).ConfigureAwait(false);
 
         return pending ? RefreshResult.MorePending : RefreshResult.Done;
+    }
+
+    /// <summary>
+    /// Bir hesabın işini çalıştırır; Steam'in hatası yalnızca o hesabın durumuna yazılıyor.
+    /// Bütçe bitişi yukarı çıkıyor.
+    /// </summary>
+    private static async Task<bool> TryAsync(FinancialAccount account, AnalyticsState state, DateTimeOffset now, Func<Task> work)
+    {
+        try
+        {
+            await work().ConfigureAwait(false);
+            state.Accounts[account.Id] = new FinancialAccountState();
+            return true;
+        }
+        catch (AnalyticsException ex)
+        {
+            state.Accounts[account.Id] = new FinancialAccountState { Failure = ex.Failure, FailureAt = now };
+            return false;
+        }
+    }
+
+    private async Task RefreshRecentAsync(FinancialAccount account, DateTimeOffset now, bool force, CancellationToken ct)
+    {
+        foreach (var appId in account.AppIds.Distinct())
+        {
+            await RefreshRecentWishlistAsync(account.Key, appId, now, force, ct).ConfigureAwait(false);
+        }
+
+        await RefreshChangedSalesAsync(account, now, force, ct).ConfigureAwait(false);
+    }
+
+    private async Task BackfillAsync(FinancialAccount account, DateTimeOffset now, CancellationToken ct)
+    {
+        await DownloadPendingSalesAsync(account, ct).ConfigureAwait(false);
+
+        foreach (var appId in account.AppIds.Distinct())
+        {
+            await BackfillWishlistAsync(account.Key, appId, now, ct).ConfigureAwait(false);
+        }
     }
 
     private async Task RefreshPlayersAsync(uint appId, DateTimeOffset now, bool force, CancellationToken ct)
@@ -290,16 +337,16 @@ public sealed class AnalyticsService(
         }
     }
 
-    private async Task<SalesLedger> RefreshChangedSalesAsync(string key, DateTimeOffset now, bool force, CancellationToken ct)
+    private async Task RefreshChangedSalesAsync(FinancialAccount account, DateTimeOffset now, bool force, CancellationToken ct)
     {
-        var ledger = await store.LoadSalesAsync(ct).ConfigureAwait(false);
+        var ledger = await store.LoadSalesAsync(account.Id, ct).ConfigureAwait(false);
 
         if (!force && ledger.LastCheckedAt is { } last && now - last < FinancialInterval)
         {
-            return ledger;
+            return;
         }
 
-        var changed = await financial.GetChangedDatesAsync(key, ledger.Highwatermark, ct).ConfigureAwait(false);
+        var changed = await financial.GetChangedDatesAsync(account.Key, ledger.Highwatermark, ct).ConfigureAwait(false);
 
         foreach (var date in changed.Dates.Select(SteamWebApi.DateText))
         {
@@ -313,13 +360,13 @@ public sealed class AnalyticsService(
         // açılışta bekleyenler listesinden devam ediliyor.
         ledger.Highwatermark = changed.Highwatermark;
         ledger.LastCheckedAt = now;
-        await store.SaveSalesAsync(ledger, ct).ConfigureAwait(false);
-
-        return ledger;
+        await store.SaveSalesAsync(account.Id, ledger, ct).ConfigureAwait(false);
     }
 
-    private async Task DownloadPendingSalesAsync(string key, SalesLedger ledger, CancellationToken ct)
+    private async Task DownloadPendingSalesAsync(FinancialAccount account, CancellationToken ct)
     {
+        var ledger = await store.LoadSalesAsync(account.Id, ct).ConfigureAwait(false);
+
         if (ledger.PendingDates.Count == 0)
         {
             return;
@@ -338,7 +385,7 @@ public sealed class AnalyticsService(
                     continue;
                 }
 
-                var day = await financial.GetSalesDayAsync(key, date, ct).ConfigureAwait(false);
+                var day = await financial.GetSalesDayAsync(account.Key, date, ct).ConfigureAwait(false);
 
                 // Değişen gün baştan okunuyor ve yerine yazılıyor (Valve: "re-query the
                 // entirety of that date"); üstüne eklenmiyor.
@@ -353,35 +400,38 @@ public sealed class AnalyticsService(
 
                 if (++written % SaveEvery == 0)
                 {
-                    await store.SaveSalesAsync(ledger, ct).ConfigureAwait(false);
+                    await store.SaveSalesAsync(account.Id, ledger, ct).ConfigureAwait(false);
                 }
             }
         }
         finally
         {
-            await store.SaveSalesAsync(ledger, ct).ConfigureAwait(false);
+            await store.SaveSalesAsync(account.Id, ledger, ct).ConfigureAwait(false);
         }
     }
 
-    /// <summary>Bir app'in önbellekteki özeti; ağa çıkmıyor.</summary>
-    public async Task<AppAnalytics> GetAsync(uint appId, CancellationToken ct = default)
+    /// <summary>
+    /// Bir app'in önbellekteki özeti; ağa çıkmıyor. <paramref name="accountId"/>: app'in
+    /// sahibinin anahtar kimliği; yoksa satış gösterilmiyor (wishlist app'e özgü, kalıyor).
+    /// </summary>
+    public async Task<AppAnalytics> GetAsync(uint appId, string? accountId, CancellationToken ct = default)
     {
         var now = _time.GetUtcNow();
         var history = await store.LoadPlayersAsync(appId, ct).ConfigureAwait(false);
         var wishlist = await store.LoadWishlistAsync(appId, ct).ConfigureAwait(false);
-        var sales = await store.LoadSalesAsync(ct).ConfigureAwait(false);
+        var sales = accountId is null ? null : await store.LoadSalesAsync(accountId, ct).ConfigureAwait(false);
 
         return new AppAnalytics(
             appId,
-            sales.AppNames.GetValueOrDefault(appId),
+            sales?.AppNames.GetValueOrDefault(appId),
             SummarizePlayers(history, now),
             SummarizeWishlist(wishlist, now),
-            SummarizeSales(sales, now, appId));
+            sales is null ? null : SummarizeSales(sales, now, appId));
     }
 
-    /// <summary>Ortağın bütün app'lerinin satış toplamı; finans verisi yoksa null.</summary>
-    public async Task<SalesStats?> GetPartnerSalesAsync(CancellationToken ct = default) =>
-        SummarizeSales(await store.LoadSalesAsync(ct).ConfigureAwait(false), _time.GetUtcNow(), appId: null);
+    /// <summary>Bir ortağın bütün app'lerinin satış toplamı; finans verisi yoksa null.</summary>
+    public async Task<SalesStats?> GetPartnerSalesAsync(string accountId, CancellationToken ct = default) =>
+        SummarizeSales(await store.LoadSalesAsync(accountId, ct).ConfigureAwait(false), _time.GetUtcNow(), appId: null);
 
     public Task<AnalyticsState> GetStateAsync(CancellationToken ct = default) => store.LoadStateAsync(ct);
 

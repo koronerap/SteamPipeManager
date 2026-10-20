@@ -77,10 +77,11 @@ internal sealed class WidgetHost
         var analytics = AnalyticsServices.Create(layout);
         var profiles = new ProfileRepository(new JsonProfileStore(layout));
 
-        _widget = new WidgetViewModel(analytics.Service, profiles, layout);
+        _widget = new WidgetViewModel(analytics.Service, profiles, analytics.Keys, layout);
 
-        // Ayrıntı penceresi bütün oyunları gösteriyor; hepsi yenileniyor.
-        _refresher = new AnalyticsRefresher(analytics.Service, () => _widget.Targets.Select(t => t.AppId).ToList());
+        // Ayrıntı penceresi bütün oyunları gösteriyor; hepsi, her biri kendi profilinin
+        // anahtarıyla yenileniyor.
+        _refresher = new AnalyticsRefresher(analytics.Service, () => _widget.Plan.Scope);
 
         _analytics = new AnalyticsViewModel(
             analytics.Service, _refresher, profiles, new SteamImageService(layout.CoversDirectory), analytics.Keys);

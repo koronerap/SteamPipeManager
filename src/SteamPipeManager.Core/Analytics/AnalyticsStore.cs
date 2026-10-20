@@ -48,8 +48,8 @@ public sealed record SalesRow(int Units, decimal NetUsd, decimal GrossUsd)
 }
 
 /// <summary>
-/// Ortağın bütün satışları, günlere (Pasifik) ve app'lere göre. Anahtar bütün app'leri
-/// gördüğü için tek dosya.
+/// Bir ortağın (anahtarın) bütün satışları, günlere (Pasifik) ve app'lere göre. Anahtar
+/// ortağın bütün app'lerini gördüğü için anahtar başına tek dosya.
 /// </summary>
 public sealed class SalesLedger
 {
@@ -69,13 +69,20 @@ public sealed class SalesLedger
     public DateTimeOffset? LastCheckedAt { get; set; }
 }
 
+/// <summary>Bir finans hesabının (anahtarın) son durumu.</summary>
+public sealed class FinancialAccountState
+{
+    /// <summary>Bu anahtarla veri neden alınamadı; null ise sorun yok.</summary>
+    public AnalyticsFailure? Failure { get; set; }
+
+    public DateTimeOffset? FailureAt { get; set; }
+}
+
 /// <summary>Son yenilemenin durumu; arayüz ve widget hatayı buradan gösteriyor.</summary>
 public sealed class AnalyticsState
 {
-    /// <summary>Finans verisi neden alınamadı; null ise sorun yok (ya da anahtar yok).</summary>
-    public AnalyticsFailure? FinancialFailure { get; set; }
-
-    public DateTimeOffset? FinancialFailureAt { get; set; }
+    /// <summary>Anahtar kimliğine (<see cref="SteamFinancialKeyStore.Fingerprint"/>) göre.</summary>
+    public Dictionary<string, FinancialAccountState> Accounts { get; set; } = [];
 
     /// <summary>Wishlist ya da satış geçmişinin bir kısmı henüz indirilmedi.</summary>
     public bool FinancialBackfillPending { get; set; }
@@ -97,7 +104,8 @@ public sealed class AnalyticsStore(string directory)
     private JsonFileStore<WishlistLedger> Wishlist(uint appId) =>
         new(Path.Combine(Directory, "wishlist", $"{appId}.json"), () => new WishlistLedger());
 
-    private JsonFileStore<SalesLedger> Sales => new(Path.Combine(Directory, "sales.json"), () => new SalesLedger());
+    private JsonFileStore<SalesLedger> Sales(string accountId) =>
+        new(Path.Combine(Directory, "sales", $"{accountId}.json"), () => new SalesLedger());
 
     private JsonFileStore<AnalyticsState> State => new(Path.Combine(Directory, "state.json"), () => new AnalyticsState());
 
@@ -113,10 +121,11 @@ public sealed class AnalyticsStore(string directory)
     public Task SaveWishlistAsync(uint appId, WishlistLedger ledger, CancellationToken ct = default) =>
         Wishlist(appId).SaveAsync(ledger, ct);
 
-    public Task<SalesLedger> LoadSalesAsync(CancellationToken ct = default) =>
-        LoadOrEmptyAsync(Sales, () => new SalesLedger(), ct);
+    public Task<SalesLedger> LoadSalesAsync(string accountId, CancellationToken ct = default) =>
+        LoadOrEmptyAsync(Sales(accountId), () => new SalesLedger(), ct);
 
-    public Task SaveSalesAsync(SalesLedger ledger, CancellationToken ct = default) => Sales.SaveAsync(ledger, ct);
+    public Task SaveSalesAsync(string accountId, SalesLedger ledger, CancellationToken ct = default) =>
+        Sales(accountId).SaveAsync(ledger, ct);
 
     public Task<AnalyticsState> LoadStateAsync(CancellationToken ct = default) =>
         LoadOrEmptyAsync(State, () => new AnalyticsState(), ct);

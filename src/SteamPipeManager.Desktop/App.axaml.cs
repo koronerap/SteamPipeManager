@@ -201,9 +201,10 @@ public sealed class App : Application
         services.AddSingleton(analytics);
         services.AddSingleton(analytics.Service);
         services.AddSingleton(analytics.Keys);
+        // Finans anahtarları profil başına: her oyun kendi profilinin anahtarıyla sorgulanıyor.
         services.AddSingleton(p => new AnalyticsRefresher(
             analytics.Service,
-            () => AnalyticsTargets.From(p.GetRequiredService<ProfileRepository>().Profiles).Select(t => t.AppId).ToList()));
+            () => AnalyticsPlan.Build(AnalyticsTargets.From(p.GetRequiredService<ProfileRepository>().Profiles), analytics.Keys.Read).Scope));
         services.AddSingleton<IWidgetLauncher, Widget.AvaloniaWidgetLauncher>();
         services.AddSingleton<AnalyticsViewModel>();
 

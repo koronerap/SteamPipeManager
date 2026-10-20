@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SteamPipeManager.Presentation.Localization;
 using SteamPipeManager.Presentation.Services;
+using SteamPipeManager.Core.Analytics;
 using SteamPipeManager.Core.Epic;
 using SteamPipeManager.Core.Models;
 using SteamPipeManager.Core.Publishing;
@@ -111,6 +112,7 @@ public sealed partial class ProfilePickerViewModel(
     SteamImageService images,
     LoginViewModel login,
     EpicSecretStore secrets,
+    SteamFinancialKeyStore financialKeys,
     ProductProfile product) : ObservableObject
 {
     /// <summary>Uygulama ömrü boyunca bir kez otomatik kontrol yapılır.</summary>
@@ -653,6 +655,10 @@ public sealed partial class ProfilePickerViewModel(
         if (card.IsEpic)
         {
             secrets.Remove(card.Profile.Id);
+        }
+        else
+        {
+            financialKeys.Remove(card.Profile.Id);
         }
 
         Refresh();
