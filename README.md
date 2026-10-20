@@ -106,14 +106,16 @@ profiles:
   Revenue is net of returns and taxes, before Steam's share. Days are Pacific time, and
   the most recent days can still change.
 
-Wishlists and sales need a **Steam financial key**:
+Wishlists and sales need a **Steam financial key**. A key belongs to one Steamworks
+partner (company) and sees only that company's games, so it is entered per profile:
 
 1. In Steamworks, open *Users & Permissions → Manage Groups* and create a
    **Financial API Group**.
-2. Copy the key shown on the group's page into **Settings → Steam financial key**. The app
-   tests it with Steam before saving it.
+2. Copy the key shown on the group's page into **Settings → Steam financial keys**, on the
+   row of the profile it belongs to. The app tests it with Steam before saving it.
+   Profiles of the same company can share a key; their sales are downloaded once.
 3. If you can, lock the key to your IP address there: it can see all sales and wishlist
-   data on your partner account.
+   data of its company.
 
 The key is kept like Epic secrets — Windows DPAPI, the macOS Keychain or the Linux secret
 store — and never in a file you would share. Steam reports wishlists one day at a time, so
@@ -216,7 +218,7 @@ Logs you export for a bug report have account IDs and user paths masked.
 | `profiles.json` | Profiles, games, build targets, depots |
 | `settings.json` | SteamCMD and BuildPatchTool paths, language, timeouts, update check |
 | `epic-secrets.json` | Windows: Epic client secrets, DPAPI-encrypted for your Windows user. Linux without a secret store: the secrets, readable only by you |
-| `steam-financial.json` | Windows: the Steam financial key, DPAPI-encrypted (elsewhere it is in the system's secret store) |
+| `steam-financial.json` | Windows: the Steam financial keys, one per profile, DPAPI-encrypted (elsewhere they are in the system's secret store) |
 | `analytics\` | Analytics cache: player samples, daily wishlists and sales |
 | `widget.json` | The widget's games, numbers and position |
 | `steamcmd-home/` | Linux and macOS: SteamCMD's own home folder (its logs and sign-in cache) |
