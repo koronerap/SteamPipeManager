@@ -21,7 +21,13 @@ public sealed partial class StripWindow : Window
 
     private readonly DispatcherTimer _settle;
     private PixelPoint? _anchor;
-    private bool _placing;
+
+    /// <summary>
+    /// Koddan verilen son konum. Konum olayı bazı platformlarda ayarlandıktan sonra,
+    /// ayrı bir turda geliyor; kullanıcının taşıması sanılıp varsayılan konum
+    /// "kullanıcının seçimi" olarak kaydedilmesin.
+    /// </summary>
+    private PixelPoint? _placed;
 
     public StripWindow()
     {
@@ -42,9 +48,9 @@ public sealed partial class StripWindow : Window
             SettleAfterMove();
         };
 
-        PositionChanged += (_, _) =>
+        PositionChanged += (_, e) =>
         {
-            if (!_placing)
+            if (e.Point != _placed)
             {
                 _settle.Stop();
                 _settle.Start();
@@ -113,9 +119,8 @@ public sealed partial class StripWindow : Window
             anchor = DefaultAnchor();
         }
 
-        _placing = true;
-        Position = new PixelPoint(anchor.X - size.Width, anchor.Y - size.Height);
-        _placing = false;
+        _placed = new PixelPoint(anchor.X - size.Width, anchor.Y - size.Height);
+        Position = _placed.Value;
     }
 
     private PixelPoint DefaultAnchor()

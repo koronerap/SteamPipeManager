@@ -113,7 +113,7 @@ jobs:
             if kill -0 $pid 2>/dev/null; then echo "Kapan isteğine uymadı"; kill $pid; exit 1; fi
             echo "Kapan isteğiyle kapandı"'
           tail -20 widget.log
-          cat data/widget.json
+          cat data/widget.json 2>/dev/null || echo "(widget.json yok: ayar değişmedi)"
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -204,7 +204,8 @@ jobs:
           for i in $(seq 1 50); do pgrep -f "PipeManagerHub --widget" > /dev/null || break; sleep 0.2; done
           if pgrep -f "PipeManagerHub --widget"; then echo "Kapan isteğine uymadı"; pkill -f "PipeManagerHub --widget"; exit 1; fi
           echo "Kapan isteğiyle kapandı"
-          cat data/widget.json
+          # Ayar ancak bir şey değişince yazılıyor; dosya olmayabilir.
+          cat data/widget.json 2>/dev/null || echo "(widget.json yok: ayar değişmedi)"
 
       - uses: actions/upload-artifact@v4
         if: always()
