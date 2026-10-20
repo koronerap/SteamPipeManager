@@ -109,15 +109,29 @@ internal sealed class WidgetHost
     {
         await _widget.LoadAsync();
 
-        _widget.Changed += (_, _) => UpdateMenus();
+        _widget.Changed += (_, _) =>
+        {
+            _strip.ApplyLook(_widget.Settings);
+            UpdateMenus();
+        };
         _refresher.Updated += async (_, _) => await _widget.ReloadAsync();
 
-        // Ana uygulamadaki "Widget'ı aç" düğmesi: şerit gizliyse geri getir.
-        _instance.ShowRequested += (_, _) => Dispatcher.UIThread.Post(() => SetStripVisible(true));
+        // Ana uygulamadaki "Widget'ı aç" düğmesi: şerit gizliyse geri getir; her zaman üstte
+        // değilse başka pencerelerin arkasında kalmış olabilir, öne al.
+        _instance.ShowRequested += (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            SetStripVisible(true);
+
+            if (!_widget.Settings.AlwaysOnTop)
+            {
+                _strip.Activate();
+            }
+        });
 
         // Güncelleme dosyaları değiştirecek; ana uygulama sonra yeniden açıyor.
         _instance.QuitRequested += (_, _) => Dispatcher.UIThread.Post(Quit);
 
+        _strip.ApplyLook(_widget.Settings);
         _strip.SetAnchor(_widget.Settings.StripRight, _widget.Settings.StripBottom);
         UpdateMenus();
 
@@ -160,12 +174,36 @@ internal sealed class WidgetHost
 
         var metrics = new[]
         {
+            (WidgetMetric.Titles, "Widget.Metric.Titles"),
             (WidgetMetric.Players, "Widget.Metric.Players"),
             (WidgetMetric.Wishlists, "Widget.Metric.Wishlists"),
             (WidgetMetric.Sales, "Widget.Metric.Sales"),
         }
         .Select(m => new WidgetMenuEntry(t.Get(m.Item2), () => _ = _widget.ToggleMetricAsync(m.Item1), IsChecked: _widget.IsShown(m.Item1)))
         .ToList();
+
+        var settings = _widget.Settings;
+
+        // Seçeneklerden biri seçili bir alt menü: "Metin boyutu ▸ Küçük / Normal / ...".
+        WidgetMenuEntry Choice<T>(string key, T current, Action<WidgetSettings, T> set) where T : struct, Enum =>
+            new(t.Get(key), Children: Enum.GetValues<T>()
+                .Select(value => new WidgetMenuEntry(
+                    t.Get($"{key}.{value}"),
+                    () => _ = _widget.UpdateAsync(s => set(s, value)),
+                    IsChecked: EqualityComparer<T>.Default.Equals(value, current)))
+                .ToList());
+
+        List<WidgetMenuEntry> appearance =
+        [
+            Choice("Widget.TextSize", settings.TextSize, (s, v) => s.TextSize = v),
+            Choice("Widget.Orientation", settings.Orientation, (s, v) => s.Orientation = v),
+            Choice("Widget.Transparency", settings.Transparency, (s, v) => s.Transparency = v),
+            Choice("Widget.Theme", settings.Theme, (s, v) => s.Theme = v),
+            WidgetMenuEntry.Separator,
+            new(t.Get("Widget.AlwaysOnTop"), () => _ = _widget.UpdateAsync(s => s.AlwaysOnTop = !s.AlwaysOnTop), IsChecked: settings.AlwaysOnTop),
+            new(t.Get("Widget.LockPosition"), () => _ = _widget.UpdateAsync(s => s.LockPosition = !s.LockPosition), IsChecked: settings.LockPosition),
+            new(t.Get("Widget.ResetPosition"), () => _ = ResetPositionAsync()),
+        ];
 
         return
         [
@@ -174,6 +212,7 @@ internal sealed class WidgetHost
             WidgetMenuEntry.Separator,
             new(t.Get("Widget.Games"), Children: games.Count > 0 ? games : [new(t.Get("Widget.NoGames"))]),
             new(t.Get("Widget.Show"), Children: metrics),
+            new(t.Get("Widget.Appearance"), Children: appearance),
             WidgetMenuEntry.Separator,
             new(t.Get("Analytics.Refresh"), () => _refresher.RefreshSoon(force: true)),
             new(t.Format("Widget.OpenApp", App.CurrentProduct.Name), () => MainAppLauncher.Launch()),
@@ -198,6 +237,12 @@ internal sealed class WidgetHost
         }
 
         UpdateMenus();
+    }
+
+    private async Task ResetPositionAsync()
+    {
+        await _widget.ResetPositionAsync();
+        _strip.SetAnchor(null, null);
     }
 
     private async Task ShowDetailsAsync()

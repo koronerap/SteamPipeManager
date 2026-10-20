@@ -83,6 +83,90 @@ public sealed class WidgetTests : IDisposable
         Assert.Equal([2u], restarted.Items.Select(i => i.AppId));
     }
 
+    /// <summary>Önceki sürümün widget.json'ında görünüm ayarları yok: şerit eskisi gibi görünmeli.</summary>
+    [Fact]
+    public async Task A_settings_file_from_before_the_appearance_options_keeps_the_old_look()
+    {
+        Directory.CreateDirectory(_root);
+        await File.WriteAllTextAsync(Layout.WidgetSettingsFile,
+            """{ "schemaVersion": 1, "showSales": false, "stripRight": 1900, "stripBottom": 1040 }""");
+
+        var widget = await WidgetWithGamesAsync(("Alpha", 1, SubAppKind.Main));
+        var settings = widget.Settings;
+
+        Assert.False(settings.ShowSales);
+        Assert.Equal(1900, settings.StripRight);
+        Assert.True(settings.ShowTitles);
+        Assert.True(settings.AlwaysOnTop);
+        Assert.False(settings.LockPosition);
+        Assert.Equal(WidgetTextSize.Normal, settings.TextSize);
+        Assert.Equal(WidgetOrientation.Horizontal, settings.Orientation);
+        Assert.Equal(WidgetTransparency.Low, settings.Transparency);
+        Assert.Equal(WidgetTheme.Dark, settings.Theme);
+    }
+
+    [Fact]
+    public async Task Appearance_changes_are_saved_and_survive_a_restart()
+    {
+        var widget = await WidgetWithGamesAsync(("Alpha", 1, SubAppKind.Main));
+
+        await widget.UpdateAsync(s =>
+        {
+            s.TextSize = WidgetTextSize.ExtraLarge;
+            s.Orientation = WidgetOrientation.Vertical;
+            s.AlwaysOnTop = false;
+            s.Transparency = WidgetTransparency.High;
+            s.Theme = WidgetTheme.System;
+            s.LockPosition = true;
+        });
+        await widget.ToggleMetricAsync(WidgetMetric.Titles);
+
+        Assert.False(widget.Items[0].ShowTitle);
+
+        var restarted = await WidgetWithGamesAsync(("Alpha", 1, SubAppKind.Main));
+        var settings = restarted.Settings;
+
+        Assert.Equal(WidgetTextSize.ExtraLarge, settings.TextSize);
+        Assert.Equal(WidgetOrientation.Vertical, settings.Orientation);
+        Assert.False(settings.AlwaysOnTop);
+        Assert.Equal(WidgetTransparency.High, settings.Transparency);
+        Assert.Equal(WidgetTheme.System, settings.Theme);
+        Assert.True(settings.LockPosition);
+        Assert.False(restarted.IsShown(WidgetMetric.Titles));
+        Assert.False(restarted.Items[0].ShowTitle);
+
+        // Ayarlar okunur hâlde: enum'lar adlarıyla.
+        Assert.Contains("\"ExtraLarge\"", await File.ReadAllTextAsync(Layout.WidgetSettingsFile));
+    }
+
+    [Fact]
+    public async Task Resetting_the_position_forgets_where_the_strip_was_dropped()
+    {
+        var widget = await WidgetWithGamesAsync(("Alpha", 1, SubAppKind.Main));
+        await widget.UpdateAsync(s => (s.StripRight, s.StripBottom) = (500, 400));
+
+        await widget.ResetPositionAsync();
+
+        var restarted = await WidgetWithGamesAsync(("Alpha", 1, SubAppKind.Main));
+        Assert.Null(restarted.Settings.StripRight);
+        Assert.Null(restarted.Settings.StripBottom);
+    }
+
+    [Fact]
+    public void Larger_text_scales_up_and_more_transparency_means_a_fainter_background()
+    {
+        var scales = Enum.GetValues<WidgetTextSize>().Select(WidgetLook.Scale).ToList();
+        var opacities = Enum.GetValues<WidgetTransparency>().Select(WidgetLook.BackgroundOpacity).ToList();
+
+        Assert.Equal(scales.Order(), scales);
+        Assert.Equal(1.0, WidgetLook.Scale(WidgetTextSize.Normal));
+        Assert.Equal(opacities.OrderDescending(), opacities);
+        Assert.Equal(1.0, opacities[0]);
+
+        // En saydamı bile görünür: yazılar okunsun, şerit tutulabilsin.
+        Assert.True(opacities[^1] >= 0.4);
+    }
+
     [Fact]
     public async Task Long_titles_are_shortened_for_the_strip()
     {

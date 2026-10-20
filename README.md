@@ -128,6 +128,20 @@ the Analytics page. Its menu picks the games and numbers, opens the full details
 app and turns on starting with the system. Drag the strip anywhere; dropped near the bottom
 of the screen, it settles onto the taskbar.
 
+**Appearance** in the same menu changes how the strip looks:
+
+| Option | Choices |
+|---|---|
+| Text size | Small, normal, large, extra large (icons and spacing scale with it) |
+| Layout | Horizontal (games side by side) or vertical (one game per row, numbers in columns) |
+| Transparency | None, low, medium, high (only the background; the numbers stay readable) |
+| Theme | Dark, light or matching the system |
+| Always on top | Off lets other windows cover the strip, like a desktop widget |
+| Lock position | Stops the strip from being dragged by accident |
+| Reset position | Puts the strip back above the taskbar, bottom right |
+
+**Show** also hides the game names, leaving only the numbers; the names stay in the tooltip.
+
 | Platform | How it runs |
 |---|---|
 | Windows | `PipeManagerPulse.exe`, next to the app |
@@ -220,7 +234,7 @@ Logs you export for a bug report have account IDs and user paths masked.
 | `epic-secrets.json` | Windows: Epic client secrets, DPAPI-encrypted for your Windows user. Linux without a secret store: the secrets, readable only by you |
 | `steam-financial.json` | Windows: the Steam financial keys, one per profile, DPAPI-encrypted (elsewhere they are in the system's secret store) |
 | `analytics\` | Analytics cache: player samples, daily wishlists and sales |
-| `widget.json` | The widget's games, numbers and position |
+| `widget.json` | The widget's games, numbers, appearance and position |
 | `steamcmd-home/` | Linux and macOS: SteamCMD's own home folder (its logs and sign-in cache) |
 | `history.json` | Build history (most recent 500 entries) |
 | `lang\*.json` | Language files — drop your own here |

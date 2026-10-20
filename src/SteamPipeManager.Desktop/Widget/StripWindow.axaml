@@ -13,52 +13,118 @@
         TransparencyLevelHint="Transparent"
         Background="Transparent">
 
-    <!-- Her yerinden sürüklenebilen ince şerit; ayrıntılar sağdaki düğmeyle ya da çift tıkla. -->
-    <Border x:Name="Body" Background="#EB1E1E22" BorderBrush="#40FFFFFF" BorderThickness="1"
-            CornerRadius="10" Padding="12,7" Cursor="SizeAll">
-        <StackPanel Orientation="Horizontal" Spacing="14">
-            <ic:SymbolIcon Symbol="DataTrending" FontSize="16" Foreground="#4C9AFF" VerticalAlignment="Center" />
+    <Window.Resources>
+        <ResourceDictionary>
+            <!-- Şeridin teması ayarlardan (koyu, açık, sistemle aynı); uygulamanınkinden bağımsız. -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="StripBackground" Color="#1E1E22" />
+                    <SolidColorBrush x:Key="StripBorder" Color="#40FFFFFF" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="StripBackground" Color="#F5F5F7" />
+                    <SolidColorBrush x:Key="StripBorder" Color="#30000000" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
 
-            <ItemsControl ItemsSource="{Binding Items}" VerticalAlignment="Center">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" Spacing="18" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal" Spacing="10" ToolTip.Tip="{Binding Summary}">
-                            <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <ItemsPanelTemplate x:Key="RowPanel">
+                <StackPanel Orientation="Horizontal" Spacing="18" />
+            </ItemsPanelTemplate>
 
-                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowPlayers}">
-                                <ic:SymbolIcon Symbol="People" FontSize="14" Foreground="#4C9AFF" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding PlayersText}" VerticalAlignment="Center" />
-                            </StackPanel>
+            <ItemsPanelTemplate x:Key="ColumnPanel">
+                <StackPanel Orientation="Vertical" Spacing="6" />
+            </ItemsPanelTemplate>
 
-                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowWishlist}">
-                                <ic:SymbolIcon Symbol="Heart" FontSize="14" Foreground="#E06C9F" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding WishlistText}" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding WishlistDelta}" FontSize="12" VerticalAlignment="Center"
-                                           Foreground="{Binding WishlistDeltaTone, Converter={StaticResource ToneBrush}}" />
-                            </StackPanel>
+            <!-- Yatay: her oyun kendi genişliğinde, yan yana. -->
+            <DataTemplate x:Key="RowItem">
+                <StackPanel Orientation="Horizontal" Spacing="10" ToolTip.Tip="{Binding Summary}">
+                    <TextBlock Text="{Binding ShortTitle}" FontWeight="SemiBold" VerticalAlignment="Center"
+                               IsVisible="{Binding ShowTitle}" />
 
-                            <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowSales}">
-                                <ic:SymbolIcon Symbol="Money" FontSize="14" Foreground="#3FB950" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding SalesText}" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                    <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowPlayers}">
+                        <ic:SymbolIcon Symbol="People" FontSize="14" Foreground="#4C9AFF" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding PlayersText}" VerticalAlignment="Center" />
+                    </StackPanel>
 
-            <TextBlock Text="{loc:T Widget.NoGames}" Opacity="0.7" VerticalAlignment="Center"
-                       IsVisible="{Binding Items.Count, Converter={StaticResource HasNoItems}}" />
+                    <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowWishlist}">
+                        <ic:SymbolIcon Symbol="Heart" FontSize="14" Foreground="#E06C9F" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding WishlistText}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding WishlistDelta}" FontSize="12" VerticalAlignment="Center"
+                                   Foreground="{Binding WishlistDeltaTone, Converter={StaticResource ToneBrush}}" />
+                    </StackPanel>
 
-            <Button x:Name="DetailsButton" Classes="subtle" Padding="4" Cursor="Hand" VerticalAlignment="Center"
-                    AutomationProperties.Name="{loc:T Widget.OpenDetails}"
-                    ToolTip.Tip="{loc:T Widget.OpenDetails}">
-                <ic:SymbolIcon Symbol="ChevronUp" FontSize="14" />
-            </Button>
-        </StackPanel>
-    </Border>
+                    <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowSales}">
+                        <ic:SymbolIcon Symbol="Money" FontSize="14" Foreground="#3FB950" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SalesText}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </DataTemplate>
+
+            <!-- Dikey: oyunlar alt alta, sayılar sütun sütun hizalı (paylaşılan sütun genişlikleri). -->
+            <DataTemplate x:Key="ColumnItem">
+                <Grid ToolTip.Tip="{Binding Summary}" Background="Transparent">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Title" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Players" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Wishlist" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="Sales" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="{Binding ShortTitle}" FontWeight="SemiBold" VerticalAlignment="Center"
+                               IsVisible="{Binding ShowTitle}" />
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="14,0,0,0" IsVisible="{Binding ShowPlayers}">
+                        <ic:SymbolIcon Symbol="People" FontSize="14" Foreground="#4C9AFF" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding PlayersText}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="14,0,0,0" IsVisible="{Binding ShowWishlist}">
+                        <ic:SymbolIcon Symbol="Heart" FontSize="14" Foreground="#E06C9F" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding WishlistText}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding WishlistDelta}" FontSize="12" VerticalAlignment="Center"
+                                   Foreground="{Binding WishlistDeltaTone, Converter={StaticResource ToneBrush}}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" Margin="14,0,0,0" IsVisible="{Binding ShowSales}">
+                        <ic:SymbolIcon Symbol="Money" FontSize="14" Foreground="#3FB950" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SalesText}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <!-- Metin boyutu: şeridin tamamı ölçekleniyor, pencere de onunla büyüyor. -->
+    <LayoutTransformControl x:Name="Scaler">
+        <Panel>
+            <!-- Arka plan ayrı katman: saydamlık yalnızca ona uygulanıyor. -->
+            <Border x:Name="Backdrop" Background="{DynamicResource StripBackground}" BorderBrush="{DynamicResource StripBorder}"
+                    BorderThickness="1" CornerRadius="10" />
+
+            <!-- Her yerinden sürüklenebilen şerit; ayrıntılar sağdaki düğmeyle ya da çift tıkla. -->
+            <Border x:Name="Body" Background="Transparent" Padding="12,7" Cursor="SizeAll">
+                <!-- Yerleşim koddan: yatayda tek satır, dikeyde başlık satırı ve altında liste. -->
+                <Grid x:Name="Arrangement" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                    <ic:SymbolIcon x:Name="Logo" Symbol="DataTrending" FontSize="16" Foreground="#4C9AFF" VerticalAlignment="Center" />
+
+                    <TextBlock x:Name="Heading" Text="Pipe Manager Pulse" FontSize="12" Opacity="0.7" VerticalAlignment="Center"
+                               Margin="8,0,0,0" IsVisible="False" />
+
+                    <Panel x:Name="Content" VerticalAlignment="Center">
+                        <ItemsControl x:Name="ItemsList" ItemsSource="{Binding Items}" Grid.IsSharedSizeScope="True"
+                                      ItemsPanel="{StaticResource RowPanel}" ItemTemplate="{StaticResource RowItem}" />
+
+                        <TextBlock Text="{loc:T Widget.NoGames}" Opacity="0.7" VerticalAlignment="Center"
+                                   IsVisible="{Binding Items.Count, Converter={StaticResource HasNoItems}}" />
+                    </Panel>
+
+                    <Button x:Name="DetailsButton" Classes="subtle" Padding="4" Cursor="Hand" VerticalAlignment="Center"
+                            AutomationProperties.Name="{loc:T Widget.OpenDetails}"
+                            ToolTip.Tip="{loc:T Widget.OpenDetails}">
+                        <ic:SymbolIcon Symbol="ChevronUp" FontSize="14" />
+                    </Button>
+                </Grid>
+            </Border>
+        </Panel>
+    </LayoutTransformControl>
 </Window>

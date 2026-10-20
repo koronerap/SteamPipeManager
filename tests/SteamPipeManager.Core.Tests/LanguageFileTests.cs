@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using SteamPipeManager.Core.Localization;
+using SteamPipeManager.Presentation.ViewModels;
 
 namespace SteamPipeManager.Core.Tests;
 
@@ -141,6 +142,24 @@ public sealed class LanguageFileTests
             .ToArray();
 
         Assert.Empty(blank);
+    }
+
+    /// <summary>
+    /// Widget'ın seçim menüleri anahtarı seçeneğin adından kuruyor ("Widget.TextSize.Small");
+    /// yeni bir seçenek eklenip metni unutulursa menüde ham anahtar görünürdü.
+    /// </summary>
+    [Fact]
+    public void Every_widget_choice_has_a_label()
+    {
+        string[] keys =
+        [
+            .. Enum.GetValues<WidgetTextSize>().Select(v => $"Widget.TextSize.{v}"),
+            .. Enum.GetValues<WidgetOrientation>().Select(v => $"Widget.Orientation.{v}"),
+            .. Enum.GetValues<WidgetTransparency>().Select(v => $"Widget.Transparency.{v}"),
+            .. Enum.GetValues<WidgetTheme>().Select(v => $"Widget.Theme.{v}"),
+        ];
+
+        Assert.Empty(keys.Where(k => !English.Strings.ContainsKey(k)));
     }
 
     private static HashSet<string> Placeholders(string text) =>

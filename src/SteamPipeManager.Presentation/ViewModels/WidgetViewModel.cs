@@ -24,7 +24,28 @@ public sealed class WidgetSettings
 
     public bool ShowSales { get; set; } = true;
 
+    /// <summary>Kapalıyken şeritte yalnızca sayılar; oyunun adı ipucunda.</summary>
+    public bool ShowTitles { get; set; } = true;
+
     public bool StripVisible { get; set; } = true;
+
+    /// <summary>Metin ve simgeler birlikte büyüyüp küçülüyor.</summary>
+    public WidgetTextSize TextSize { get; set; } = WidgetTextSize.Normal;
+
+    /// <summary>Oyunlar yan yana (ince şerit) ya da alt alta (sütunları hizalı liste).</summary>
+    public WidgetOrientation Orientation { get; set; } = WidgetOrientation.Horizontal;
+
+    /// <summary>Kapalıyken şerit diğer pencerelerin arkasında kalabiliyor; masaüstü widget'ı gibi.</summary>
+    public bool AlwaysOnTop { get; set; } = true;
+
+    /// <summary>Yalnızca arka plan saydamlaşıyor; yazılar okunur kalsın.</summary>
+    public WidgetTransparency Transparency { get; set; } = WidgetTransparency.Low;
+
+    /// <summary>Yalnızca şeridin teması; açık görev çubuğunun üstünde açık şerit için.</summary>
+    public WidgetTheme Theme { get; set; } = WidgetTheme.Dark;
+
+    /// <summary>Kilitliyken şerit sürüklenmiyor; yanlışlıkla kaymasın.</summary>
+    public bool LockPosition { get; set; }
 
     /// <summary>
     /// Şeridin sağ alt köşesi (fiziksel piksel); yoksa görev çubuğunun üstü, sağda. Köşe
@@ -37,9 +58,64 @@ public sealed class WidgetSettings
 
 public enum WidgetMetric
 {
+    Titles,
     Players,
     Wishlists,
     Sales,
+}
+
+public enum WidgetTextSize
+{
+    Small,
+    Normal,
+    Large,
+    ExtraLarge,
+}
+
+public enum WidgetOrientation
+{
+    Horizontal,
+    Vertical,
+}
+
+public enum WidgetTransparency
+{
+    None,
+    Low,
+    Medium,
+    High,
+}
+
+public enum WidgetTheme
+{
+    Dark,
+    Light,
+    System,
+}
+
+/// <summary>Görünüm ayarlarının ekrandaki karşılığı.</summary>
+public static class WidgetLook
+{
+    /// <summary>Şeridin ölçeği; metin, simge ve boşluklar birlikte.</summary>
+    public static double Scale(WidgetTextSize size) => size switch
+    {
+        WidgetTextSize.Small => 0.85,
+        WidgetTextSize.Large => 1.2,
+        WidgetTextSize.ExtraLarge => 1.45,
+        _ => 1.0,
+    };
+
+    /// <summary>
+    /// Arka planın opaklığı. En saydamı bile tamamen saydam değil: yazılar her zeminde
+    /// okunsun ve şerit tutulup sürüklenebilsin.
+    /// </summary>
+    public static double BackgroundOpacity(WidgetTransparency transparency) => transparency switch
+    {
+        WidgetTransparency.None => 1.0,
+        WidgetTransparency.Medium => 0.7,
+        WidgetTransparency.High => 0.45,
+        _ => 0.92,
+    };
 }
 
 /// <summary>Şeritte bir oyun: kısa ad ve seçilen sayılar.</summary>
@@ -51,6 +127,9 @@ public sealed partial class WidgetItem(AnalyticsTarget target) : ObservableObjec
 
     /// <summary>Şeride sığsın diye kısaltılmış ad; tam adı ipucunda.</summary>
     public string ShortTitle => Target.Title.Length <= 18 ? Target.Title : Target.Title[..17].TrimEnd() + "…";
+
+    [ObservableProperty]
+    private bool _showTitle = true;
 
     [ObservableProperty]
     private bool _showPlayers;
@@ -83,6 +162,7 @@ public sealed partial class WidgetItem(AnalyticsTarget target) : ObservableObjec
 
     public void Apply(AppAnalytics data, WidgetSettings settings)
     {
+        ShowTitle = settings.ShowTitles;
         ShowPlayers = settings.ShowPlayers;
         PlayersText = data.Players.Current is { } players ? AnalyticsFormat.Compact(players) : "—";
 
@@ -241,6 +321,7 @@ public sealed partial class WidgetViewModel(
 
     public bool IsShown(WidgetMetric metric) => metric switch
     {
+        WidgetMetric.Titles => Settings.ShowTitles,
         WidgetMetric.Players => Settings.ShowPlayers,
         WidgetMetric.Wishlists => Settings.ShowWishlists,
         _ => Settings.ShowSales,
@@ -250,6 +331,9 @@ public sealed partial class WidgetViewModel(
     {
         switch (metric)
         {
+            case WidgetMetric.Titles:
+                Settings.ShowTitles = !Settings.ShowTitles;
+                break;
             case WidgetMetric.Players:
                 Settings.ShowPlayers = !Settings.ShowPlayers;
                 break;
@@ -264,6 +348,17 @@ public sealed partial class WidgetViewModel(
         await SaveAsync();
         await ReloadAsync();
     }
+
+    /// <summary>Görünüm ayarlarından birini değiştirir ve kaydeder; şerit <see cref="Changed"/> ile yenileniyor.</summary>
+    public async Task UpdateAsync(Action<WidgetSettings> change)
+    {
+        change(Settings);
+        await SaveAsync();
+        await ReloadAsync();
+    }
+
+    /// <summary>Şerit varsayılan yerine, birincil ekranın sağ altına dönüyor.</summary>
+    public Task ResetPositionAsync() => UpdateAsync(s => (s.StripRight, s.StripBottom) = (null, null));
 
     public async Task SaveAsync()
     {
