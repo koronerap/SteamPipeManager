@@ -89,13 +89,41 @@ jobs:
             if kill -0 $pid; then echo "Uygulama çalışıyor"; kill $pid; else echo "Uygulama kapandı"; cat app.log; exit 1; fi'
           ls data data/lang | head -20
 
+      # Widget: aynı dosya --widget ile. Bir Steam oyunu (CS2) olsun ki şeritte sayı görünsün.
+      # Sanal ekranda tepsi servisi yok; widget bundan çökmemeli.
+      - name: Widget
+        run: |
+          printf '%s' '{"schemaVersion":3,"profiles":[{"id":"11111111-1111-1111-1111-111111111111","displayName":"CI","provider":"Steam","steamUsername":"ci","apps":[{"id":"22222222-2222-2222-2222-222222222222","title":"Counter-Strike 2","subApps":[{"id":"33333333-3333-3333-3333-333333333333","title":"Counter-Strike 2","kind":"Main","steamAppId":730,"depots":[]}]}]}]}' > data/profiles.json
+          export SPM_DATA_DIR="$PWD/data"
+          xvfb-run -a -s "-screen 0 1280x860x24" bash -c '
+            ./out/extracted/PipeManagerHub/PipeManagerHub --widget > widget.log 2>&1 &
+            pid=$!
+            sleep 15
+            import -window root shot-linux-widget.png
+            if kill -0 $pid; then echo "Widget çalışıyor"; else echo "Widget kapandı"; cat widget.log; exit 1; fi
+
+            # İkinci kopya birincisine "görün" deyip kapanmalı.
+            timeout 20 ./out/extracted/PipeManagerHub/PipeManagerHub --widget; rc=$?
+            if [ $rc -eq 124 ]; then echo "İkinci kopya kapanmadı"; kill $pid; exit 1; fi
+            echo "İkinci kopya kapandı ($rc)"
+
+            # Güncelleme öncesi "kapan" isteği.
+            echo now > "$SPM_DATA_DIR/widget.quit"
+            for i in $(seq 1 50); do kill -0 $pid 2>/dev/null || break; sleep 0.2; done
+            if kill -0 $pid 2>/dev/null; then echo "Kapan isteğine uymadı"; kill $pid; exit 1; fi
+            echo "Kapan isteğiyle kapandı"'
+          tail -20 widget.log
+          cat data/widget.json
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: linux-app
           path: |
             shot-linux.png
+            shot-linux-widget.png
             app.log
+            widget.log
 
   macos-app:
     name: App bundle (macOS ${{ matrix.arch }})
@@ -160,8 +188,26 @@ jobs:
           if pgrep -x PipeManagerHub; then echo "Uygulama çalışıyor"; pkill -x PipeManagerHub; else echo "Uygulama çalışmıyor"; exit 1; fi
           ls data data/lang | head -20
 
+      # Widget: aynı uygulama --widget ile; Dock'ta görünmüyor, menü çubuğunda simgesi var.
+      - name: Widget
+        run: |
+          printf '%s' '{"schemaVersion":3,"profiles":[{"id":"11111111-1111-1111-1111-111111111111","displayName":"CI","provider":"Steam","steamUsername":"ci","apps":[{"id":"22222222-2222-2222-2222-222222222222","title":"Counter-Strike 2","subApps":[{"id":"33333333-3333-3333-3333-333333333333","title":"Counter-Strike 2","kind":"Main","steamAppId":730,"depots":[]}]}]}]}' > data/profiles.json
+          open -n --env SPM_DATA_DIR="$PWD/data" "out/extracted/Pipe Manager Hub.app" --args --widget
+          sleep 15
+          screencapture -x shot-macos-widget-${{ matrix.arch }}.png || true
+          if pgrep -f "PipeManagerHub --widget"; then echo "Widget çalışıyor"; else echo "Widget çalışmıyor"; exit 1; fi
+
+          # Güncelleme öncesi "kapan" isteği.
+          echo now > data/widget.quit
+          for i in $(seq 1 50); do pgrep -f "PipeManagerHub --widget" > /dev/null || break; sleep 0.2; done
+          if pgrep -f "PipeManagerHub --widget"; then echo "Kapan isteğine uymadı"; pkill -f "PipeManagerHub --widget"; exit 1; fi
+          echo "Kapan isteğiyle kapandı"
+          cat data/widget.json
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: macos-app-${{ matrix.arch }}
-          path: shot-macos-${{ matrix.arch }}.png
+          path: |
+            shot-macos-${{ matrix.arch }}.png
+            shot-macos-widget-${{ matrix.arch }}.png

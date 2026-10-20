@@ -44,10 +44,17 @@ marked **experimental** in the app until more people have published with it.
   `app_*.vdf` / `depot_*.vdf` files and turns them into profiles, games and depots
 - **In-app sign-in** — no console window; Steam Guard codes and mobile confirmation are handled in the UI
 - **Preview builds** — a dry run that uploads nothing
+- **Choose the depots** to send when a target has several; a depot that cannot be sent (an
+  empty folder, say) no longer blocks the others
 - **Live progress** with phase, percentage and a detailed log you can open when you need it
 - **Build history** with the BuildID Steam returned and a link to the archived log
 - **Script preview** — see the exact `.vdf` files that will be written before you build
-- **Store art** — game capsules and profile avatars pulled from Steam's public endpoints
+- **Store art** — game capsules and profile avatars pulled from Steam's public endpoints and
+  checked against the store at every start
+- **Analytics** (Steam Pipe Manager and Pipe Manager Hub) — current players for every Steam
+  game, and wishlists and sales with a Steam financial key
+- **Pipe Manager Pulse** — a small widget that keeps those numbers on screen, above the
+  taskbar or in the tray, and can start with the system
 - **Epic Games Store** (Epic Build Manager and Pipe Manager Hub) — artifacts, build roots,
   launch settings and labels; uploads with `UploadBinary`, then sets the label live with
   `LabelBinary`, and reports "uploaded but not labelled" as its own state
@@ -86,6 +93,46 @@ the current version is kept. The check can be turned off in Settings.
 
 > Preview is worth using the first time: it runs the whole pipeline and reports exactly
 > what would be uploaded, without uploading anything.
+
+## Analytics and the widget
+
+The **Analytics** page (the chart button at the top) shows, for every Steam game in your
+profiles:
+
+- **Players now** — Steam's public count; no key needed. Steam keeps no history, so the
+  24-hour peak and the chart come from what the app records while it (or the widget) runs.
+- **Wishlists** — the total, today's and yesterday's change, and the last 30 days.
+- **Sales** — units and revenue for today, yesterday, the last 7 and 30 days and all time.
+  Revenue is net of returns and taxes, before Steam's share. Days are Pacific time, and
+  the most recent days can still change.
+
+Wishlists and sales need a **Steam financial key**:
+
+1. In Steamworks, open *Users & Permissions → Manage Groups* and create a
+   **Financial API Group**.
+2. Copy the key shown on the group's page into **Settings → Steam financial key**. The app
+   tests it with Steam before saving it.
+3. If you can, lock the key to your IP address there: it can see all sales and wishlist
+   data on your partner account.
+
+The key is kept like Epic secrets — Windows DPAPI, the macOS Keychain or the Linux secret
+store — and never in a file you would share. Steam reports wishlists one day at a time, so
+the first time the app downloads the history back to your game's first day. That takes a
+few minutes, and the totals fill in as it goes.
+
+**Pipe Manager Pulse** keeps the same numbers on screen: a thin strip that stays on top just
+above the taskbar, and a tray icon (the menu bar on macOS). Open it with **Open widget** on
+the Analytics page. Its menu picks the games and numbers, opens the full details, opens the
+app and turns on starting with the system. Drag the strip anywhere; dropped near the bottom
+of the screen, it settles onto the taskbar.
+
+| Platform | How it runs |
+|---|---|
+| Windows | `PipeManagerPulse.exe`, next to the app |
+| Linux, macOS | The app itself with `--widget` |
+
+On GNOME the tray icon needs the *AppIndicator* extension; without it, right-click the strip
+for the same menu. KDE, and the Steam Deck's desktop mode, show it as they are.
 
 ## Linux and macOS
 
@@ -169,6 +216,9 @@ Logs you export for a bug report have account IDs and user paths masked.
 | `profiles.json` | Profiles, games, build targets, depots |
 | `settings.json` | SteamCMD and BuildPatchTool paths, language, timeouts, update check |
 | `epic-secrets.json` | Windows: Epic client secrets, DPAPI-encrypted for your Windows user. Linux without a secret store: the secrets, readable only by you |
+| `steam-financial.json` | Windows: the Steam financial key, DPAPI-encrypted (elsewhere it is in the system's secret store) |
+| `analytics\` | Analytics cache: player samples, daily wishlists and sales |
+| `widget.json` | The widget's games, numbers and position |
 | `steamcmd-home/` | Linux and macOS: SteamCMD's own home folder (its logs and sign-in cache) |
 | `history.json` | Build history (most recent 500 entries) |
 | `lang\*.json` | Language files — drop your own here |

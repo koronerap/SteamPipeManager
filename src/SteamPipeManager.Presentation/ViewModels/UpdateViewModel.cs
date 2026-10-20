@@ -51,6 +51,7 @@ public sealed partial class UpdateViewModel : ObservableObject
     private readonly UpdateChecker _checker;
     private readonly UpdateDownloader _downloader;
     private readonly IAppLifetime _lifetime;
+    private readonly IWidgetLauncher? _widgetLauncher;
 
     private UpdateCheckResult? _result;
     private AppVersion? _updatedFrom;
@@ -65,9 +66,11 @@ public sealed partial class UpdateViewModel : ObservableObject
         EpicBuildPanelViewModel epicBuild,
         SubAppWorkspaceViewModel workspace,
         EpicWorkspaceViewModel epicWorkspace,
-        IAppLifetime lifetime)
+        IAppLifetime lifetime,
+        IWidgetLauncher? widgetLauncher = null)
     {
         _lifetime = lifetime;
+        _widgetLauncher = widgetLauncher;
         _settings = settings;
         _layout = layout;
         _product = product;
@@ -187,6 +190,12 @@ public sealed partial class UpdateViewModel : ObservableObject
         }
 
         _ = Task.Run(() => CleanupAsync(launch.WaitForProcessId));
+
+        // Güncellemeden önce kapatılan widget yeni sürümle geri gelsin.
+        if (launch.RestartWidget)
+        {
+            _widgetLauncher?.Launch();
+        }
 
         if (launch.UpdatedFrom is not null)
         {
@@ -344,6 +353,10 @@ public sealed partial class UpdateViewModel : ObservableObject
             await _workspace.FlushAsync();
             await _epicWorkspace.FlushAsync();
 
+            // Widget aynı klasörden çalışıyor: Windows'ta açıkken klasör taşınamıyor,
+            // diğerlerinde eski sürümle çalışmaya devam ederdi. Kapatılıp sonra yeniden açılıyor.
+            var widgetWasRunning = await WidgetSignals.StopAsync(_layout, TimeSpan.FromSeconds(10));
+
             var installed = await Task.Run(() => UpdateInstaller.Install(staged, appDirectory));
 
             Stage = UpdateStage.Restarting;
@@ -353,7 +366,7 @@ public sealed partial class UpdateViewModel : ObservableObject
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = executable,
-                    Arguments = UpdateLaunchArguments.Build(Current, Environment.ProcessId),
+                    Arguments = UpdateLaunchArguments.Build(Current, Environment.ProcessId, widgetWasRunning),
                     WorkingDirectory = appDirectory,
                     UseShellExecute = false,
                 });

@@ -111,6 +111,9 @@ internal sealed class WidgetHost
         // Ana uygulamadaki "Widget'ı aç" düğmesi: şerit gizliyse geri getir.
         _instance.ShowRequested += (_, _) => Dispatcher.UIThread.Post(() => SetStripVisible(true));
 
+        // Güncelleme dosyaları değiştirecek; ana uygulama sonra yeniden açıyor.
+        _instance.QuitRequested += (_, _) => Dispatcher.UIThread.Post(Quit);
+
         _strip.SetAnchor(_widget.Settings.StripRight, _widget.Settings.StripBottom);
         UpdateMenus();
 

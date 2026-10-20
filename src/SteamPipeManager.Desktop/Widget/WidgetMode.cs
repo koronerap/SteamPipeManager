@@ -38,28 +38,69 @@ internal static class WidgetMode
 
 /// <summary>
 /// Aynı anda tek widget. İkincisi açılırsa birincisine "görün" der ve kapanır: ana
-/// uygulamadaki "Widget'ı aç" düğmesi gizlenmiş şeridi de geri getirsin diye.
+/// uygulamadaki "Widget'ı aç" düğmesi gizlenmiş şeridi de geri getirsin diye. Güncelleme
+/// öncesinde ana uygulama "kapan" diyor (bkz. <see cref="WidgetSignals"/>).
 /// </summary>
 internal sealed class WidgetInstance : IDisposable
 {
     private readonly FileStream _lock;
     private readonly FileSystemWatcher _watcher;
+    private readonly string _directory;
 
     private WidgetInstance(FileStream fileLock, string directory)
     {
         _lock = fileLock;
-        _watcher = new FileSystemWatcher(directory, ShowRequestFile) { EnableRaisingEvents = true };
-        _watcher.Created += (_, _) => Raise();
-        _watcher.Changed += (_, _) => Raise();
-    }
+        _directory = directory;
 
-    private const string LockFile = "widget.lock";
-    private const string ShowRequestFile = "widget.show";
+        // Önceki oturumdan kalmış istekler yok sayılıyor.
+        Consume(WidgetSignals.ShowRequestFile);
+        Consume(WidgetSignals.QuitRequestFile);
+
+        _watcher = new FileSystemWatcher(directory, "widget.*") { EnableRaisingEvents = true };
+        _watcher.Created += (_, e) => OnRequest(e.Name);
+        _watcher.Changed += (_, e) => OnRequest(e.Name);
+    }
 
     /// <summary>Başka bir kopya "görün" dedi; olay arka plan iş parçacığında geliyor.</summary>
     public event EventHandler? ShowRequested;
 
-    private void Raise() => ShowRequested?.Invoke(this, EventArgs.Empty);
+    /// <summary>Ana uygulama güncelleme için "kapan" dedi; arka plan iş parçacığında.</summary>
+    public event EventHandler? QuitRequested;
+
+    private void OnRequest(string? name)
+    {
+        if (string.Equals(name, WidgetSignals.ShowRequestFile, StringComparison.OrdinalIgnoreCase) &&
+            Consume(WidgetSignals.ShowRequestFile))
+        {
+            ShowRequested?.Invoke(this, EventArgs.Empty);
+        }
+        else if (string.Equals(name, WidgetSignals.QuitRequestFile, StringComparison.OrdinalIgnoreCase) &&
+                 Consume(WidgetSignals.QuitRequestFile))
+        {
+            QuitRequested?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>İstek dosyasını siler; vardıysa true. İzleyici aynı isteği iki kez bildirebiliyor.</summary>
+    private bool Consume(string file)
+    {
+        try
+        {
+            var path = Path.Combine(_directory, file);
+
+            if (!File.Exists(path))
+            {
+                return false;
+            }
+
+            File.Delete(path);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Kilit alınamazsa widget zaten açık: ona haber verilip null dönüyor.</summary>
     public static WidgetInstance? TryAcquire(WorkspaceLayout layout)
@@ -69,20 +110,12 @@ internal sealed class WidgetInstance : IDisposable
         try
         {
             var stream = new FileStream(
-                Path.Combine(layout.Root, LockFile), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+                Path.Combine(layout.Root, WidgetSignals.LockFile), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             return new WidgetInstance(stream, layout.Root);
         }
         catch (IOException)
         {
-            try
-            {
-                File.WriteAllText(Path.Combine(layout.Root, ShowRequestFile), DateTimeOffset.UtcNow.ToString("O"));
-            }
-            catch (IOException)
-            {
-                // Açık olan kopya yine çalışıyor; yalnızca öne gelmez.
-            }
-
+            WidgetSignals.Request(layout, WidgetSignals.ShowRequestFile);
             return null;
         }
     }
@@ -97,10 +130,17 @@ internal sealed class WidgetInstance : IDisposable
 /// <summary>
 /// Avalonia arayüzünden (Linux, macOS) widget: aynı çalıştırılabilir <c>--widget</c> ile.
 /// </summary>
-internal sealed class AvaloniaWidgetLauncher : IWidgetLauncher
+internal sealed class AvaloniaWidgetLauncher(WorkspaceLayout layout) : IWidgetLauncher
 {
     public bool Launch()
     {
+        // Zaten açıksa yeni süreç başlatmadan şeridi geri getir.
+        if (WidgetSignals.IsRunning(layout))
+        {
+            WidgetSignals.Request(layout, WidgetSignals.ShowRequestFile);
+            return true;
+        }
+
         if (Environment.ProcessPath is not { } exe)
         {
             return false;

@@ -6,12 +6,14 @@ using System.Text;
 // Kullanım:
 //   Packager tar <kaynak klasör> <çıktı.tar.gz> <paketteki kök ad> [çalıştırılabilir göreli yol]...
 //   Packager macapp <publish klasörü> <.app klasörü> <ürün adı> <çalıştırılabilir ad> <bundle id> <sürüm> <app.ico>
+//   Packager identity <dosya> <anahtar>=<değer>...   (değer boşsa anahtar hiç olmamalı)
 
 return args switch
 {
     ["tar", var source, var output, var rootName, .. var executables] => Tar(source, output, rootName, executables),
     ["macapp", var publish, var bundle, var name, var executable, var id, var version, var icon] =>
         MacApp(publish, bundle, name, executable, id, version, icon),
+    ["identity", var file, .. var expected] when expected.Length > 0 => Identity(file, expected),
     _ => Usage(),
 };
 
@@ -19,7 +21,55 @@ static int Usage()
 {
     Console.Error.WriteLine("usage: Packager tar <source> <out.tar.gz> <root> [exec...]");
     Console.Error.WriteLine("       Packager macapp <publish> <bundle.app> <name> <exe> <id> <version> <icon.ico>");
+    Console.Error.WriteLine("       Packager identity <file> <key>=<value>...");
     return 2;
+}
+
+/// <summary>
+/// Pakete giren çalıştırılabilirin ürün kimliğini doğrular: <c>AssemblyMetadata</c>
+/// değerleri (SpmProduct, SpmWidget). Aynı proje farklı ürünler için art arda
+/// derlendiğinde artımlı derlemenin eski kimliği bırakması görüldü; yanlış ürünün
+/// paketlenmesi sessizce geçmesin.
+///
+/// Tek dosya paketler sıkıştırılmadığı için derleme içinde olduğu gibi duruyor;
+/// öznitelik verisi önek 01 00, ardından uzunluk önekli anahtar ve değer.
+/// </summary>
+static int Identity(string file, string[] expected)
+{
+    var bytes = File.ReadAllBytes(file);
+    var failed = false;
+
+    foreach (var pair in expected)
+    {
+        var separator = pair.IndexOf('=');
+        var (key, value) = separator < 0 ? (pair, "") : (pair[..separator], pair[(separator + 1)..]);
+        var actual = ReadMetadata(bytes, key);
+
+        if (value.Length == 0 ? actual is not null : actual != value)
+        {
+            Console.Error.WriteLine($"{Path.GetFileName(file)}: {key} expected {(value.Length == 0 ? "absent" : value)}, found {actual ?? "absent"}");
+            failed = true;
+        }
+    }
+
+    return failed ? 1 : 0;
+}
+
+static string? ReadMetadata(byte[] bytes, string key)
+{
+    var keyBytes = Encoding.UTF8.GetBytes(key);
+    byte[] pattern = [0x01, 0x00, (byte)keyBytes.Length, .. keyBytes];
+
+    var index = bytes.AsSpan().IndexOf(pattern);
+
+    if (index < 0)
+    {
+        return null;
+    }
+
+    var valueAt = index + pattern.Length;
+    var length = bytes[valueAt];
+    return Encoding.UTF8.GetString(bytes, valueAt + 1, length);
 }
 
 /// <summary>

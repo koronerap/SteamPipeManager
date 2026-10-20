@@ -105,9 +105,9 @@ New-Item -ItemType Directory $staging | Out-Null
 
 # Ürün adları, exe adları ve macOS paket kimlikleri; üçü de aynı koddan çıkıyor.
 $catalog = [ordered]@{
-    SteamPipeManager = @{ Name = "Steam Pipe Manager"; Exe = "SteamPipeManager"; BundleId = "io.github.koronerap.steampipemanager" }
-    EpicBuildManager = @{ Name = "Epic Build Manager"; Exe = "EpicBuildManager"; BundleId = "io.github.koronerap.epicbuildmanager" }
-    PipeManagerHub   = @{ Name = "Pipe Manager Hub";   Exe = "PipeManagerHub";   BundleId = "io.github.koronerap.pipemanagerhub" }
+    SteamPipeManager = @{ Name = "Steam Pipe Manager"; Exe = "SteamPipeManager"; BundleId = "io.github.koronerap.steampipemanager"; Widget = $true }
+    EpicBuildManager = @{ Name = "Epic Build Manager"; Exe = "EpicBuildManager"; BundleId = "io.github.koronerap.epicbuildmanager"; Widget = $false }
+    PipeManagerHub   = @{ Name = "Pipe Manager Hub";   Exe = "PipeManagerHub";   BundleId = "io.github.koronerap.pipemanagerhub"; Widget = $true }
 }
 
 $products = if ($Product -eq "All") { @($catalog.Keys) } else { @($Product) }
@@ -122,17 +122,23 @@ $bundleVersion = if ($Version) { $Version } else {
     (dotnet msbuild $avaloniaProject -getProperty:Version -nologo).Trim()
 }
 
-# Paketleyici bir kez derleniyor.
+# Paketleyici bir kez derleniyor; kimlik denetimi her platformda kullanıyor.
 $packagerDir = Join-Path $work "packager"
-if ($platforms -contains "Linux" -or $platforms -contains "MacOS") {
-    dotnet build (Join-Path $root "tools\Packager\Packager.csproj") -c Release -o $packagerDir --nologo --verbosity quiet
-    if ($LASTEXITCODE -ne 0) { throw "Paketleyici derlenemedi." }
-}
+dotnet build (Join-Path $root "tools\Packager\Packager.csproj") -c Release -o $packagerDir --nologo --verbosity quiet
+if ($LASTEXITCODE -ne 0) { throw "Paketleyici derlenemedi." }
 $packager = Join-Path $packagerDir "Packager.exe"
 
 function Invoke-Packager([string[]]$arguments) {
     & $packager @arguments
     if ($LASTEXITCODE -ne 0) { throw "Paketleyici başarısız: $($arguments -join ' ')" }
+}
+
+# Pakete giren dosyanın ürün kimliği. Aynı proje farklı ürünler için art arda
+# derlenirken artımlı derlemenin eski kimliği bıraktığı görüldü; yanlış ürün sessizce
+# paketlenmesin. Boş değer: o anahtar hiç olmamalı (ana uygulama widget olarak açılmasın).
+function Assert-Identity([string]$file, [string[]]$expected) {
+    & $packager identity $file @expected
+    if ($LASTEXITCODE -ne 0) { throw "Ürün kimliği beklenen değil: $file ($($expected -join ', '))" }
 }
 
 # rcodesign: macOS paketini bütünüyle ad-hoc imzalamak için.
@@ -159,6 +165,10 @@ if ($platforms -contains "Windows") {
     dotnet restore $wpfProject -r win-x64 --nologo --verbosity quiet
     if ($LASTEXITCODE -ne 0) { throw "Paket geri yükleme başarısız." }
 
+    # Widget (PipeManagerPulse.exe) Avalonia projesinin Windows derlemesi.
+    dotnet restore $avaloniaProject -r win-x64 --nologo --verbosity quiet
+    if ($LASTEXITCODE -ne 0) { throw "Paket geri yükleme başarısız (widget)." }
+
     foreach ($id in $products) {
         $info = $catalog[$id]
         $productDir = Join-Path $staging $info.Exe
@@ -172,6 +182,24 @@ if ($platforms -contains "Windows") {
 
         # Kullanıcının çift tıklayacağı dosya ürünün adını taşısın.
         Rename-Item (Join-Path $productDir "SteamPipeManager.App.exe") "$($info.Exe).exe"
+        Assert-Identity (Join-Path $productDir "$($info.Exe).exe") @("SpmProduct=$id")
+
+        if ($info.Widget) {
+            # Widget aynı paketin içinde: yanında duruyor, ana uygulamayla birlikte güncelleniyor.
+            # Her seferinde baştan derleniyor: artımlı derleme widget işaretini düşürebiliyordu
+            # ve "dotnet publish" --no-incremental almıyor; ara klasör (yalnızca widget'ın
+            # Windows derlemesi kullanıyor) siliniyor.
+            Write-Host "Yayımlanıyor: Pipe Manager Pulse ($($info.Name), win-x64)…" -ForegroundColor Cyan
+            $pulseDir = Join-Path $work "$($info.Exe)-pulse"
+            $pulseObj = Join-Path $root "src\SteamPipeManager.Desktop\obj\$Configuration\net9.0\win-x64"
+            if (Test-Path $pulseObj) { Remove-Item $pulseObj -Recurse -Force }
+
+            dotnet publish $avaloniaProject -c $Configuration -r win-x64 -o $pulseDir --nologo --no-restore --verbosity quiet -p:SpmProduct=$id -p:SpmWidget=true @versionArgs
+            if ($LASTEXITCODE -ne 0) { throw "Yayımlama başarısız: widget ($id)" }
+
+            Assert-Identity (Join-Path $pulseDir "PipeManagerPulse.exe") @("SpmProduct=$id", "SpmWidget=true")
+            Copy-Item (Join-Path $pulseDir "*") $productDir -Recurse -Force
+        }
 
         # Zip'leme bir sonraki ürün derlenirken arka planda yapılıyor.
         $jobs += Start-Job -Name "$id-win" -ScriptBlock $zipJob -ArgumentList $productDir, $productZip
@@ -199,6 +227,9 @@ foreach ($rid in $unixRids) {
 
         dotnet publish $avaloniaProject -c $Configuration -r $rid -o $publishDir --nologo --no-restore --verbosity quiet -p:SpmProduct=$id @versionArgs
         if ($LASTEXITCODE -ne 0) { throw "Yayımlama başarısız: $id ($rid)" }
+
+        # Linux ve macOS'ta widget bu dosyanın kendisi (--widget); dosya widget olarak derlenmemeli.
+        Assert-Identity (Join-Path $publishDir $info.Exe) @("SpmProduct=$id", "SpmWidget=")
 
         if ($rid -like "linux-*") {
             # Paketin içinde ürün adıyla bir klasör; ikili çalıştırma izniyle.
