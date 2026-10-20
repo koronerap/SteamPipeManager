@@ -20,16 +20,45 @@ internal sealed record WidgetMenuEntry(
 
 internal static class WidgetMenu
 {
-    /// <summary>Tepsi simgesinin menüsü.</summary>
-    public static NativeMenu ToNativeMenu(IEnumerable<WidgetMenuEntry> entries)
+    /// <summary>
+    /// Tepsi simgesinin menüsünü baştan doldurur. Menü nesnesi hep aynı kalmalı: macOS'ta
+    /// tepsi simgesine yeni bir <see cref="NativeMenu"/> vermek "The menu being updated
+    /// does not match" hatasıyla uygulamayı düşürüyor (CI'da görüldü).
+    /// </summary>
+    public static void Fill(NativeMenu menu, IEnumerable<WidgetMenuEntry> entries)
+    {
+        menu.Items.Clear();
+
+        foreach (var item in ToNativeItems(entries))
+        {
+            menu.Items.Add(item);
+        }
+    }
+
+    /// <summary>Menünün içeriğini özetler; değişmediyse yeniden doldurmaya gerek yok.</summary>
+    public static string Signature(IEnumerable<WidgetMenuEntry> entries) =>
+        string.Join("|", entries.Select(e =>
+            $"{e.Header}:{e.IsChecked}" + (e.Children is { } children ? "[" + Signature(children) + "]" : "")));
+
+    private static NativeMenu ToNativeMenu(IEnumerable<WidgetMenuEntry> entries)
     {
         var menu = new NativeMenu();
 
+        foreach (var item in ToNativeItems(entries))
+        {
+            menu.Items.Add(item);
+        }
+
+        return menu;
+    }
+
+    private static IEnumerable<NativeMenuItemBase> ToNativeItems(IEnumerable<WidgetMenuEntry> entries)
+    {
         foreach (var entry in entries)
         {
             if (entry.IsSeparator)
             {
-                menu.Add(new NativeMenuItemSeparator());
+                yield return new NativeMenuItemSeparator();
                 continue;
             }
 
@@ -50,10 +79,8 @@ internal static class WidgetMenu
                 item.Click += (_, _) => run();
             }
 
-            menu.Add(item);
+            yield return item;
         }
-
-        return menu;
     }
 
     /// <summary>Şeridin sağ tık menüsü.</summary>

@@ -64,6 +64,8 @@ internal sealed class WidgetHost
     private readonly AnalyticsViewModel _analytics;
     private readonly StripWindow _strip;
     private readonly TrayIcon _tray;
+    private readonly NativeMenu _trayMenu = new();
+    private string? _menuSignature;
     private DetailWindow? _details;
 
     public WidgetHost(Application app, IClassicDesktopStyleApplicationLifetime desktop, WorkspaceLayout layout, WidgetInstance instance)
@@ -96,6 +98,7 @@ internal sealed class WidgetHost
         {
             Icon = new WindowIcon(AssetLoader.Open(new Uri($"avares://{typeof(WidgetApp).Assembly.GetName().Name}/Assets/app.ico"))),
             ToolTipText = WidgetMode.DisplayName,
+            Menu = _trayMenu,
         };
         _tray.Clicked += (_, _) => _ = ShowDetailsAsync();
         TrayIcon.SetIcons(app, [_tray]);
@@ -128,9 +131,15 @@ internal sealed class WidgetHost
     private void UpdateMenus()
     {
         var entries = MenuEntries();
+        var signature = WidgetMenu.Signature(entries);
 
-        _tray.Menu = WidgetMenu.ToNativeMenu(entries);
-        _strip.SetMenu(entries);
+        // Her yenileme turunda çağrılıyor; içerik değişmediyse menüye dokunulmuyor.
+        if (signature != _menuSignature)
+        {
+            _menuSignature = signature;
+            WidgetMenu.Fill(_trayMenu, entries);
+            _strip.SetMenu(entries);
+        }
 
         // Windows tepsi ipucu 127 karakterle sınırlı.
         var tooltip = _widget.Tooltip;
