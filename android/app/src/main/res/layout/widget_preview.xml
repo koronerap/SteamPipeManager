@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget seçicide ve "ana ekrana ekle" penceresinde görünen örnek (Android 12+). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="HardcodedText"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="8dp">
+
+    <ImageView
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:src="@drawable/ic_trend"
+        android:tint="#FF4C9AFF"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Counter-Strike 2      1.2M   ♥ 48K   $1.2K"
+        android:textColor="#FFF2F2F2"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Dota 2                     600K   ♥ 21K   $480"
+        android:textColor="#FFF2F2F2"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
+</LinearLayout>

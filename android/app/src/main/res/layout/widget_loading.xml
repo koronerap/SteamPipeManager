@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget ilk çizilene kadar (ekleme, güncelleme sonrası): Glance'in dönen halkası yerine widget'ın kendi görünümü. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="HardcodedText,UseCompoundDrawables"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:paddingHorizontal="12dp">
+
+    <ImageView
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:src="@drawable/ic_trend"
+        android:tint="#FF4C9AFF"
+        android:contentDescription="@null" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:text="Pipe Manager Pulse"
+        android:textColor="#FFA0A0A8"
+        android:textSize="12sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+</LinearLayout>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_refresh">更新</string>
+    <string name="action_settings">設定</string>
+    <string name="action_add">ゲームを追加</string>
+    <string name="action_back">戻る</string>
+    <string name="action_cancel">キャンセル</string>
+    <string name="action_ok">OK</string>
+    <string name="empty_title">ゲームがまだありません</string>
+    <string name="empty_body">デスクトップアプリとペアリングしてゲームとキーを取り込むか、App ID でゲームを追加してください。</string>
+    <string name="players">現在のプレイヤー</string>
+    <string name="players_peak">24時間ピーク: %1$s</string>
+    <string name="no_players">プレイヤーデータなし</string>
+    <string name="wishlists">ウィッシュリスト</string>
+    <string name="wishlist_today">今日 %1$s</string>
+    <string name="wishlist_incomplete">履歴をダウンロード中</string>
+    <string name="sales_today">今日の売上</string>
+    <string name="sales_units">%1$s 本</string>
+    <string name="sales_payout">支払い ≈ %1$s</string>
+    <string name="sales_month">30日</string>
+    <string name="needs_key">財務キーなし</string>
+    <string name="no_data_yet">まだデータがありません</string>
+    <string name="updated">更新: %1$s</string>
+    <string name="notice_key_rejected">Steam が財務キーを拒否しました。設定で確認してください。</string>
+    <string name="notice_rate_limited">Steam がリクエストを制限しています。後でもう一度試します。</string>
+    <string name="notice_offline">Steam に接続できません。保存された数値を表示しています。</string>
+    <string name="notice_backfilling">ウィッシュリストの履歴をダウンロード中です。合計は順次反映されます。</string>
+    <string name="show_in_widget">ウィジェットに表示</string>
+    <string name="remove_game">削除</string>
+    <string name="add_title">ゲームを追加</string>
+    <string name="pair_scan">デスクトップの QR を読み取る</string>
+    <string name="pair_scan_body">デスクトップアプリで: 設定 → 電話に送る。ゲームと財務キーがまとめて届きます。</string>
+    <string name="pair_paste">代わりにコードのテキストを貼り付ける</string>
+    <string name="pair_continue">続ける</string>
+    <string name="pair_code_title">コードを入力</string>
+    <string name="pair_code_body">デスクトップの QR の横に表示される 8 桁のコードを入力してください。QR はこのコードで暗号化されています。</string>
+    <string name="pair_code">コード</string>
+    <string name="pair_decrypting">復号中…</string>
+    <string name="pair_unlock">ロック解除</string>
+    <string name="pair_wrong_code">コードが間違っているか、QR が破損しています。</string>
+    <string name="pair_not_ours">この QR コードは Pipe Manager のものではありません。</string>
+    <string name="pair_import">取り込む</string>
+    <string name="pair_done">取り込みました。</string>
+    <string name="scan_prompt">デスクトップの QR コードに向けてください</string>
+    <string name="manual_title">App ID で追加</string>
+    <string name="manual_app_id">App ID</string>
+    <string name="manual_key">財務キー</string>
+    <string name="manual_key_none">なし（プレイヤーのみ）</string>
+    <string name="manual_key_new">新しいキー…</string>
+    <string name="manual_key_input">財務キーを貼り付け</string>
+    <string name="manual_add">追加</string>
+    <string name="manual_invalid">有効な App ID を入力してください。</string>
+    <string name="settings_title">設定</string>
+    <string name="settings_currency">通貨</string>
+    <string name="settings_currency_auto">自動（%1$s）</string>
+    <string name="settings_currency_usd">米ドルのみ（USD）</string>
+    <string name="settings_hide">金額を隠す</string>
+    <string name="settings_hide_body">すべての金額を ••• で表示します（ウィジェットも）。</string>
+    <string name="settings_interval">バックグラウンド更新</string>
+    <string name="settings_keys">財務キー</string>
+    <string name="settings_keys_body">Android Keystore で暗号化して保存され、この端末から外に出ることはありません。</string>
+    <string name="settings_no_keys">キーなし</string>
+    <string name="settings_key_remove_confirm">末尾が %1$s のキーを削除しますか？ゲームのプレイヤー数は引き続き表示されます。</string>
+    <string name="settings_clear">ダウンロードしたデータを消去</string>
+    <string name="settings_clear_body">ゲームとキーは残り、数値は再ダウンロードされます。</string>
+    <string name="settings_about">バージョン %1$s · 為替レート: frankfurter.dev</string>
+    <string name="settings_widget">ホーム画面ウィジェット</string>
+    <string name="settings_widget_body">ゲームのプレイヤー、ウィッシュリスト、今日の売上を表示します。大きくするとより多くのゲームが表示されます。</string>
+    <string name="settings_widget_add">ホーム画面に追加</string>
+    <string name="widget_description">Steam ゲームのプレイヤー、ウィッシュリスト、今日の売上</string>
+    <string name="widget_empty">タップしてゲームを追加</string>
+    <string name="widget_key_rejected">キーが拒否されました</string>
+    <plurals name="pair_games">
+        <item quantity="other">%d 件のゲーム</item>
+    </plurals>
+    <plurals name="pair_keys">
+        <item quantity="other">%d 個のキー</item>
+    </plurals>
+    <plurals name="settings_minutes">
+        <item quantity="other">%d 分</item>
+    </plurals>
+    <plurals name="settings_key_games">
+        <item quantity="other">%d 件のゲーム</item>
+    </plurals>
+</resources>

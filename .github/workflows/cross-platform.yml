@@ -4,6 +4,7 @@
 #   - gerçek SteamCMD ölçümü (anonim giriş; log yeri, canlı çıktı)
 #   - Avalonia uygulaması açılıyor mu (ekran görüntüsüyle)
 #   - macOS: .app paketi ve imzası Apple'ın kendi araçlarıyla geçerli mi
+#   - Android (Pipe Manager Pulse): testler ve küçültülmüş yayın APK'sı
 name: Cross-platform
 
 on:
@@ -217,3 +218,36 @@ jobs:
             shot-macos-${{ matrix.arch }}.png
             shot-macos-widget-${{ matrix.arch }}.png
             widget.log
+
+  android:
+    name: Android app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Yayın anahtarı CI'da yok: APK hata ayıklama anahtarıyla imzalanıyor, denemek için.
+      # R8 küçültmesi yalnızca yayın derlemesinde; serileştirme kuralları ancak burada sınanıyor.
+      - name: Test and build
+        working-directory: android
+        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease
+
+      - name: Name the APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk PipeManagerPulse-android.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-app
+          path: PipeManagerPulse-android.apk
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: android-test-report
+          path: android/app/build/reports/tests

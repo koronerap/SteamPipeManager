@@ -1,0 +1,10 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.cxx/
+captures/
+# Yayın imzası anahtarları depoya asla girmiyor.
+*.jks
+*.keystore

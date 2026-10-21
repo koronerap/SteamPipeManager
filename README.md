@@ -27,6 +27,9 @@ Each edition is published for every platform:
 
 `<Edition>` is `SteamPipeManager`, `EpicBuildManager` or `PipeManagerHub`.
 
+The analytics widget is also on Android, as `PipeManagerPulse-android.apk`; see
+[Pulse on Android](#pulse-on-android).
+
 Epic support is new. It has been used against a real Epic Games Store account, and it stays
 marked **experimental** in the app until more people have published with it.
 
@@ -174,6 +177,47 @@ of the screen, it settles onto the taskbar.
 On GNOME the tray icon needs the *AppIndicator* extension; without it, right-click the strip
 for the same menu. KDE, and the Steam Deck's desktop mode, show it as they are.
 
+### Pulse on Android
+
+**Pipe Manager Pulse** is also an Android app (Android 8.0 or later) with a home-screen
+widget: the same players, wishlists and sales, on your phone. It only follows the numbers;
+builds and uploads stay on the desktop.
+
+1. Download `PipeManagerPulse-android.apk` from the GitHub release and open it on the phone.
+   Android asks once to allow installing apps from your browser or file manager.
+2. On the desktop, open **Settings → Send to phone** (under the financial keys) and click
+   **Show QR**. It shows a QR code and an 8-digit code.
+3. In the app, tap **Add game → Scan the desktop QR code**, then type the 8-digit code.
+   Your Steam games and their financial keys come over together.
+
+The QR holds the keys, so it is encrypted with the code: AES-256-GCM, with the key derived
+from the code by PBKDF2 (600,000 rounds). The code is never part of the QR, so a photo of
+the QR alone is not enough to read it. Don't show it while sharing your screen anyway. If
+the phone cannot scan, **Copy text** on the desktop and **Paste the code text instead** on
+the phone do the same. You can also add a game by its App ID and type a key by hand.
+
+To add the widget, long-press the home screen and pick **Widgets → Pipe Manager Pulse**, or
+use **Add to home screen** in the app's settings. It shows more as it grows:
+
+| Widget size | Shows |
+|---|---|
+| One row high | One game: players, then wishlists and today's sales as the width allows |
+| Two rows or more | Up to three games, or six when it is tall enough |
+| Four cells wide | Today's wishlist change next to each total, too |
+
+**Currency** and **Hide amounts** in the app's settings work as on the desktop, and apply to
+the widget as well.
+
+The numbers refresh every 15, 30 or 60 minutes (chosen in the app's settings), only with a
+network connection. Android can delay this while the battery saver is on. The refresh
+button on the widget, or pulling down in the app, refreshes at once.
+
+On the phone, financial keys are encrypted with a key held in the Android Keystore, which
+cannot be copied off the device. The app's backup is turned off, so the keys are never
+uploaded with it. The phone keeps the last 35 days of sales and 7 days of player counts; the
+full history stays on the desktop. It talks only to Steam's Web API, the Steam store (for
+game names) and [frankfurter.dev](https://frankfurter.dev) (exchange rates).
+
 ## Linux and macOS
 
 The Linux and macOS versions are new. They share all of their logic with the Windows app.
@@ -291,6 +335,14 @@ dotnet run --project src/SteamPipeManager.Desktop   # the Linux/macOS front end;
 .\publish.ps1                                   # package everything (asks whether to skip tests)
 ```
 
+The Android app is in `android/` and needs JDK 17 and the Android SDK:
+
+```bash
+cd android
+./gradlew testDebugUnitTest   # run its tests
+./gradlew assembleRelease     # app/build/outputs/apk/release/app-release.apk
+```
+
 ### Publishing a release
 
 ```powershell
@@ -302,6 +354,14 @@ This writes one package per edition and platform, plus `SHA256SUMS.txt`, to `pub
 GitHub release, tagged `vX.Y.Z` to match `<Version>` in `src/Product.props`. The in-app
 updater looks for its own edition and platform (for example `PipeManagerHub-osx-arm64.tar.gz`)
 and refuses to install it unless `SHA256SUMS.txt` lists a matching checksum.
+
+The Android APK is built separately. Its version also comes from `src/Product.props`. Set
+`PULSE_KEYSTORE` (the keystore's path), `PULSE_KEYSTORE_PASSWORD`, `PULSE_KEY_ALIAS` and
+`PULSE_KEY_PASSWORD`, run `./gradlew assembleRelease` in `android/`, and upload the APK as
+`PipeManagerPulse-android.apk`. Sign every release with the same key: Android installs an
+update only if it is signed like the installed app. Without these variables the APK is
+signed with the debug key, which is fine for trying it out but not for a release. Keep the
+keystore out of the repository.
 
 The Linux and macOS packages are written by `tools/Packager`, which keeps the execute bits
 that a zip would lose and builds the macOS `.app`. If

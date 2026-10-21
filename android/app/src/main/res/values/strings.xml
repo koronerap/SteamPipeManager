@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Pipe Manager Pulse</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_add">Add game</string>
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_ok">OK</string>
+    <string name="empty_title">No games yet</string>
+    <string name="empty_body">Pair with the desktop app to bring over your games and keys, or add a game by its App ID.</string>
+    <string name="players">Players now</string>
+    <string name="players_peak">24h peak: %1$s</string>
+    <string name="no_players">No player data</string>
+    <string name="wishlists">Wishlists</string>
+    <string name="wishlist_today">Today %1$s</string>
+    <string name="wishlist_incomplete">History still downloading</string>
+    <string name="sales_today">Today\'s sales</string>
+    <string name="sales_units">%1$s units</string>
+    <string name="sales_payout">Payout ≈ %1$s</string>
+    <string name="sales_month">30 days</string>
+    <string name="needs_key">No financial key</string>
+    <string name="no_data_yet">No data yet</string>
+    <string name="updated">Updated %1$s</string>
+    <string name="notice_key_rejected">Steam rejected a financial key. Check it in Settings.</string>
+    <string name="notice_rate_limited">Steam is limiting requests; trying again later.</string>
+    <string name="notice_offline">Steam could not be reached. Showing saved numbers.</string>
+    <string name="notice_backfilling">Wishlist history is downloading; totals fill in as it goes.</string>
+    <string name="show_in_widget">Show in widget</string>
+    <string name="remove_game">Remove</string>
+    <string name="add_title">Add games</string>
+    <string name="pair_scan">Scan the desktop QR code</string>
+    <string name="pair_scan_body">In the desktop app: Settings → Send to phone. Your games and financial keys come over together.</string>
+    <string name="pair_paste">Paste the code text instead</string>
+    <string name="pair_continue">Continue</string>
+    <string name="pair_code_title">Enter the code</string>
+    <string name="pair_code_body">Type the 8-digit code shown next to the QR on the desktop. The QR is encrypted with it.</string>
+    <string name="pair_code">Code</string>
+    <string name="pair_decrypting">Decrypting…</string>
+    <string name="pair_unlock">Unlock</string>
+    <string name="pair_wrong_code">The code is wrong or the QR is damaged.</string>
+    <string name="pair_not_ours">This QR code is not from Pipe Manager.</string>
+    <string name="pair_import">Import</string>
+    <string name="pair_done">Imported.</string>
+    <string name="scan_prompt">Point at the QR code on the desktop</string>
+    <string name="manual_title">Add by App ID</string>
+    <string name="manual_app_id">App ID</string>
+    <string name="manual_key">Financial key</string>
+    <string name="manual_key_none">None (players only)</string>
+    <string name="manual_key_new">New key…</string>
+    <string name="manual_key_input">Paste the financial key</string>
+    <string name="manual_add">Add</string>
+    <string name="manual_invalid">Enter a valid App ID.</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_currency">Currency</string>
+    <string name="settings_currency_auto">Automatic (%1$s)</string>
+    <string name="settings_currency_usd">US dollars only (USD)</string>
+    <string name="settings_hide">Hide amounts</string>
+    <string name="settings_hide_body">Shows every amount as •••, in the widget too.</string>
+    <string name="settings_interval">Background refresh</string>
+    <string name="settings_keys">Financial keys</string>
+    <string name="settings_keys_body">Stored encrypted with the Android Keystore; they never leave this phone.</string>
+    <string name="settings_no_keys">No keys</string>
+    <string name="settings_key_remove_confirm">Remove the key ending %1$s? Its games keep showing player counts.</string>
+    <string name="settings_clear">Clear downloaded data</string>
+    <string name="settings_clear_body">Games and keys stay; the numbers download again.</string>
+    <string name="settings_about">Version %1$s · Exchange rates from frankfurter.dev</string>
+    <string name="settings_widget">Home screen widget</string>
+    <string name="settings_widget_body">Shows your games\' players, wishlists and today\'s sales. Resize it to see more games.</string>
+    <string name="settings_widget_add">Add to home screen</string>
+    <string name="widget_description">Players, wishlists and today\'s sales of your Steam games</string>
+    <string name="widget_empty">Tap to add games</string>
+    <string name="widget_key_rejected">Key rejected</string>
+    <plurals name="pair_games">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <plurals name="pair_keys">
+        <item quantity="one">%d key</item>
+        <item quantity="other">%d keys</item>
+    </plurals>
+    <plurals name="settings_minutes">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d min</item>
+    </plurals>
+    <plurals name="settings_key_games">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+</resources>

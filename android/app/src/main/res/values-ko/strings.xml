@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_refresh">새로 고침</string>
+    <string name="action_settings">설정</string>
+    <string name="action_add">게임 추가</string>
+    <string name="action_back">뒤로</string>
+    <string name="action_cancel">취소</string>
+    <string name="action_ok">확인</string>
+    <string name="empty_title">아직 게임이 없습니다</string>
+    <string name="empty_body">데스크톱 앱과 페어링해 게임과 키를 가져오거나 App ID로 게임을 추가하세요.</string>
+    <string name="players">현재 플레이어</string>
+    <string name="players_peak">24시간 최고: %1$s</string>
+    <string name="no_players">플레이어 데이터 없음</string>
+    <string name="wishlists">위시리스트</string>
+    <string name="wishlist_today">오늘 %1$s</string>
+    <string name="wishlist_incomplete">기록 다운로드 중</string>
+    <string name="sales_today">오늘 판매</string>
+    <string name="sales_units">%1$s개</string>
+    <string name="sales_payout">지급액 ≈ %1$s</string>
+    <string name="sales_month">30일</string>
+    <string name="needs_key">재무 키 없음</string>
+    <string name="no_data_yet">아직 데이터 없음</string>
+    <string name="updated">업데이트: %1$s</string>
+    <string name="notice_key_rejected">Steam이 재무 키를 거부했습니다. 설정에서 확인하세요.</string>
+    <string name="notice_rate_limited">Steam이 요청을 제한하고 있습니다. 잠시 후 다시 시도합니다.</string>
+    <string name="notice_offline">Steam에 연결할 수 없습니다. 저장된 숫자를 표시합니다.</string>
+    <string name="notice_backfilling">위시리스트 기록을 다운로드하는 중입니다. 합계가 차례로 채워집니다.</string>
+    <string name="show_in_widget">위젯에 표시</string>
+    <string name="remove_game">삭제</string>
+    <string name="add_title">게임 추가</string>
+    <string name="pair_scan">데스크톱 QR 스캔</string>
+    <string name="pair_scan_body">데스크톱 앱에서: 설정 → 휴대폰으로 보내기. 게임과 재무 키가 함께 옵니다.</string>
+    <string name="pair_paste">대신 코드 텍스트 붙여넣기</string>
+    <string name="pair_continue">계속</string>
+    <string name="pair_code_title">코드 입력</string>
+    <string name="pair_code_body">데스크톱의 QR 옆에 표시된 8자리 코드를 입력하세요. QR은 이 코드로 암호화되어 있습니다.</string>
+    <string name="pair_code">코드</string>
+    <string name="pair_decrypting">복호화 중…</string>
+    <string name="pair_unlock">잠금 해제</string>
+    <string name="pair_wrong_code">코드가 잘못되었거나 QR이 손상되었습니다.</string>
+    <string name="pair_not_ours">이 QR 코드는 Pipe Manager의 것이 아닙니다.</string>
+    <string name="pair_import">가져오기</string>
+    <string name="pair_done">가져왔습니다.</string>
+    <string name="scan_prompt">데스크톱의 QR 코드를 비추세요</string>
+    <string name="manual_title">App ID로 추가</string>
+    <string name="manual_app_id">App ID</string>
+    <string name="manual_key">재무 키</string>
+    <string name="manual_key_none">없음(플레이어만)</string>
+    <string name="manual_key_new">새 키…</string>
+    <string name="manual_key_input">재무 키 붙여넣기</string>
+    <string name="manual_add">추가</string>
+    <string name="manual_invalid">올바른 App ID를 입력하세요.</string>
+    <string name="settings_title">설정</string>
+    <string name="settings_currency">통화</string>
+    <string name="settings_currency_auto">자동 (%1$s)</string>
+    <string name="settings_currency_usd">미국 달러만 (USD)</string>
+    <string name="settings_hide">금액 숨기기</string>
+    <string name="settings_hide_body">모든 금액을 •••로 표시합니다(위젯 포함).</string>
+    <string name="settings_interval">백그라운드 새로 고침</string>
+    <string name="settings_keys">재무 키</string>
+    <string name="settings_keys_body">Android Keystore로 암호화해 저장하며 이 휴대폰 밖으로 나가지 않습니다.</string>
+    <string name="settings_no_keys">키 없음</string>
+    <string name="settings_key_remove_confirm">%1$s(으)로 끝나는 키를 삭제할까요? 해당 게임의 플레이어 수는 계속 표시됩니다.</string>
+    <string name="settings_clear">다운로드한 데이터 지우기</string>
+    <string name="settings_clear_body">게임과 키는 유지되며 숫자는 다시 다운로드됩니다.</string>
+    <string name="settings_about">버전 %1$s · 환율: frankfurter.dev</string>
+    <string name="settings_widget">홈 화면 위젯</string>
+    <string name="settings_widget_body">게임의 플레이어, 위시리스트, 오늘 판매를 보여 줍니다. 크게 하면 더 많은 게임이 보입니다.</string>
+    <string name="settings_widget_add">홈 화면에 추가</string>
+    <string name="widget_description">Steam 게임의 플레이어, 위시리스트, 오늘 판매</string>
+    <string name="widget_empty">탭하여 게임 추가</string>
+    <string name="widget_key_rejected">키 거부됨</string>
+    <plurals name="pair_games">
+        <item quantity="other">게임 %d개</item>
+    </plurals>
+    <plurals name="pair_keys">
+        <item quantity="other">키 %d개</item>
+    </plurals>
+    <plurals name="settings_minutes">
+        <item quantity="other">%d분</item>
+    </plurals>
+    <plurals name="settings_key_games">
+        <item quantity="other">게임 %d개</item>
+    </plurals>
+</resources>
