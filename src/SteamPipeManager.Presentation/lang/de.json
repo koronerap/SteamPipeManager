@@ -534,6 +534,14 @@
     "Settings.Currency": "Währung",
     "Settings.Currency.Hint": "Verkaufsbeträge werden zusätzlich in dieser Währung angezeigt. Tageskurse von frankfurter.dev; gesendet werden nur Währungscode und Datum.",
     "Settings.Currency.Auto": "Automatisch ({0})",
-    "Settings.Currency.UsdOnly": "Nur US-Dollar (USD)"
+    "Settings.Currency.UsdOnly": "Nur US-Dollar (USD)",
+    "Settings.Phone": "An Telefon senden",
+    "Settings.Phone.Body": "Überträgt deine Steam-Spiele und Finanzschlüssel an Pipe Manager Pulse auf Android: Tippe auf dem Telefon auf „Desktop-QR-Code scannen“ und gib den hier angezeigten Code ein. Der QR-Code enthält die Schlüssel und ist deshalb mit dem Code verschlüsselt; öffne ihn trotzdem nicht, während du deinen Bildschirm teilst.",
+    "Settings.Phone.Show": "QR anzeigen",
+    "Settings.Phone.Hide": "Ausblenden",
+    "Settings.Phone.Copy": "Text kopieren",
+    "Settings.Phone.Code": "Code",
+    "Settings.Phone.Summary": "{0} Spiele, {1} Schlüssel",
+    "Settings.Phone.Preparing": "Wird vorbereitet…"
   }
 }

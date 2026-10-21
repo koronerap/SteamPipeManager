@@ -534,6 +534,14 @@
     "Settings.Currency": "通貨",
     "Settings.Currency.Hint": "売上金額をこの通貨でも表示します。日次レートは frankfurter.dev から取得し、送信するのは通貨コードと日付のみです。",
     "Settings.Currency.Auto": "自動（{0}）",
-    "Settings.Currency.UsdOnly": "米ドルのみ（USD）"
+    "Settings.Currency.UsdOnly": "米ドルのみ（USD）",
+    "Settings.Phone": "電話に送る",
+    "Settings.Phone.Body": "Steam のゲームと財務キーを Android の Pipe Manager Pulse に送ります。電話で「デスクトップの QR を読み取る」をタップし、ここに表示されるコードを入力してください。QR にはキーが含まれるためコードで暗号化されていますが、画面共有中は開かないでください。",
+    "Settings.Phone.Show": "QR を表示",
+    "Settings.Phone.Hide": "隠す",
+    "Settings.Phone.Copy": "テキストをコピー",
+    "Settings.Phone.Code": "コード",
+    "Settings.Phone.Summary": "ゲーム {0} 件、キー {1} 個",
+    "Settings.Phone.Preparing": "準備中…"
   }
 }

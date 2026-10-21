@@ -126,6 +126,28 @@ public sealed partial class SettingsViewModel(
     [ObservableProperty]
     private CurrencyOption? _selectedCurrency;
 
+    /// <summary>
+    /// Telefona aktarım QR'ının kareleri; yalnızca istenince ve Ayarlar açıkken. QR finans
+    /// anahtarlarını içeriyor (kodla şifreli); sayfa yeniden açılınca gizleniyor.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPairingVisible))]
+    private bool[,]? _pairingModules;
+
+    [ObservableProperty]
+    private string _pairingCode = "";
+
+    [ObservableProperty]
+    private string _pairingSummary = "";
+
+    [ObservableProperty]
+    private bool _isPreparingPairing;
+
+    /// <summary>QR'ın metni; telefonda "yapıştır" için kopyalanabiliyor.</summary>
+    public string? PairingText { get; private set; }
+
+    public bool IsPairingVisible => PairingModules is not null;
+
     partial void OnSelectedCurrencyChanged(CurrencyOption? value)
     {
         if (_loading || value is null)
@@ -161,6 +183,40 @@ public sealed partial class SettingsViewModel(
         StatusMessage = "";
 
         LoadFinancialKeys();
+        HidePairing();
+    }
+
+    [RelayCommand]
+    private async Task ShowPairingAsync()
+    {
+        IsPreparingPairing = true;
+
+        try
+        {
+            var payload = PhonePairing.Build(AnalyticsTargets.From(profiles.Profiles), analytics.Keys.Read, analytics.Preferences.Current.Currency);
+            var code = PhonePairing.NewCode();
+
+            // Anahtar türetme kasıtlı olarak yavaş (600.000 tur): arayüz donmasın.
+            var text = await Task.Run(() => PhonePairing.Seal(payload, code));
+
+            PairingText = text;
+            PairingCode = PhonePairing.FormatCode(code);
+            PairingSummary = AppLocalizer.Instance.Format("Settings.Phone.Summary", payload.Games.Count, payload.Keys.Count);
+            PairingModules = PhonePairing.Modules(text);
+        }
+        finally
+        {
+            IsPreparingPairing = false;
+        }
+    }
+
+    [RelayCommand]
+    private void HidePairing()
+    {
+        PairingModules = null;
+        PairingText = null;
+        PairingCode = "";
+        PairingSummary = "";
     }
 
     private void LoadFinancialKeys()

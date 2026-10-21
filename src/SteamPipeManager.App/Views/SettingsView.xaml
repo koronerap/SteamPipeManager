@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:loc="clr-namespace:SteamPipeManager.App.Localization">
+             xmlns:loc="clr-namespace:SteamPipeManager.App.Localization"
+             xmlns:controls="clr-namespace:SteamPipeManager.App.Controls">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="720" HorizontalAlignment="Left">
@@ -217,6 +218,44 @@ ToolTip="{loc:T Settings.SteamCmd.Download.Tip}"
                                           AutomationProperties.Name="{loc:T Settings.Currency}" />
                             </Grid>
                             <TextBlock Text="{loc:T Settings.Currency.Hint}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Telefona aktar: Android'deki Pipe Manager Pulse için QR ve kod -->
+                    <Border BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{loc:T Settings.Phone}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <ui:Button Grid.Column="1"
+                                           Icon="{ui:SymbolIcon QrCode24}"
+                                           Content="{loc:T Settings.Phone.Show}"
+                                           Command="{Binding ShowPairingCommand}"
+                                           Visibility="{Binding IsPairingVisible, Converter={StaticResource BoolToVisInverted}}" />
+                            </Grid>
+                            <TextBlock Text="{loc:T Settings.Phone.Body}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,6,0,0" />
+                            <TextBlock Text="{loc:T Settings.Phone.Preparing}" FontSize="12" Opacity="0.7" Margin="0,6,0,0"
+                                       Visibility="{Binding IsPreparingPairing, Converter={StaticResource BoolToVis}}" />
+
+                            <Grid Margin="0,12,0,0" Visibility="{Binding IsPairingVisible, Converter={StaticResource BoolToVis}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <controls:QrCodeView Width="260" Height="260" Modules="{Binding PairingModules}" />
+                                <StackPanel Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{loc:T Settings.Phone.Code}" FontSize="12" Opacity="0.7" />
+                                    <TextBlock Text="{Binding PairingCode}" FontSize="30" FontWeight="SemiBold" FontFamily="Cascadia Mono, Consolas" />
+                                    <TextBlock Text="{Binding PairingSummary}" FontSize="12" Opacity="0.7" Margin="0,4,0,12" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <ui:Button Margin="0,0,8,0" Icon="{ui:SymbolIcon Copy24}" Content="{loc:T Settings.Phone.Copy}" Click="CopyPairingText" />
+                                        <ui:Button Icon="{ui:SymbolIcon EyeOff24}" Content="{loc:T Settings.Phone.Hide}" Command="{Binding HidePairingCommand}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </Border>
                 </StackPanel>

@@ -534,6 +534,14 @@
     "Settings.Currency": "货币",
     "Settings.Currency.Hint": "销售金额也会以此货币显示。每日汇率来自 frankfurter.dev；只发送货币代码和日期。",
     "Settings.Currency.Auto": "自动（{0}）",
-    "Settings.Currency.UsdOnly": "仅美元（USD）"
+    "Settings.Currency.UsdOnly": "仅美元（USD）",
+    "Settings.Phone": "发送到手机",
+    "Settings.Phone.Body": "将你的 Steam 游戏和财务密钥导入 Android 上的 Pipe Manager Pulse：在手机上点按“扫描桌面二维码”，然后输入这里显示的代码。二维码包含密钥，因此已用代码加密；但共享屏幕时仍不要打开它。",
+    "Settings.Phone.Show": "显示二维码",
+    "Settings.Phone.Hide": "隐藏",
+    "Settings.Phone.Copy": "复制文本",
+    "Settings.Phone.Code": "代码",
+    "Settings.Phone.Summary": "{0} 个游戏，{1} 个密钥",
+    "Settings.Phone.Preparing": "正在准备…"
   }
 }

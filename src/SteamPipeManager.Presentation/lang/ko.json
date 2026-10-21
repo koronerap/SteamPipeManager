@@ -534,6 +534,14 @@
     "Settings.Currency": "통화",
     "Settings.Currency.Hint": "판매 금액을 이 통화로도 표시합니다. 일일 환율은 frankfurter.dev에서 가져오며 통화 코드와 날짜만 전송됩니다.",
     "Settings.Currency.Auto": "자동 ({0})",
-    "Settings.Currency.UsdOnly": "미국 달러만 (USD)"
+    "Settings.Currency.UsdOnly": "미국 달러만 (USD)",
+    "Settings.Phone": "휴대폰으로 보내기",
+    "Settings.Phone.Body": "Steam 게임과 재무 키를 Android의 Pipe Manager Pulse로 보냅니다. 휴대폰에서 \"데스크톱 QR 스캔\"을 누르고 여기에 표시된 코드를 입력하세요. QR에는 키가 들어 있어 코드로 암호화되지만, 화면을 공유하는 중에는 열지 마세요.",
+    "Settings.Phone.Show": "QR 표시",
+    "Settings.Phone.Hide": "숨기기",
+    "Settings.Phone.Copy": "텍스트 복사",
+    "Settings.Phone.Code": "코드",
+    "Settings.Phone.Summary": "게임 {0}개, 키 {1}개",
+    "Settings.Phone.Preparing": "준비 중…"
   }
 }

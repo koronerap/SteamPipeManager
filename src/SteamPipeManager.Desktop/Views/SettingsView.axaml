@@ -176,6 +176,37 @@
                             <TextBlock Text="{loc:T Settings.Currency.Hint}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
                         </StackPanel>
                     </Border>
+
+                    <!-- Telefona aktar: Android'deki Pipe Manager Pulse için QR ve kod -->
+                    <Border BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="{loc:T Settings.Phone}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <Button Grid.Column="1" Command="{Binding ShowPairingCommand}" IsVisible="{Binding !IsPairingVisible}">
+                                    <c:IconLabel Symbol="QrCode" Text="{loc:T Settings.Phone.Show}" />
+                                </Button>
+                            </Grid>
+                            <TextBlock Text="{loc:T Settings.Phone.Body}" TextWrapping="Wrap" FontSize="12" Opacity="0.7" />
+                            <TextBlock Text="{loc:T Settings.Phone.Preparing}" FontSize="12" Opacity="0.7" IsVisible="{Binding IsPreparingPairing}" />
+
+                            <Grid ColumnDefinitions="Auto,*" Margin="0,6,0,0" IsVisible="{Binding IsPairingVisible}">
+                                <c:QrCodeView Width="260" Height="260" Modules="{Binding PairingModules}" />
+                                <StackPanel Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center" Spacing="4">
+                                    <TextBlock Text="{loc:T Settings.Phone.Code}" FontSize="12" Opacity="0.7" />
+                                    <TextBlock Text="{Binding PairingCode}" FontSize="30" FontWeight="SemiBold" FontFamily="Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace" />
+                                    <TextBlock Text="{Binding PairingSummary}" FontSize="12" Opacity="0.7" Margin="0,0,0,8" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Click="CopyPairingText">
+                                            <c:IconLabel Symbol="Copy" Text="{loc:T Settings.Phone.Copy}" />
+                                        </Button>
+                                        <Button Command="{Binding HidePairingCommand}">
+                                            <c:IconLabel Symbol="EyeOff" Text="{loc:T Settings.Phone.Hide}" />
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
 

@@ -534,6 +534,14 @@
     "Settings.Currency": "Para birimi",
     "Settings.Currency.Hint": "Satış tutarları bu para biriminde de gösterilir. Günlük kurlar frankfurter.dev'den; yalnızca para birimi kodu ve tarihler gönderilir.",
     "Settings.Currency.Auto": "Otomatik ({0})",
-    "Settings.Currency.UsdOnly": "Yalnızca dolar (USD)"
+    "Settings.Currency.UsdOnly": "Yalnızca dolar (USD)",
+    "Settings.Phone": "Telefona aktar",
+    "Settings.Phone.Body": "Steam oyunlarını ve finans anahtarlarını Android'deki Pipe Manager Pulse'a aktarır: telefonda \"Masaüstündeki QR'ı tara\"ya bas ve burada görünen kodu gir. QR anahtarları içerdiği için kodla şifreli; yine de ekranını paylaşırken açma.",
+    "Settings.Phone.Show": "QR göster",
+    "Settings.Phone.Hide": "Gizle",
+    "Settings.Phone.Copy": "Metni kopyala",
+    "Settings.Phone.Code": "Kod",
+    "Settings.Phone.Summary": "{0} oyun, {1} anahtar",
+    "Settings.Phone.Preparing": "Hazırlanıyor…"
   }
 }
