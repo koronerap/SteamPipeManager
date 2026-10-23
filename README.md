@@ -203,12 +203,27 @@ use **Add to home screen** in the app's settings. It shows more as it grows:
 
 | Widget size | Shows |
 |---|---|
-| One row high | One game: players, then wishlists and today's sales as the width allows |
-| Two rows or more | Up to three games, or six when it is tall enough |
+| One row high | One game: players, then wishlists and sales as the width allows |
+| Two rows or more | As many games as fit: three on a short widget, about seven on a tall one |
 | Four cells wide | Today's wishlist change next to each total, too |
 
-**Currency** and **Hide amounts** in the app's settings work as on the desktop, and apply to
-the widget as well.
+**Settings → Home screen widget → Customize** changes how it looks, with a live preview of
+the widget in three sizes:
+
+| Option | Choices |
+|---|---|
+| Theme | Dark, light or matching the system; on Android 12 and later, colours from your wallpaper |
+| Transparency | None, low, medium, high |
+| Text size | Small, normal, large, extra large (fewer numbers fit as it grows) |
+| Show | Game names, players, wishlists, sales |
+| Sales period | Today, yesterday, the last 7 or 30 days (the header names the period) |
+| Amounts | In dollars, or in your currency at the latest rate |
+| Order | As added, most players or most sales |
+| Header | The update time and refresh button; without it, one more game fits |
+
+**App appearance** in the same settings picks the app's own theme and, on Android 12 and
+later, wallpaper colours. **Currency** and **Hide amounts** work as on the desktop, and
+apply to the widget as well.
 
 The numbers refresh every 15, 30 or 60 minutes (chosen in the app's settings), only with a
 network connection. Android can delay this while the battery saver is on. The refresh

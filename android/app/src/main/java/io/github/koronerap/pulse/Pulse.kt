@@ -7,6 +7,7 @@ import io.github.koronerap.pulse.data.AnalyticsScope
 import io.github.koronerap.pulse.data.AnalyticsService
 import io.github.koronerap.pulse.data.AnalyticsStore
 import io.github.koronerap.pulse.data.AppAnalytics
+import io.github.koronerap.pulse.data.AppLook
 import io.github.koronerap.pulse.data.ExchangeRate
 import io.github.koronerap.pulse.data.FinancialAccount
 import io.github.koronerap.pulse.data.FinancialKeys
@@ -20,6 +21,7 @@ import io.github.koronerap.pulse.data.SteamPlayerCountClient
 import io.github.koronerap.pulse.data.SteamStoreClient
 import io.github.koronerap.pulse.data.TrackedGame
 import io.github.koronerap.pulse.data.UrlConnectionClient
+import io.github.koronerap.pulse.data.WidgetLook
 import io.github.koronerap.pulse.widget.PulseWidget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +41,7 @@ data class Snapshot(
     val lastRefreshAt: Instant?,
     val currency: String,
     val rate: Double?,
+    val look: WidgetLook = WidgetLook(),
 ) {
     companion object {
         /** Açılışta, dosyalar arka planda okunana kadar. */
@@ -68,6 +71,23 @@ class Pulse private constructor(context: Context) {
     /** Her yenilemeden ve her değişiklikten sonra güncelleniyor. */
     val snapshots: StateFlow<Snapshot> = _snapshot
 
+    // Tema açılışta hemen gerekiyor (yoksa ekran önce varsayılan temayla açılıp değişir);
+    // küçük bir tercih dosyası, diskte bekletmiyor.
+    private val _appLook = MutableStateFlow(preferences.appLook)
+
+    val appLook: StateFlow<AppLook> = _appLook
+
+    fun setAppLook(look: AppLook) {
+        preferences.appLook = look
+        _appLook.value = look
+    }
+
+    /** Widget'ın görünümü değişti: kaydedip ekranı ve widget'ları yeniden çiziyor. */
+    suspend fun setWidgetLook(look: WidgetLook) {
+        withContext(Dispatchers.IO) { preferences.widgetLook = look }
+        changed()
+    }
+
     /** Oyunlardan ve anahtarlardan yenileme kapsamı: her anahtar bir hesap. */
     fun scope(): AnalyticsScope {
         val list = games.load()
@@ -96,13 +116,29 @@ class Pulse private constructor(context: Context) {
             state.lastRefreshAt?.let(Instant::ofEpochSecond),
             currency,
             rates.cached(currency),
+            preferences.widgetLook,
         )
     }
+
+    @Volatile
+    private var loaded = false
 
     /** Değişiklikten sonra (oyun eklendi, ayar değişti): ekran ve widget yeniden çiziliyor. */
     suspend fun changed() {
         _snapshot.value = withContext(Dispatchers.IO) { snapshot() }
+        loaded = true
         PulseWidget().updateAll(app)
+    }
+
+    /**
+     * Widget için: süreç widget ya da arka plan işi için yeni başladıysa anlık görüntü önce
+     * diskten. Sonrasında widget [snapshots]'u izliyor.
+     */
+    suspend fun ensureLoaded() {
+        if (!loaded) {
+            _snapshot.value = withContext(Dispatchers.IO) { snapshot() }
+            loaded = true
+        }
     }
 
     suspend fun refresh(force: Boolean): RefreshResult {

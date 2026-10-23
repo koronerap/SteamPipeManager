@@ -1,11 +1,17 @@
 package io.github.koronerap.pulse.ui
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import io.github.koronerap.pulse.data.AppLook
+import io.github.koronerap.pulse.data.LookTheme
 
 /** Masaüstüyle aynı tonlar: oyuncu mavi, wishlist pembe, satış yeşil. */
 object Tones {
@@ -50,7 +56,23 @@ private val Light = lightColorScheme(
     surfaceContainerHighest = Color(0xFFE3E6EC),
 )
 
+/** Duvar kâğıdı renkleri (Material You) Android 12'den beri var. */
+val wallpaperColorsAvailable: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
 @Composable
-fun PulseTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) Dark else Light, content = content)
+fun PulseTheme(look: AppLook = AppLook(), content: @Composable () -> Unit) {
+    val dark = when (look.theme) {
+        LookTheme.Dark -> true
+        LookTheme.Light -> false
+        LookTheme.System -> isSystemInDarkTheme()
+    }
+
+    val context = LocalContext.current
+    val scheme = when {
+        look.wallpaperColors && wallpaperColorsAvailable -> if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        dark -> Dark
+        else -> Light
+    }
+
+    MaterialTheme(colorScheme = scheme, content = content)
 }

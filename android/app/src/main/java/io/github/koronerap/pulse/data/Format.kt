@@ -52,10 +52,16 @@ object PulseFormat {
     }
 
     /** Widget için kısa tutar: $227, $1.2K, −$40. */
-    fun compactUsd(value: Double): String {
-        if (hideMoney) return "$$HIDDEN"
+    fun compactUsd(value: Double): String = compactAmount(value, "$")
+
+    /** Kullanıcının para biriminde kısa tutar: ₺7.8K; simgesi olmayanlarda kodla (SEK 120). */
+    fun compactMoney(value: Double, currency: String): String =
+        if (currency.equals("USD", ignoreCase = true)) compactUsd(value) else compactAmount(value, symbolOf(currency))
+
+    private fun compactAmount(value: Double, symbol: String): String {
+        if (hideMoney) return "$symbol$HIDDEN"
         val rounded = kotlin.math.round(kotlin.math.abs(value)).toInt()
-        return (if (value < 0) "−$" else "$") + if (rounded < 1000) rounded.toString() else compact(rounded)
+        return (if (value < 0) "−" else "") + symbol + if (rounded < 1000) rounded.toString() else compact(rounded)
     }
 
     /** Kullanıcının para birimindeki yaklaşık karşılık: "≈ ₺11,268"; yoksa boş. */

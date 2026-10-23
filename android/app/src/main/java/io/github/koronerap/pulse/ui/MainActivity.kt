@@ -28,6 +28,7 @@ sealed interface Screen {
     data object Home : Screen
     data object Add : Screen
     data object Settings : Screen
+    data object Widget : Screen
     data class Pair(val payload: String) : Screen
 }
 
@@ -35,7 +36,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { PulseTheme { PulseRoot() } }
+        setContent {
+            val look by Pulse.get(this).appLook.collectAsStateWithLifecycle()
+            PulseTheme(look) { PulseRoot() }
+        }
     }
 }
 
@@ -88,7 +92,7 @@ private fun PulseRoot() {
         )
     }
 
-    BackHandler(enabled = screen != Screen.Home) { screen = Screen.Home }
+    BackHandler(enabled = screen != Screen.Home) { screen = if (screen == Screen.Widget) Screen.Settings else Screen.Home }
 
     when (val current = screen) {
         Screen.Home -> HomeScreen(
@@ -143,6 +147,13 @@ private fun PulseRoot() {
             pulse = pulse,
             snapshot = snapshot,
             onBack = { screen = Screen.Home },
+            onWidget = { screen = Screen.Widget },
+        )
+
+        Screen.Widget -> WidgetScreen(
+            pulse = pulse,
+            snapshot = snapshot,
+            onBack = { screen = Screen.Settings },
         )
     }
 }

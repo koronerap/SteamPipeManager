@@ -1,6 +1,9 @@
 package io.github.koronerap.pulse.data
 
 import android.content.SharedPreferences
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import java.time.Duration
 import java.time.Instant
@@ -22,6 +25,37 @@ class Preferences(private val prefs: SharedPreferences) {
     var refreshMinutes: Int
         get() = prefs.getInt("refreshMinutes", 30)
         set(value) = prefs.edit().putInt("refreshMinutes", value.coerceAtLeast(15)).apply()
+
+    var widgetLook: WidgetLook
+        get() = read("widgetLook", WidgetLook.serializer()) ?: WidgetLook()
+        set(value) = write("widgetLook", WidgetLook.serializer(), value)
+
+    var appLook: AppLook
+        get() = read("appLook", AppLook.serializer()) ?: AppLook()
+        set(value) = write("appLook", AppLook.serializer(), value)
+
+    private fun <T> read(name: String, serializer: KSerializer<T>): T? = prefs.getString(name, null)?.let { decode(serializer, it) }
+
+    private fun <T> write(name: String, serializer: KSerializer<T>, value: T) =
+        prefs.edit().putString(name, json.encodeToString(serializer, value)).apply()
+
+    internal companion object {
+        private val json = Json { ignoreUnknownKeys = true }
+
+        /**
+         * Görünüm JSON olarak saklanıyor: yeni bir seçenek eklenince eski kayıt varsayılanıyla
+         * açılıyor; bozuk ya da bilinmeyen bir değer null (görünüm varsayılana dönüyor).
+         */
+        fun <T> decode(serializer: KSerializer<T>, text: String): T? = try {
+            json.decodeFromString(serializer, text)
+        } catch (_: SerializationException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+
+        fun <T> encode(serializer: KSerializer<T>, value: T): String = json.encodeToString(serializer, value)
+    }
 }
 
 /**

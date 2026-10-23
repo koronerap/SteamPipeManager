@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -30,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +47,7 @@ import io.github.koronerap.pulse.BuildConfig
 import io.github.koronerap.pulse.Pulse
 import io.github.koronerap.pulse.R
 import io.github.koronerap.pulse.Snapshot
+import io.github.koronerap.pulse.data.LookTheme
 import io.github.koronerap.pulse.data.PulseFormat
 import io.github.koronerap.pulse.data.StoredKey
 import io.github.koronerap.pulse.widget.PulseWidgetReceiver
@@ -55,7 +58,7 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(pulse: Pulse, snapshot: Snapshot, onBack: () -> Unit) {
+fun SettingsScreen(pulse: Pulse, snapshot: Snapshot, onBack: () -> Unit, onWidget: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = pulse.preferences
@@ -67,6 +70,7 @@ fun SettingsScreen(pulse: Pulse, snapshot: Snapshot, onBack: () -> Unit) {
     var choosingCurrency by remember { mutableStateOf(false) }
     var removing by remember { mutableStateOf<StoredKey?>(null) }
     var clearing by remember { mutableStateOf(false) }
+    val appLook by pulse.appLook.collectAsState()
 
     fun changed() = scope.launch { pulse.changed() }
 
@@ -85,12 +89,29 @@ fun SettingsScreen(pulse: Pulse, snapshot: Snapshot, onBack: () -> Unit) {
             // Android 8+: başlatıcı onay sorup widget'ı ana ekrana koyuyor.
             val widgets = remember { AppWidgetManager.getInstance(context) }
 
-            if (widgets.isRequestPinAppWidgetSupported) {
-                Section(stringResource(R.string.settings_widget)) {
-                    Text(stringResource(R.string.settings_widget_body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    OutlinedButton(onClick = {
-                        widgets.requestPinAppWidget(ComponentName(context, PulseWidgetReceiver::class.java), null, null)
-                    }) { Text(stringResource(R.string.settings_widget_add)) }
+            Section(stringResource(R.string.settings_widget)) {
+                Text(stringResource(R.string.settings_widget_body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onWidget) { Text(stringResource(R.string.settings_widget_customize)) }
+
+                    if (widgets.isRequestPinAppWidgetSupported) {
+                        OutlinedButton(onClick = {
+                            widgets.requestPinAppWidget(ComponentName(context, PulseWidgetReceiver::class.java), null, null)
+                        }) { Text(stringResource(R.string.settings_widget_add)) }
+                    }
+                }
+            }
+
+            Section(stringResource(R.string.settings_app_look)) {
+                Choice(stringResource(R.string.look_theme), LookTheme.entries, appLook.theme, { stringResource(themeLabel(it)) }) {
+                    pulse.setAppLook(appLook.copy(theme = it))
+                }
+
+                if (wallpaperColorsAvailable) {
+                    Toggle(stringResource(R.string.look_wallpaper), stringResource(R.string.look_wallpaper_app_body), appLook.wallpaperColors) {
+                        pulse.setAppLook(appLook.copy(wallpaperColors = it))
+                    }
                 }
             }
 
