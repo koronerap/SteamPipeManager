@@ -108,6 +108,12 @@ public sealed class SalesLedger
     /// gösterilmeye devam ediyor; yalnızca ayrıntıları eksik.
     /// </summary>
     public List<string> UpgradeDates { get; set; } = [];
+
+    /// <summary>
+    /// Sınır ve günler başka ortakların paylaştıklarıyla (view grant) birlikte mi soruldu.
+    /// Önceki sürümler sormuyordu; o dosyalarda sınır bunlarsız, günler baştan soruluyor.
+    /// </summary>
+    public bool IncludesViewGrants { get; set; }
 }
 
 /// <summary>Bir finans hesabının (anahtarın) son durumu.</summary>

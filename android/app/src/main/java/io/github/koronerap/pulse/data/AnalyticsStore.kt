@@ -49,6 +49,8 @@ data class SalesLedger(
     val days: MutableMap<String, MutableMap<Long, SalesTotals>> = mutableMapOf(),
     val appNames: MutableMap<Long, String> = mutableMapOf(),
     var lastCheckedAt: Long? = null,
+    /** Sınır yayıncının paylaştıklarıyla (view grant) birlikte mi; 1.1.0 sormuyordu. */
+    var includesViewGrants: Boolean = false,
 )
 
 @Serializable

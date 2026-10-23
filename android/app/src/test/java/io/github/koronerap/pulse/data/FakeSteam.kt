@@ -15,6 +15,13 @@ class FakeSteam(private val validKey: String) : HttpGet {
     /** Değişiklik günlüğü: sınır değeri ve değişen gün. */
     val changes = mutableListOf<Pair<Long, LocalDate>>()
     val sales = mutableMapOf<LocalDate, List<String>>()
+
+    /** Yayıncının paylaştığı (view grant) değişiklikler ve satırlar: yalnızca include_view_grants=true ile. */
+    val grantedChanges = mutableListOf<Pair<Long, LocalDate>>()
+    val grantedSales = mutableMapOf<LocalDate, List<String>>()
+
+    /** Gönderilen sınırlar, sırayla. */
+    val highwatermarksSent = mutableListOf<String>()
     var pageSize = 2
 
     /** İstenen adresler (yol; sorgu ve anahtar olmadan). */
@@ -60,7 +67,9 @@ class FakeSteam(private val validKey: String) : HttpGet {
 
         if ("GetChangedDatesForPartner" in url) {
             val since = q.getValue("highwatermark").toLong()
-            val changed = changes.filter { it.first > since }
+            highwatermarksSent.add(q.getValue("highwatermark"))
+            val log = if (q["include_view_grants"] == "true") changes + grantedChanges else changes
+            val changed = log.filter { it.first > since }
             val dates = changed.map { "\"${it.second.toString().replace('-', '/')}\"" }.distinct().joinToString(",")
             val next = changed.maxOfOrNull { it.first } ?: since
             return HttpResponse(200, """{"response":{"dates":[$dates],"result_highwatermark":"$next"}}""")
@@ -70,7 +79,7 @@ class FakeSteam(private val validKey: String) : HttpGet {
             val date = LocalDate.parse(q.getValue("date"))
             salesDatesRequested.add(date)
             val after = q.getValue("highwatermark_id").toLong()
-            val rows = sales[date].orEmpty()
+            val rows = sales[date].orEmpty() + if (q["include_view_grants"] == "true") grantedSales[date].orEmpty() else emptyList()
 
             // Satır kimlikleri 1'den başlıyor; sınırdan sonrakiler, sayfa boyu kadar.
             val page = rows.withIndex().map { (i, row) -> (i + 1L) to row }.filter { it.first > after }.take(pageSize)

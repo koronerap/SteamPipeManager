@@ -411,12 +411,16 @@ public sealed class AnalyticsService(
     {
         var ledger = await store.LoadSalesAsync(account.Id, ct).ConfigureAwait(false);
 
-        if (!force && ledger.LastCheckedAt is { } last && now - last < FinancialInterval)
+        // Yayıncının paylaştığı satışlar (view grant) önceki sürümlerde istenmiyordu; o
+        // dosyalardaki sınır onlarsız. Bir kez, bütün günler baştan soruluyor.
+        var restart = !ledger.IncludesViewGrants;
+
+        if (!force && !restart && ledger.LastCheckedAt is { } last && now - last < FinancialInterval)
         {
             return;
         }
 
-        var changed = await financial.GetChangedDatesAsync(account.Key, ledger.Highwatermark, ct).ConfigureAwait(false);
+        var changed = await financial.GetChangedDatesAsync(account.Key, restart ? 0 : ledger.Highwatermark, ct).ConfigureAwait(false);
 
         foreach (var date in changed.Dates.Select(SteamWebApi.DateText))
         {
@@ -429,6 +433,7 @@ public sealed class AnalyticsService(
         // Sınır, bekleyen günlerle aynı dosyada: günler okunmadan kapanırsa bir sonraki
         // açılışta bekleyenler listesinden devam ediliyor.
         ledger.Highwatermark = changed.Highwatermark;
+        ledger.IncludesViewGrants = true;
         ledger.LastCheckedAt = now;
         await store.SaveSalesAsync(account.Id, ledger, ct).ConfigureAwait(false);
     }

@@ -134,7 +134,9 @@ dates. **Hide amounts** on the Analytics page shows every amount as •••, i
 for when you share your screen.
 
 Wishlists and sales need a **Steam financial key**. A key belongs to one Steamworks
-partner (company) and sees only that company's games, so it is entered per profile:
+partner (company) and sees only that company's games, so it is entered per profile. If a
+publisher sells your game and shares its sales data with your company (a *view grant* in
+Steamworks), the key sees those sales too. To get a key:
 
 1. In Steamworks, open *Users & Permissions → Manage Groups* and create a
    **Financial API Group**.

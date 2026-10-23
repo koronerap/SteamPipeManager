@@ -111,6 +111,12 @@ public sealed record SalesLine
 
     public long SalePrice { get; init; }
 
+    /// <summary>
+    /// Satırı paylaşan ortak (<c>view_grant_partnerid</c>): oyun yayıncının hesabındaysa
+    /// satış onun, görme izni bizim. Kendi satışımızda 0.
+    /// </summary>
+    public uint ViewGrant { get; init; }
+
     public SalesTotals Totals => new(NetUnits, Net, Gross, Returns, Tax, Math.Round(Net * SteamRevenueShare.OfTier(Tier), 4));
 }
 
@@ -174,6 +180,13 @@ public sealed class SteamFinancialClient(HttpClient http, string host = SteamFin
     private const int MaxPages = 1000;
 
     /// <summary>
+    /// Başka bir ortağın (çoğunlukla yayıncının) paylaştığı veri de istensin. Oyun yayıncının
+    /// hesabındaysa satışları orada; bu olmadan anahtar yalnızca kendi hesabındakileri (örneğin
+    /// dağıtılan anahtarları) görüyor ve satışlar hiç gelmiyor.
+    /// </summary>
+    private const string ViewGrants = "include_view_grants=true";
+
+    /// <summary>
     /// Her istekten önce çağrılıyor; çağıran istek sayısını ve hızını buradan yönetiyor
     /// (bkz. <see cref="AnalyticsService"/>).
     /// </summary>
@@ -223,7 +236,7 @@ public sealed class SteamFinancialClient(HttpClient http, string host = SteamFin
     public async Task<ChangedDates> GetChangedDatesAsync(string key, ulong highwatermark, CancellationToken ct = default)
     {
         using var json = await GetAsync(
-            Url("GetChangedDatesForPartner", key, $"highwatermark={highwatermark}"), ct).ConfigureAwait(false);
+            Url("GetChangedDatesForPartner", key, $"highwatermark={highwatermark}&{ViewGrants}"), ct).ConfigureAwait(false);
 
         var body = SteamWebApi.Body(json.RootElement);
         var dates = new List<DateOnly>();
@@ -261,7 +274,7 @@ public sealed class SteamFinancialClient(HttpClient http, string host = SteamFin
         for (var page = 0; page < MaxPages; page++)
         {
             using var json = await GetAsync(
-                Url("GetDetailedSales", key, $"date={SteamWebApi.DateText(date)}&highwatermark_id={cursor}"), ct).ConfigureAwait(false);
+                Url("GetDetailedSales", key, $"date={SteamWebApi.DateText(date)}&highwatermark_id={cursor}&{ViewGrants}"), ct).ConfigureAwait(false);
 
             var body = SteamWebApi.Body(json.RootElement);
 
@@ -345,6 +358,7 @@ public sealed class SteamFinancialClient(HttpClient http, string host = SteamFin
             Currency = SteamWebApi.Text(row, "currency"),
             BasePrice = SteamWebApi.Long(row, "base_price"),
             SalePrice = SteamWebApi.Long(row, "sale_price"),
+            ViewGrant = (uint)SteamWebApi.Long(row, "view_grant_partnerid"),
         };
     }
 

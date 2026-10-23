@@ -106,7 +106,7 @@ class SteamFinancialClient(private val http: HttpGet, private val host: String =
 
     /** Son sorgudan bu yana verisi değişen günler; ilk çağrıda "0" verilir. */
     suspend fun changedDates(key: String, highwatermark: String): ChangedDates {
-        val body = SteamWebApi.body(get(url("GetChangedDatesForPartner", key, "highwatermark=$highwatermark")))
+        val body = SteamWebApi.body(get(url("GetChangedDatesForPartner", key, "highwatermark=$highwatermark&$VIEW_GRANTS")))
 
         val dates = ((body as? JsonObject)?.get("dates") as? JsonArray).orEmpty()
             .mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content }
@@ -128,7 +128,7 @@ class SteamFinancialClient(private val http: HttpGet, private val host: String =
         var cursor = 0L
 
         repeat(MAX_PAGES) {
-            val body = SteamWebApi.body(get(url("GetDetailedSales", key, "date=${SteamWebApi.dateText(date)}&highwatermark_id=$cursor")))
+            val body = SteamWebApi.body(get(url("GetDetailedSales", key, "date=${SteamWebApi.dateText(date)}&highwatermark_id=$cursor&$VIEW_GRANTS")))
             val obj = body as? JsonObject
 
             for (row in (obj?.get("results") as? JsonArray).orEmpty()) {
@@ -192,6 +192,13 @@ class SteamFinancialClient(private val http: HttpGet, private val host: String =
 
         /** Sayfalamanın sonsuza dek sürmemesi için üst sınır. */
         private const val MAX_PAGES = 1000
+
+        /**
+         * Başka bir ortağın (çoğunlukla yayıncının) paylaştığı veri de istensin. Oyun yayıncının
+         * hesabındaysa satışları orada; bu olmadan anahtar yalnızca kendi hesabındakileri
+         * (örneğin dağıtılan anahtarları) görüyor ve satışlar hiç gelmiyor.
+         */
+        private const val VIEW_GRANTS = "include_view_grants=true"
     }
 }
 

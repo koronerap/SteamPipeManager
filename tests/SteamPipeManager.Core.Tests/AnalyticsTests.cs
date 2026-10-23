@@ -293,6 +293,63 @@ public sealed class AnalyticsTests : IDisposable
     }
 
     /// <summary>
+    /// Oyun yayıncının hesabındaysa satışlar orada; anahtar onları ancak yayıncının
+    /// paylaşımıyla (view grant) görüyor. Kendi hesapta yalnızca dağıtılan anahtarlar var.
+    /// </summary>
+    [Fact]
+    public async Task Sales_a_publisher_shares_through_a_view_grant_are_counted()
+    {
+        var today = PacificToday;
+        _steam.Changes.Add((100, today.AddDays(-400)));
+        _steam.Sales[today.AddDays(-400)] =
+        [
+            """{"line_item_type":"Package","package_sale_type":"Retail","packageid":2,"key_request_id":55,"gross_units_activated":30}""",
+        ];
+        _steam.GrantedChanges.Add((200, today));
+        _steam.GrantedSales[today] =
+        [
+            """{"line_item_type":"Package","packageid":1,"primary_appid":4000,"gross_units_sold":3,"net_units_sold":3,"gross_sales_usd":"23.9700","net_sales_usd":"20.0000","view_grant_partnerid":777}""",
+        ];
+
+        await Service().RefreshAsync();
+
+        Assert.Equal((3, 20m, 23.97m), Basic((await Service().GetAsync(Game)).Sales!.Today));
+
+        var month = await new AnalyticsStore(_dir).LoadSalesMonthAsync(SteamFinancialKeyStore.Fingerprint(Key), today.ToString("yyyy-MM"));
+        Assert.Equal(777u, Assert.Single(month.Days[SteamWebApi.DateText(today)]).ViewGrant);
+    }
+
+    /// <summary>
+    /// Önceki sürümün dosyasındaki sınır view grant'siz: yayıncının paylaştığı günler o
+    /// sınırdan eski olduğu için hiç gelmezdi. Bir kez baştan soruluyor, sonra yine sınırla.
+    /// </summary>
+    [Fact]
+    public async Task A_sales_file_from_before_view_grants_is_asked_again_from_the_start()
+    {
+        var store = new AnalyticsStore(_dir);
+        var account = SteamFinancialKeyStore.Fingerprint(Key);
+        var old = PacificToday.AddDays(-100);
+
+        await store.SaveSalesAsync(account, new SalesLedger { Version = 2, Highwatermark = 500, LastCheckedAt = _clock.Now });
+
+        _steam.GrantedChanges.Add((300, old));
+        _steam.GrantedSales[old] =
+        [
+            """{"line_item_type":"Package","packageid":1,"primary_appid":4000,"gross_units_sold":2,"net_units_sold":2,"gross_sales_usd":"15.9800","net_sales_usd":"13.0000","view_grant_partnerid":777}""",
+        ];
+
+        await Service().RefreshAsync();
+
+        Assert.Equal((2, 13m, 15.98m), Basic((await Service().GetAsync(Game)).Sales!.Lifetime));
+
+        _clock.Advance(TimeSpan.FromHours(3));
+        await Service().RefreshAsync();
+
+        Assert.Equal(["0", "300"], _steam.HighwatermarksSent);
+        Assert.True((await store.LoadSalesAsync(account)).IncludesViewGrants);
+    }
+
+    /// <summary>
     /// Steam'in satırları ayrıntısıyla saklanıyor: iade, vergi, ülke, platform, indirim, anahtar
     /// isteği ve adları. Tahmini pay her satırın kendi kademesiyle (%70, %80).
     /// </summary>
@@ -348,6 +405,7 @@ public sealed class AnalyticsTests : IDisposable
         {
             Highwatermark = 500,
             LastCheckedAt = _clock.Now,
+            IncludesViewGrants = true,
             Days = { [SteamWebApi.DateText(old)] = new() { [Game] = new SalesRow(5, 50m, 60m) } },
         });
 
@@ -570,6 +628,14 @@ internal sealed class FakeSteamApi : HttpMessageHandler
 
     public Dictionary<DateOnly, string[]> Sales { get; } = [];
 
+    /// <summary>
+    /// Yayıncının paylaştığı (view grant) değişiklikler ve satırlar: Steam bunları yalnızca
+    /// <c>include_view_grants=true</c> ile veriyor.
+    /// </summary>
+    public List<(ulong Mark, DateOnly Date)> GrantedChanges { get; } = [];
+
+    public Dictionary<DateOnly, string[]> GrantedSales { get; } = [];
+
     /// <summary>Satış yanıtına eklenen ad tabloları (package_info, country_info…), JSON parçası olarak.</summary>
     public string SalesLookups { get; set; } = "";
 
@@ -618,7 +684,8 @@ internal sealed class FakeSteamApi : HttpMessageHandler
             var since = ulong.Parse(query["highwatermark"]!);
             HighwatermarksSent.Add(query["highwatermark"]!);
 
-            var changed = Changes.Where(c => c.Mark > since).ToList();
+            var log = query["include_view_grants"] == "true" ? Changes.Concat(GrantedChanges) : Changes;
+            var changed = log.Where(c => c.Mark > since).ToList();
             var dates = string.Join(",", changed.Select(c => $"\"{c.Date:yyyy/MM/dd}\"").Distinct());
             var next = changed.Count > 0 ? changed.Max(c => c.Mark) : since;
 
@@ -629,7 +696,8 @@ internal sealed class FakeSteamApi : HttpMessageHandler
         {
             var date = DateOnly.Parse(query["date"]!);
             var after = ulong.Parse(query["highwatermark_id"]!);
-            var rows = Sales.GetValueOrDefault(date) ?? [];
+            var granted = query["include_view_grants"] == "true" ? GrantedSales.GetValueOrDefault(date) ?? [] : [];
+            var rows = (Sales.GetValueOrDefault(date) ?? []).Concat(granted).ToArray();
 
             // Satır kimlikleri 1'den başlıyor; sınırdan sonrakiler, sayfa boyu kadar.
             var page = rows.Select((row, i) => (Id: (ulong)i + 1, Row: row))

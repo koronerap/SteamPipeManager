@@ -144,6 +144,31 @@ class AnalyticsServiceTest {
         assertTrue(sales.isComplete)
     }
 
+    /**
+     * Oyun yayıncının hesabındaysa satışlar orada; anahtar onları ancak yayıncının paylaşımıyla
+     * (view grant) görüyor. 1.1.0'ın dosyası onlarsız bir sınırla kaydedilmişti: bir kez baştan.
+     */
+    @Test
+    fun salesAPublisherSharesAreCountedAndAnOldFileStartsOver() = runTest {
+        AnalyticsStore(dir).saveSales(account, SalesLedger(highwatermark = "500", lastCheckedAt = now.epochSecond))
+
+        steam.grantedChanges.add(300L to pacificToday)
+        steam.grantedSales[pacificToday] = listOf(
+            """{"line_item_type":"Package","packageid":1,"primary_appid":4000,"gross_units_sold":3,"net_units_sold":3,"gross_sales_usd":"23.9700","net_sales_usd":"20.0000","view_grant_partnerid":777}""",
+        )
+
+        service().refresh(scope())
+
+        assertEquals(3, service().get(game, account).sales!!.today.units)
+        assertEquals(20.0, service().get(game, account).sales!!.today.net, 1e-9)
+
+        now = now.plus(Duration.ofHours(3))
+        service().refresh(scope())
+
+        assertEquals(listOf("0", "300"), steam.highwatermarksSent)
+        assertTrue(AnalyticsStore(dir).loadSales(account).includesViewGrants)
+    }
+
     /** Telefonda yalnızca son günler: ilk sorgu bütün geçmişi bildirse de eskileri indirilmiyor. */
     @Test
     fun onlyRecentSalesDaysAreDownloaded() = runTest {

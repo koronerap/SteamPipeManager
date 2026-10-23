@@ -201,11 +201,15 @@ class AnalyticsService(
     private suspend fun refreshChangedSales(account: FinancialAccount, at: Instant, force: Boolean) {
         val ledger = store.loadSales(account.id)
 
-        if (!force && ledger.lastCheckedAt?.let { Duration.between(Instant.ofEpochSecond(it), at) < financialInterval } == true) {
+        // Yayıncının paylaştığı satışlar (view grant) 1.1.0'da istenmiyordu; o dosyadaki sınır
+        // onlarsız. Bir kez, günler baştan soruluyor.
+        val restart = !ledger.includesViewGrants
+
+        if (!force && !restart && ledger.lastCheckedAt?.let { Duration.between(Instant.ofEpochSecond(it), at) < financialInterval } == true) {
             return
         }
 
-        val changed = financial.changedDates(account.key, ledger.highwatermark)
+        val changed = financial.changedDates(account.key, if (restart) "0" else ledger.highwatermark)
         val since = pacificDay(at).minusDays(SALES_WINDOW_DAYS - 1)
 
         for (date in changed.dates.filter { it >= since }.map(SteamWebApi::dateText)) {
@@ -217,6 +221,7 @@ class AnalyticsService(
         // Pencereden çıkan günler tutulmuyor.
         ledger.days.keys.removeAll { (SteamWebApi.date(it) ?: since) < since }
         ledger.highwatermark = changed.highwatermark
+        ledger.includesViewGrants = true
         ledger.lastCheckedAt = at.epochSecond
         store.saveSales(account.id, ledger)
     }
